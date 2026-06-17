@@ -1,0 +1,70 @@
+{
+  "expo": {
+    "name": "Tara",
+    "slug": "tara",
+    "version": "1.0.0",
+    "scheme": "tara",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "icon": "./assets/icon.png",
+    "splash": {
+      "backgroundColor": "#08060c",
+      "resizeMode": "contain"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.tara.app",
+      "infoPlist": {
+        "NSUserTrackingUsageDescription": "Tara does not track you across apps."
+      }
+    },
+    "android": {
+      "package": "com.tara.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#08060c"
+      }
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "@kingstinct/react-native-healthkit",
+        {
+          "NSHealthShareUsageDescription": "Tara reads your sleep, heart rate, HRV, and activity to blend your body's rhythm with your Vedic chart for personalized wellness insights.",
+          "NSHealthUpdateUsageDescription": "Tara does not write data to Health.",
+          "background": false
+        }
+      ],
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/Fraunces-Regular.ttf",
+            "./assets/fonts/Fraunces-Medium.ttf",
+            "./assets/fonts/Outfit-Regular.ttf",
+            "./assets/fonts/Outfit-Medium.ttf",
+            "./assets/fonts/Outfit-SemiBold.ttf"
+          ]
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "googlePlacesApiKey": "",
+      "taraAiUrl": "",
+      "revenueCat": {
+        "ios": "",
+        "android": ""
+      },
+      "eas": {
+        "projectId": ""
+      }
+    }
+  }
+}
