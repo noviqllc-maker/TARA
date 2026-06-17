@@ -57,7 +57,7 @@
     },
     "extra": {
       "googlePlacesApiKey": "",
-      "taraAiUrl": "",
+      "taraAiUrl": "https://daiqcbbegstszrwypkac.supabase.co/functions/v1/tara-ai",
       "revenueCat": {
         "ios": "",
         "android": ""
