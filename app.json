@@ -56,7 +56,7 @@
       "typedRoutes": true
     },
     "extra": {
-      "googlePlacesApiKey": "",
+      "googlePlacesApiKey": "AIzaSyDdr1h0keStD3lgOvVlbOQE0MuWfd4e9Us",
       "taraAiUrl": "https://daiqcbbegstszrwypkac.supabase.co/functions/v1/tara-ai",
       "revenueCat": {
         "ios": "",
