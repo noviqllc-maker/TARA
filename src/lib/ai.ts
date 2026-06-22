@@ -4,9 +4,9 @@
 // app.json -> expo.extra.taraAiUrl.
 
 import Constants from 'expo-constants';
-import { cosmicWeather } from '@/data/mock';
 import { BirthChart } from '@/lib/vedic';
 import { HealthMetrics } from '@/lib/health';
+import { computeTransits } from '@/lib/transits';
 
 export type ChatMessage = { role: 'user' | 'assistant'; content: string };
 
@@ -17,14 +17,24 @@ function endpoint(): string | undefined {
 
 // Context string built from the user's REAL chart + REAL wellness (when connected).
 function buildContext(name: string, chart: BirthChart | null, health?: HealthMetrics | null): string {
+  const today = new Date();
+  const dateStr = today.toLocaleDateString('en-US', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+  });
+
+  // Live sky for today (real panchanga + Moon transit relative to the user's chart)
+  const t = computeTransits(today, chart);
+  const sky = `Today's sky: ${t.moonPhase}, Moon in ${t.moonSign} (${t.moonNakshatra}), ${t.panchanga}. ${t.transitText}.`;
+
   const w = health
     ? `Wellness today (${health.source === 'apple-health' ? 'from Apple Health' : 'estimated'}): recovery ${health.recovery}/100, sleep ${health.sleep}/100${health.sleepHours ? ` (${health.sleepHours}h)` : ''}, HRV ${health.hrv}ms, resting HR ${health.rhr}, steps ${health.steps}.`
     : '';
+
   if (chart) {
     const p = chart.planets.map((pl) => `${pl.name} in ${pl.sign} (house ${pl.house})`).join(', ');
-    return `User: ${name}. Lagna ${chart.ascendant.sign}, Moon ${chart.moonSign}, Sun ${chart.sunSign}, Nakshatra ${chart.nakshatra} pada ${chart.nakshatraPada}, ${chart.currentDasha}. Planets: ${p}. Today's sky: ${cosmicWeather.transit}, ${cosmicWeather.moonPhase}. ${w}`;
+    return `Today's date: ${dateStr}. User: ${name}. Lagna ${chart.ascendant.sign}, Moon ${chart.moonSign}, Sun ${chart.sunSign}, Nakshatra ${chart.nakshatra} pada ${chart.nakshatraPada}, ${chart.currentDasha}. Planets: ${p}. ${sky} ${w}`;
   }
-  return `User: ${name}. (Birth chart not yet available.) Today's sky: ${cosmicWeather.transit}, ${cosmicWeather.moonPhase}. ${w}`;
+  return `Today's date: ${dateStr}. User: ${name}. (Birth chart not yet available.) ${sky} ${w}`;
 }
 
 export async function askTara(
