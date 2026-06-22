@@ -40,6 +40,19 @@ export default function Timeline() {
                 </View>
                 <Text variant="tiny" color={colors.goldSoft} style={{ marginTop: 4 }}>{d.start} – {d.end}</Text>
                 <Text variant="body" style={{ marginTop: 8, fontSize: 13.5 }}>{d.theme}</Text>
+                {d.antardashas?.length ? (
+                  <View style={{ marginTop: 12, borderTopWidth: 1, borderTopColor: colors.line, paddingTop: 10, gap: 6 }}>
+                    <Text variant="tiny" color={colors.muted} style={{ textTransform: 'uppercase', letterSpacing: 1 }}>Antardashas</Text>
+                    {d.antardashas.map((a, j) => (
+                      <View key={`${a.planet}-${j}`} style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                        <Text variant="tiny" color={a.phase === 'present' ? colors.gold : colors.cream} style={{ fontSize: 12.5 }}>
+                          {d.planet}–{a.planet}{a.phase === 'present' ? '  •' : ''}
+                        </Text>
+                        <Text variant="tiny" color={a.phase === 'present' ? colors.goldSoft : colors.muted}>{a.start} – {a.end}</Text>
+                      </View>
+                    ))}
+                  </View>
+                ) : null}
               </Card>
             </Animated.View>
           ))}

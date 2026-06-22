@@ -16,9 +16,10 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { useHealth } from '@/hooks/useHealth';
 import { router } from 'expo-router';
 import { colors, fonts, radius, spacing } from '@/theme';
+import Markdown from 'react-native-markdown-display';
 
 const MEM_KEY = 'tara.chat.v1';
-const FREE_LIMIT = 5; // free users get 5 questions, then Premium
+const FREE_LIMIT = 20; // free users get 5 questions, then Premium
 
 export default function TaraAI() {
   const insets = useSafeAreaInsets();
@@ -99,9 +100,13 @@ export default function TaraAI() {
               style={[styles.bubble, m.role === 'user' ? styles.user : styles.assistant]}
             >
               {m.role === 'assistant' && <Text variant="eyebrow" color={colors.gold} style={{ marginBottom: 6 }}>✦ Tara</Text>}
-              <Text variant="body" color={m.role === 'user' ? '#1a1018' : colors.cream} style={{ lineHeight: 22 }}>
-                {m.content}
-              </Text>
+              {m.role === 'user' ? (
+                <Text variant="body" color="#1a1018" style={{ lineHeight: 22 }}>
+                  {m.content}
+                </Text>
+              ) : (
+                <Markdown style={markdownStyles}>{m.content}</Markdown>
+              )}
             </Animated.View>
           ))}
 
@@ -155,9 +160,38 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1, backgroundColor: 'rgba(255,255,255,0.05)', borderColor: colors.line, borderWidth: 1,
-    borderRadius: radius.pill, paddingVertical: 12, paddingHorizontal: 18, color: colors.cream, fontFamily: fonts.sans, fontSize: 15,
+    borderRadius: radius.pill, paddingVertical: 12, paddingHorizontal: 18, color: colors.cream, fontFamily: fonts.sans, fontWeight: '400', fontSize: 15,
   },
   sendBtn: {
     width: 44, height: 44, borderRadius: 22, backgroundColor: colors.goldSoft, alignItems: 'center', justifyContent: 'center',
   },
 });
+
+const markdownStyles = {
+  body: { color: colors.cream, fontFamily: fonts.sans, fontSize: 15, lineHeight: 23 },
+  paragraph: { marginTop: 0, marginBottom: 12 },
+  strong: { color: colors.gold, fontWeight: '600' as const },
+  em: { fontStyle: 'italic' as const, color: colors.cream },
+  heading1: { color: colors.gold, fontSize: 18, fontWeight: '700' as const, marginTop: 4, marginBottom: 8 },
+  heading2: { color: colors.gold, fontSize: 16, fontWeight: '600' as const, marginTop: 10, marginBottom: 6 },
+  bullet_list: { marginTop: 2, marginBottom: 8 },
+  ordered_list: { marginTop: 2, marginBottom: 8 },
+  list_item: { marginBottom: 4 },
+  bullet_list_icon: { color: colors.gold },
+  link: { color: colors.goldSoft, textDecorationLine: 'underline' as const },
+  blockquote: {
+    backgroundColor: 'rgba(205,163,73,0.08)',
+    borderLeftColor: colors.gold,
+    borderLeftWidth: 3,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginVertical: 6,
+  },
+  code_inline: {
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    color: colors.cream,
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    paddingHorizontal: 4,
+    borderRadius: 4,
+  },
+};

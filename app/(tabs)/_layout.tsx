@@ -35,7 +35,7 @@ export default function TabsLayout() {
         tabBarBackground: () => (
           <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
         ),
-        tabBarLabelStyle: { fontFamily: fonts.sansMed, fontSize: 9.5, letterSpacing: 0.4 },
+        tabBarLabelStyle: { fontFamily: fonts.sansMed, fontSize: 9.5, fontWeight: '600', letterSpacing: 0.4 },
       }}
     >
       <Tabs.Screen name="home" options={{ title: 'Today', tabBarIcon: ({ color }) => <Icon name="home" color={color} /> }} />

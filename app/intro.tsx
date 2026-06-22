@@ -74,7 +74,7 @@ export default function Intro() {
               start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
               style={[styles.cta, shadow.gold]}
             >
-              <Text variant="body" color="#1a1018" style={{ fontFamily: fonts.sansSemi, fontSize: 16 }}>
+              <Text variant="body" color="#1a1018" style={{ fontWeight: '600', fontSize: 16 }}>
                 Start Journey
               </Text>
             </LinearGradient>
@@ -88,8 +88,11 @@ export default function Intro() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.black },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  title: { fontFamily: fonts.serif, fontSize: 58, letterSpacing: 8, color: colors.cream, textAlign: 'center' },
-  wellness: { fontFamily: fonts.serif, fontSize: 18, letterSpacing: 6, color: colors.gold, textAlign: 'center', marginTop: 2 },
+  title: {
+    fontFamily: 'System', fontSize: 58, fontWeight: '800', letterSpacing: 10,
+    lineHeight: 70, color: colors.cream, textAlign: 'center', includeFontPadding: false,
+  },
+  wellness: { fontFamily: 'System', fontSize: 18, fontWeight: '600', letterSpacing: 6, color: colors.gold, textAlign: 'center', marginTop: 2 },
   sub: { letterSpacing: 3, marginTop: 14, textAlign: 'center' },
   ctaWrap: { paddingBottom: 70, alignItems: 'center' },
   cta: { borderRadius: 16, paddingVertical: 16, paddingHorizontal: 48 },

@@ -32,12 +32,14 @@ export const domainColors = {
   Spiritual: colors.saffron,
 } as const;
 
+// All text now uses the iOS system font (SF Pro). Weight is controlled per-style
+// via fontWeight ('400' regular, '600' semibold, '700' bold) — not via family name.
 export const fonts = {
-  serif: 'Fraunces',
-  serifMed: 'Fraunces-Medium',
-  sans: 'Outfit',
-  sansMed: 'Outfit-Medium',
-  sansSemi: 'Outfit-SemiBold',
+  serif: 'System',
+  serifMed: 'System',
+  sans: 'System',
+  sansMed: 'System',
+  sansSemi: 'System',
 } as const;
 
 export const spacing = {

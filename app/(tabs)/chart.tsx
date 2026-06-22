@@ -48,7 +48,7 @@ export default function Chart() {
           <Line x1="100" y1="10" x2="190" y2="100" stroke={colors.gold} strokeWidth="0.7" opacity={0.35} />
           <Line x1="10" y1="100" x2="100" y2="190" stroke={colors.gold} strokeWidth="0.7" opacity={0.35} />
           <Line x1="190" y1="100" x2="100" y2="190" stroke={colors.gold} strokeWidth="0.7" opacity={0.35} />
-          <SvgText x="100" y="30" fill={colors.goldSoft} fontSize="8" textAnchor="middle" fontFamily={fonts.serif}>{chart.ascendant.sign}</SvgText>
+          <SvgText x="100" y="30" fill={colors.goldSoft} fontSize="8" fontWeight="600" textAnchor="middle" fontFamily={fonts.serif}>{chart.ascendant.sign}</SvgText>
           <Circle cx="100" cy="44" r="3" fill={colors.terra} />
         </Svg>
         <Text variant="tiny" color={colors.muted}>Ascendant (Lagna): {chart.ascendant.sign} {chart.ascendant.degree}</Text>
@@ -74,6 +74,9 @@ export default function Chart() {
         <Card solid glow style={{ marginTop: spacing.lg }}>
           <Eyebrow color={colors.gold}>Current Period</Eyebrow>
           <Text variant="serif" style={{ fontSize: 18, marginTop: 6 }}>{chart.currentDasha}</Text>
+          {chart.currentAntardasha ? (
+            <Text variant="tiny" color={colors.goldSoft} style={{ marginTop: 4 }}>{chart.currentAntardasha}</Text>
+          ) : null}
         </Card>
       ) : null}
 
@@ -84,7 +87,10 @@ export default function Chart() {
         {chart.planets.map((pl) => (
           <Pressable key={pl.name} style={styles.planetRow} onPress={() => setSelected(pl)}>
             <Text variant="serif" style={{ fontSize: 15 }}>{pl.glyph}  {pl.name}{pl.retrograde ? ' ℞' : ''}</Text>
-            <Text variant="tiny" color={colors.goldSoft}>{pl.sign} · {pl.degree} · H{pl.house}</Text>
+            <View style={{ alignItems: 'flex-end' }}>
+              <Text variant="tiny" color={colors.goldSoft}>{pl.sign} · {pl.degree} · H{pl.house}</Text>
+              <Text variant="tiny" color={colors.muted} style={{ fontSize: 10.5, marginTop: 2 }}>Navāṁśa (D9): {pl.navamsaSign}</Text>
+            </View>
           </Pressable>
         ))}
       </Card>
@@ -111,7 +117,22 @@ export default function Chart() {
         </View>
       </Card>
 
+      {/* Graha Drishti — planetary aspects */}
+      {chart.drishti.length > 0 && (
+        <Card style={{ marginTop: spacing.lg }}>
+          <Eyebrow>Graha Drishti</Eyebrow>
+          <View style={{ marginTop: 10, gap: 7 }}>
+            {chart.drishti.map((a, i) => (
+              <Text key={`${a.from}-${a.house}-${i}`} variant="tiny" color={colors.cream} style={{ fontSize: 13 }}>
+                • {a.from} aspects {a.targets.join(', ')} (house {a.house})
+              </Text>
+            ))}
+          </View>
+        </Card>
+      )}
+
       <View style={{ marginTop: spacing.lg, gap: 10 }}>
+        <GhostButton label="Vedic Calculator →" onPress={() => router.push('/calculator')} />
         <GhostButton label="View Dasha Timeline →" onPress={() => router.push('/chart/timeline')} />
         <GhostButton label="Compatibility →" onPress={() => router.push('/insights/love')} />
       </View>

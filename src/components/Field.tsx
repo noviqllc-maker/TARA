@@ -23,7 +23,7 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     paddingHorizontal: 16,
     color: colors.cream,
-    fontFamily: fonts.sans,
+    fontFamily: fonts.sans, fontWeight: '400',
     fontSize: 17,
   },
 });

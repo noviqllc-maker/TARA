@@ -60,7 +60,7 @@ export default function Home() {
         <View style={styles.snapRow}>
           {snapshot.map((s) => (
             <View key={s.label} style={styles.snapItem}>
-              <Text style={{ fontFamily: fonts.serif, fontSize: 20, color: colors.goldSoft }}>{s.value}%</Text>
+              <Text style={{ fontFamily: fonts.serif, fontSize: 20, fontWeight: '600', color: colors.goldSoft }}>{s.value}%</Text>
               <Text variant="tiny" style={{ fontSize: 10 }}>{s.label}</Text>
             </View>
           ))}

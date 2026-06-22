@@ -67,7 +67,7 @@ export default function Wellness() {
         ].map(([k, v, c]) => (
           <Card key={k as string} style={{ flex: 1, alignItems: 'center' }}>
             <Text variant="eyebrow" color={colors.muted} style={{ fontSize: 9 }}>{k}</Text>
-            <Text style={{ fontFamily: fonts.serif, fontSize: 19, color: c as string, marginTop: 4 }}>{v}</Text>
+            <Text style={{ fontFamily: fonts.serif, fontSize: 19, fontWeight: '600', color: c as string, marginTop: 4 }}>{v}</Text>
           </Card>
         ))}
       </View>

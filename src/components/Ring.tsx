@@ -37,7 +37,7 @@ export default function Ring({
         />
       </Svg>
       <View style={{ position: 'absolute', alignItems: 'center' }}>
-        <Text style={{ fontFamily: fonts.serif, fontSize: size * 0.27, color: colors.cream }}>{value}</Text>
+        <Text style={{ fontFamily: fonts.serif, fontWeight: '600', fontSize: size * 0.27, color: colors.cream }}>{value}</Text>
         {label ? (
           <Text variant="eyebrow" color={colors.muted} style={{ marginTop: 2, fontSize: 9 }}>{label}</Text>
         ) : null}

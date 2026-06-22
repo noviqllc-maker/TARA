@@ -64,7 +64,7 @@ export function GoldButton({
           style={[styles.goldBtn, shadow.gold, disabled && { opacity: 0.5 }]}
         >
           {typeof label === 'string'
-            ? <Text variant="body" color="#1a1018" style={{ fontFamily: fonts.sansSemi }}>{label}</Text>
+            ? <Text variant="body" color="#1a1018" style={{ fontWeight: '600' }}>{label}</Text>
             : label}
         </LinearGradient>
       </Pressable>
@@ -95,14 +95,14 @@ export function Chip({ children }: { children: React.ReactNode }) {
 export const Divider = () => <View style={styles.divider} />;
 
 const styles = StyleSheet.create({
-  h1: { fontFamily: fonts.serif, fontSize: 30, color: colors.cream, lineHeight: 35 },
-  h2: { fontFamily: fonts.serif, fontSize: 22, color: colors.cream },
-  h3: { fontFamily: fonts.serif, fontSize: 18, color: colors.cream },
-  serif: { fontFamily: fonts.serif, fontSize: 16, color: colors.cream, lineHeight: 23 },
-  body: { fontFamily: fonts.sans, fontSize: 14.5, color: colors.cream, lineHeight: 21 },
-  tiny: { fontFamily: fonts.sans, fontSize: 11.5, color: colors.muted, lineHeight: 17 },
+  h1: { fontFamily: fonts.serif, fontSize: 30, fontWeight: '700', color: colors.cream, lineHeight: 38 },
+  h2: { fontFamily: fonts.serif, fontSize: 22, fontWeight: '600', color: colors.cream, lineHeight: 28 },
+  h3: { fontFamily: fonts.serif, fontSize: 18, fontWeight: '600', color: colors.cream, lineHeight: 24 },
+  serif: { fontFamily: fonts.serif, fontSize: 16, fontWeight: '600', color: colors.cream, lineHeight: 23 },
+  body: { fontFamily: fonts.sans, fontSize: 14.5, fontWeight: '400', color: colors.cream, lineHeight: 21 },
+  tiny: { fontFamily: fonts.sans, fontSize: 11.5, fontWeight: '400', color: colors.muted, lineHeight: 17 },
   eyebrow: {
-    fontFamily: fonts.sansMed, fontSize: 10.5, letterSpacing: 2.4,
+    fontFamily: fonts.sansMed, fontSize: 10.5, fontWeight: '600', letterSpacing: 2.4,
     textTransform: 'uppercase', color: colors.gold,
   },
   card: {

@@ -51,7 +51,7 @@ export default function Journal() {
       <Card style={{ marginBottom: spacing.lg }}>
         <View style={styles.sliderHead}>
           <Eyebrow>Energy Level</Eyebrow>
-          <Text style={{ fontFamily: fonts.serif, color: colors.gold }}>{energy}/10</Text>
+          <Text style={{ fontFamily: fonts.serif, fontWeight: '600', color: colors.gold }}>{energy}/10</Text>
         </View>
         <Slider value={energy} onChange={setEnergy} color={colors.gold} />
       </Card>
@@ -59,7 +59,7 @@ export default function Journal() {
       <Card style={{ marginBottom: spacing.lg }}>
         <View style={styles.sliderHead}>
           <Eyebrow>Stress Level</Eyebrow>
-          <Text style={{ fontFamily: fonts.serif, color: colors.rose }}>{stress}/10</Text>
+          <Text style={{ fontFamily: fonts.serif, fontWeight: '600', color: colors.rose }}>{stress}/10</Text>
         </View>
         <Slider value={stress} onChange={setStress} color={colors.rose} />
       </Card>
@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
   moodOn: { borderColor: colors.gold, backgroundColor: 'rgba(205,163,73,0.12)' },
   sliderHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   notes: {
-    marginTop: 10, minHeight: 90, textAlignVertical: 'top', color: colors.cream, fontFamily: fonts.sans, fontSize: 15,
+    marginTop: 10, minHeight: 90, textAlignVertical: 'top', color: colors.cream, fontFamily: fonts.sans, fontWeight: '400', fontSize: 15,
     backgroundColor: 'rgba(255,255,255,0.04)', borderColor: colors.line, borderWidth: 1, borderRadius: radius.md, padding: 14,
   },
   replay: { flexDirection: 'row', gap: 8, marginTop: 12 },

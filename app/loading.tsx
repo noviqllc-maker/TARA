@@ -57,5 +57,5 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.black },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   glyph: { position: 'absolute', fontSize: 30, color: colors.gold },
-  msg: { fontFamily: fonts.serif, fontSize: 18, color: colors.cream, textAlign: 'center' },
+  msg: { fontFamily: fonts.serif, fontSize: 18, fontWeight: '600', color: colors.cream, textAlign: 'center' },
 });
