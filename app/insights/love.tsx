@@ -305,7 +305,10 @@ export default function Love() {
         )}
       </Card>
 
-      <GhostButton label="Ask a Love Question →" onPress={() => router.push('/(tabs)/tara')} />
+      <GhostButton
+        label="Ask a relationship question →"
+        onPress={() => router.push({ pathname: '/(tabs)/tara', params: { category: 'Relationships' } })}
+      />
       <Disclaimer />
     </Screen>
   );

@@ -14,7 +14,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { useChart } from '@/hooks/useChart';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useHealth } from '@/hooks/useHealth';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { colors, fonts, radius, spacing, domainColors } from '@/theme';
 import Markdown from 'react-native-markdown-display';
 
@@ -31,6 +31,7 @@ export default function TaraAI() {
   const chart = useChart();
   const { isPremium } = useSubscription();
   const { metrics } = useHealth();
+  const params = useLocalSearchParams<{ category?: string }>();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [category, setCategory] = useState<QuestionCategory['key']>('Mind');
@@ -47,6 +48,17 @@ export default function TaraAI() {
     // Load today's question count — auto-resets daily since a new day has no key yet.
     AsyncStorage.getItem(usageKey()).then((v) => setUsedToday(v ? parseInt(v, 10) || 0 : 0));
   }, []);
+
+  // Pre-select a category when navigated here with a `category` param (e.g. from the
+  // Love screen → "Relationships"). Case-insensitive; falls back to the current default.
+  // Sets state even if chat history hides the tabs, so the right category shows on New chat.
+  useEffect(() => {
+    if (!params.category) return;
+    const match = taraQuestions.find(
+      (c) => c.key.toLowerCase() === String(params.category).toLowerCase(),
+    );
+    if (match) setCategory(match.key);
+  }, [params.category]);
   useEffect(() => {
     AsyncStorage.setItem(MEM_KEY, JSON.stringify(messages.slice(-30))).catch(() => {});
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 80);
