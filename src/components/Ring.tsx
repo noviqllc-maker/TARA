@@ -1,6 +1,6 @@
 // src/components/Ring.tsx
 import React, { useEffect } from 'react';
-import { View } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import Animated, {
   useSharedValue, useAnimatedProps, withTiming, Easing,
@@ -36,8 +36,8 @@ export default function Ring({
           animatedProps={animatedProps}
         />
       </Svg>
-      <View style={{ position: 'absolute', alignItems: 'center' }}>
-        <Text style={{ fontFamily: fonts.serif, fontWeight: '600', fontSize: size * 0.27, color: colors.cream }}>{value}</Text>
+      <View style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }]}>
+        <Text style={{ fontFamily: fonts.serif, fontWeight: '600', fontSize: size * 0.27, lineHeight: size * 0.34, textAlign: 'center', includeFontPadding: false, color: colors.cream }}>{value}</Text>
         {label ? (
           <Text variant="eyebrow" color={colors.muted} style={{ marginTop: 2, fontSize: 9 }}>{label}</Text>
         ) : null}
