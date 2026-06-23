@@ -1,13 +1,13 @@
 // app/paywall.tsx
 import React, { useState } from 'react';
-import { View, Pressable, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { View, Pressable, ScrollView, Alert, ActivityIndicator, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import CosmicBackground from '@/components/CosmicBackground';
 import { Text, Eyebrow, GoldButton } from '@/components/ui';
 import { useSubscription } from '@/hooks/useSubscription';
-import { colors, spacing } from '@/theme';
+import { colors, radius, spacing } from '@/theme';
 
 const FEATURES = [
   'Unlimited Tara AI conversations',
@@ -18,13 +18,21 @@ const FEATURES = [
   'No ads — ever',
 ];
 
+// Subscription tiers — prices + product IDs ready to wire to RevenueCat later.
+const PRODUCTS = {
+  monthly: { id: 'tara_premium_monthly', label: 'Monthly', price: '$4.99', period: 'month' },
+  annual: { id: 'tara_premium_annual', label: 'Annual', price: '$39.99', period: 'year' },
+} as const;
+const ANNUAL_BADGE = 'Save 33% · 4 months free';
+type Tier = keyof typeof PRODUCTS;
+
 export default function Paywall() {
   const insets = useSafeAreaInsets();
   const { packages, purchase, restore, available, isPremium } = useSubscription();
   const [busy, setBusy] = useState(false);
+  const [selected, setSelected] = useState<Tier>('annual');
 
-  const pkg = packages[0]; // your $9.99/mo offering's first package
-  const priceLabel = pkg?.product?.priceString ?? '$9.99';
+  const pkg = packages[0]; // your offering's first package
 
   const onBuy = async () => {
     if (!available || !pkg) {
@@ -58,7 +66,7 @@ export default function Paywall() {
         </Pressable>
 
         <Animated.View entering={FadeInDown.duration(500)}>
-          <Text style={{ fontSize: 30, textAlign: 'center', color: colors.gold }}>✦</Text>
+          <Text style={{ fontSize: 30, lineHeight: 40, textAlign: 'center', includeFontPadding: false, color: colors.gold }}>✦</Text>
           <Text variant="h1" style={{ textAlign: 'center', marginTop: 12 }}>Tara Premium</Text>
           <Text variant="tiny" style={{ textAlign: 'center', marginTop: 8, marginBottom: 28 }}>
             Your full Vedic life guide — unlimited and ad-free.
@@ -79,8 +87,32 @@ export default function Paywall() {
             </Text>
           ) : (
             <>
+              {/* Subscription tiers — Annual selected by default */}
+              <View style={{ gap: 12, marginBottom: 24 }}>
+                {(['annual', 'monthly'] as const).map((key) => {
+                  const t = PRODUCTS[key];
+                  const active = selected === key;
+                  return (
+                    <Pressable key={key} onPress={() => setSelected(key)} style={[styles.tier, active && styles.tierActive]}>
+                      <View style={{ flex: 1 }}>
+                        <Text variant="serif" style={{ fontSize: 16 }}>{t.label}</Text>
+                        {key === 'annual' && (
+                          <View style={styles.badge}>
+                            <Text variant="tiny" color="#1a1018" style={{ fontSize: 10, fontWeight: '600' }}>{ANNUAL_BADGE}</Text>
+                          </View>
+                        )}
+                      </View>
+                      <View style={{ alignItems: 'flex-end' }}>
+                        <Text variant="serif" color={colors.goldSoft} style={{ fontSize: 17 }}>{t.price}</Text>
+                        <Text variant="tiny" color={colors.muted}>per {t.period}</Text>
+                      </View>
+                    </Pressable>
+                  );
+                })}
+              </View>
+
               <GoldButton
-                label={busy ? <ActivityIndicator color="#1a1018" /> : `Start Premium — ${priceLabel}/month`}
+                label={busy ? <ActivityIndicator color="#1a1018" /> : `Start Premium — ${PRODUCTS[selected].price}/${PRODUCTS[selected].period}`}
                 onPress={onBuy}
                 disabled={busy}
               />
@@ -98,3 +130,16 @@ export default function Paywall() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  tier: {
+    flexDirection: 'row', alignItems: 'center',
+    borderWidth: 1, borderColor: colors.line, borderRadius: radius.lg,
+    backgroundColor: colors.card, paddingVertical: 16, paddingHorizontal: 16,
+  },
+  tierActive: { borderColor: colors.gold, backgroundColor: 'rgba(205,163,73,0.10)' },
+  badge: {
+    alignSelf: 'flex-start', marginTop: 6, backgroundColor: colors.goldSoft,
+    borderRadius: radius.pill, paddingVertical: 3, paddingHorizontal: 9,
+  },
+});
