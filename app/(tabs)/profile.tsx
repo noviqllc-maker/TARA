@@ -18,12 +18,14 @@ const SHOP_PRODUCTS = {
   compatibility: 'shop_compatibility',
   yearAhead: 'shop_year_ahead',
   birthBlueprint: 'shop_birth_blueprint',
+  doshaRemedies: 'shop_dosha_remedies',
 } as const;
 
 const SHOP_ITEMS = [
   { id: SHOP_PRODUCTS.compatibility, title: 'Compatibility Chart', desc: 'See how your charts align with someone else.', price: '$7.99' },
   { id: SHOP_PRODUCTS.yearAhead, title: 'Year Ahead Report', desc: 'Your personalized forecast for the next 12 months.', price: '$7.99' },
   { id: SHOP_PRODUCTS.birthBlueprint, title: 'Birth Blueprint', desc: 'A deep reading of your natal chart.', price: '$6.99' },
+  { id: SHOP_PRODUCTS.doshaRemedies, title: 'Dosha Remedies', desc: 'Discover the doshas in your chart and personalized remedies to restore balance.', price: '$7.99' },
 ];
 
 const SETTINGS_ROWS = [
@@ -128,7 +130,7 @@ export default function Profile() {
           <>
             <Text variant="serif" style={{ fontSize: 17, marginTop: 8 }}>Unlock Tara Premium</Text>
             <Text variant="tiny" style={{ marginTop: 6 }}>
-              Unlimited Tara AI, yearly forecast, deep compatibility, Life Timeline, AI memory, and no ads — $9.99/month.
+              Unlimited Tara AI, yearly forecast, deep compatibility, Life Timeline, AI memory, and no ads — $4.99/month or $39.99/year.
             </Text>
             <Pressable style={styles.upgrade} onPress={() => router.push('/paywall')}>
               <Text variant="body" color="#1a1018" style={{ fontWeight: '600' }}>Upgrade to Premium</Text>
