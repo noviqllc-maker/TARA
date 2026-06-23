@@ -2,14 +2,14 @@
 import React, { useState } from 'react';
 import { View, Pressable, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
-import Svg, { Rect, Line, Text as SvgText, Circle } from 'react-native-svg';
+import Svg, { Rect, Line, Text as SvgText } from 'react-native-svg';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import Screen from '@/components/Screen';
 import { Text, Card, Eyebrow, GhostButton } from '@/components/ui';
 import Disclaimer from '@/components/Disclaimer';
 import { useProfile } from '@/hooks/useProfile';
 import { useChart } from '@/hooks/useChart';
-import { PlanetPosition } from '@/lib/vedic';
+import { PlanetPosition, BirthChart } from '@/lib/vedic';
 import { colors, fonts, spacing } from '@/theme';
 
 export default function Chart() {
@@ -40,17 +40,7 @@ export default function Chart() {
 
       {/* North-Indian diamond chart with ascendant marker */}
       <Card solid style={{ alignItems: 'center', marginBottom: spacing.lg }}>
-        <Svg width={280} height={280} viewBox="0 0 200 200">
-          <Rect x="10" y="10" width="180" height="180" fill="none" stroke={colors.gold} strokeWidth="1" opacity={0.5} />
-          <Line x1="10" y1="10" x2="190" y2="190" stroke={colors.gold} strokeWidth="0.7" opacity={0.35} />
-          <Line x1="190" y1="10" x2="10" y2="190" stroke={colors.gold} strokeWidth="0.7" opacity={0.35} />
-          <Line x1="100" y1="10" x2="10" y2="100" stroke={colors.gold} strokeWidth="0.7" opacity={0.35} />
-          <Line x1="100" y1="10" x2="190" y2="100" stroke={colors.gold} strokeWidth="0.7" opacity={0.35} />
-          <Line x1="10" y1="100" x2="100" y2="190" stroke={colors.gold} strokeWidth="0.7" opacity={0.35} />
-          <Line x1="190" y1="100" x2="100" y2="190" stroke={colors.gold} strokeWidth="0.7" opacity={0.35} />
-          <SvgText x="100" y="30" fill={colors.goldSoft} fontSize="8" fontWeight="600" textAnchor="middle" fontFamily={fonts.serif}>{chart.ascendant.sign}</SvgText>
-          <Circle cx="100" cy="44" r="3" fill={colors.terra} />
-        </Svg>
+        <NorthIndianChart chart={chart} />
         <Text variant="tiny" color={colors.muted}>Ascendant (Lagna): {chart.ascendant.sign} {chart.ascendant.degree}</Text>
       </Card>
 
@@ -139,6 +129,77 @@ export default function Chart() {
 
       <Disclaimer />
     </Screen>
+  );
+}
+
+/* ---------------- North-Indian Kundali ---------------- */
+
+const PLANET_ABBR: Record<string, string> = {
+  Sun: 'Su', Moon: 'Mo', Mars: 'Ma', Mercury: 'Me', Jupiter: 'Ju',
+  Venus: 'Ve', Saturn: 'Sa', Rahu: 'Ra', Ketu: 'Ke',
+};
+
+// Label anchors for the 12 houses, counter-clockwise from the top-center house —
+// the fixed North-Indian layout. House 1 (top center) always holds the ascendant.
+const HOUSE_ANCHORS = [
+  { x: 100, y: 48 }, { x: 55, y: 26 }, { x: 26, y: 56 }, { x: 46, y: 100 },
+  { x: 26, y: 144 }, { x: 55, y: 174 }, { x: 100, y: 150 }, { x: 145, y: 174 },
+  { x: 174, y: 144 }, { x: 154, y: 100 }, { x: 174, y: 56 }, { x: 145, y: 26 },
+];
+
+function NorthIndianChart({ chart }: { chart: BirthChart }) {
+  const ascIndex = chart.ascendant.signIndex;
+
+  // planets grouped by the house they occupy (1–12)
+  const byHouse: Record<number, string[]> = {};
+  chart.planets.forEach((p) => {
+    if (!byHouse[p.house]) byHouse[p.house] = [];
+    byHouse[p.house].push(PLANET_ABBR[p.name] || p.name.slice(0, 2));
+  });
+
+  const grid = { stroke: colors.gold, strokeWidth: 0.7, opacity: 0.4 } as const;
+
+  return (
+    <Svg width={280} height={280} viewBox="0 0 200 200">
+      {/* outer square + diagonals + inner diamond */}
+      <Rect x="10" y="10" width="180" height="180" fill="none" stroke={colors.gold} strokeWidth="1" opacity={0.5} />
+      <Line x1="10" y1="10" x2="190" y2="190" {...grid} />
+      <Line x1="190" y1="10" x2="10" y2="190" {...grid} />
+      <Line x1="100" y1="10" x2="10" y2="100" {...grid} />
+      <Line x1="100" y1="10" x2="190" y2="100" {...grid} />
+      <Line x1="10" y1="100" x2="100" y2="190" {...grid} />
+      <Line x1="190" y1="100" x2="100" y2="190" {...grid} />
+
+      {HOUSE_ANCHORS.map((a, i) => {
+        const house = i + 1;
+        const signNum = ((ascIndex + i) % 12) + 1;       // house 1 = ascendant sign
+        const planets = byHouse[house] || [];
+        const isLagna = house === 1;
+        // wrap planet abbreviations into rows of two so dense houses stay legible
+        const rows: string[] = [];
+        for (let j = 0; j < planets.length; j += 2) rows.push(planets.slice(j, j + 2).join(' '));
+        return (
+          <React.Fragment key={house}>
+            <SvgText
+              x={a.x} y={a.y - (planets.length ? 7 : 0)}
+              fill={isLagna ? colors.gold : colors.muted}
+              fontSize="7" textAnchor="middle" fontFamily={fonts.serif} fontWeight="600"
+            >
+              {signNum}
+            </SvgText>
+            {rows.map((r, ri) => (
+              <SvgText
+                key={ri} x={a.x} y={a.y + 2 + ri * 8}
+                fill={isLagna ? colors.terra : colors.cream}
+                fontSize="8" textAnchor="middle" fontFamily={fonts.serif} fontWeight="600"
+              >
+                {r}
+              </SvgText>
+            ))}
+          </React.Fragment>
+        );
+      })}
+    </Svg>
   );
 }
 
