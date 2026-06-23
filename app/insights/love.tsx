@@ -9,6 +9,7 @@ import Ring from '@/components/Ring';
 import Field from '@/components/Field';
 import Disclaimer from '@/components/Disclaimer';
 import { love } from '@/data/mock';
+import { useDailyEnergy } from '@/hooks/useDailyEnergy';
 import { colors, spacing } from '@/theme';
 
 function List({ title, items, color }: { title: string; items: string[]; color: string }) {
@@ -25,13 +26,15 @@ function List({ title, items, color }: { title: string; items: string[]; color: 
 export default function Love() {
   const [partner, setPartner] = useState('');
   const [matched, setMatched] = useState(false);
+  const energy = useDailyEnergy();
+  const loveScore = energy.snapshot.find((s) => s.label === 'Love')?.value ?? love.score;
 
   return (
     <Screen>
       <SubHeader eyebrow="Love & Relationships" title="Your Connection Energy" />
 
       <Card solid glow style={{ alignItems: 'center', marginBottom: spacing.lg }}>
-        <Ring value={love.score} label="Harmony" color={colors.rose} />
+        <Ring value={loveScore} label="Harmony" color={colors.rose} />
         <Text variant="tiny" style={{ marginTop: 10, textAlign: 'center' }}>{love.influence}</Text>
       </Card>
 

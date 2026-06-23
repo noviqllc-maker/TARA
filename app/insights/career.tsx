@@ -8,6 +8,7 @@ import SubHeader from '@/components/SubHeader';
 import Ring from '@/components/Ring';
 import Disclaimer from '@/components/Disclaimer';
 import { career } from '@/data/mock';
+import { useDailyEnergy } from '@/hooks/useDailyEnergy';
 import { colors, spacing } from '@/theme';
 
 function List({ title, items, color }: { title: string; items: string[]; color: string }) {
@@ -22,12 +23,14 @@ function List({ title, items, color }: { title: string; items: string[]; color: 
 }
 
 export default function Career() {
+  const energy = useDailyEnergy();
+  const careerScore = energy.snapshot.find((s) => s.label === 'Career')?.value ?? career.energy;
   return (
     <Screen>
       <SubHeader eyebrow="Career & Money" title="Your Work Energy" />
 
       <Card solid glow style={{ alignItems: 'center', marginBottom: spacing.lg }}>
-        <Ring value={career.energy} label="Career" color={colors.goldSoft} />
+        <Ring value={careerScore} label="Career" color={colors.goldSoft} />
         <Text variant="tiny" style={{ marginTop: 10, textAlign: 'center' }}>{career.financialOutlook}</Text>
       </Card>
 

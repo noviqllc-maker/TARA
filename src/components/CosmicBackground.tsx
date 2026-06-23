@@ -9,6 +9,10 @@ import { colors } from '@/theme';
 
 const { width, height } = Dimensions.get('window');
 
+// Keep every star fully on-screen: positions are inset so a star's box never
+// crosses an edge (otherwise stars near the right/bottom render as clipped half-dots).
+const EDGE_MARGIN = 8;
+
 function Star({ x, y, size, delay }: { x: number; y: number; size: number; delay: number }) {
   const op = useSharedValue(0.2);
   React.useEffect(() => {
@@ -31,12 +35,16 @@ function Star({ x, y, size, delay }: { x: number; y: number; size: number; delay
 export default function CosmicBackground({ intense = false }: { intense?: boolean }) {
   const stars = useMemo(
     () =>
-      Array.from({ length: intense ? 80 : 46 }).map(() => ({
-        x: Math.random() * width,
-        y: Math.random() * height,
-        size: Math.random() * 2 + 0.6,
-        delay: Math.random() * 2000,
-      })),
+      Array.from({ length: intense ? 80 : 46 }).map(() => {
+        const size = Math.random() * 2 + 0.6;
+        return {
+          size,
+          // inset by EDGE_MARGIN on each side and account for the star's own size
+          x: EDGE_MARGIN + Math.random() * (width - size - EDGE_MARGIN * 2),
+          y: EDGE_MARGIN + Math.random() * (height - size - EDGE_MARGIN * 2),
+          delay: Math.random() * 2000,
+        };
+      }),
     [intense],
   );
 

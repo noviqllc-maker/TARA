@@ -33,15 +33,17 @@ export default function LoadingScreen() {
     <View style={styles.root}>
       <CosmicBackground intense />
       <View style={styles.center}>
-        <Animated.View style={ringStyle}>
-          <Svg width={160} height={160}>
-            <Circle cx="80" cy="80" r="70" stroke={colors.line} strokeWidth="1" fill="none" />
-            <Circle cx="80" cy="80" r="70" stroke={colors.gold} strokeWidth="2"
-              fill="none" strokeDasharray="20 420" strokeLinecap="round" />
-            <Circle cx="80" cy="10" r="3" fill={colors.goldSoft} />
-          </Svg>
-        </Animated.View>
-        <Text style={styles.glyph}>✦</Text>
+        <View style={styles.ringWrap}>
+          <Animated.View style={ringStyle}>
+            <Svg width={160} height={160}>
+              <Circle cx="80" cy="80" r="70" stroke={colors.line} strokeWidth="1" fill="none" />
+              <Circle cx="80" cy="10" r="4" fill={colors.goldSoft} />
+            </Svg>
+          </Animated.View>
+          <View style={styles.glyphWrap}>
+            <Text style={styles.glyph}>✦</Text>
+          </View>
+        </View>
 
         <View style={{ height: 40, marginTop: 36, justifyContent: 'center' }}>
           <Animated.View key={idx} entering={FadeIn.duration(500)} exiting={FadeOut.duration(400)}>
@@ -56,6 +58,8 @@ export default function LoadingScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.black },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  glyph: { position: 'absolute', fontSize: 30, color: colors.gold },
+  ringWrap: { width: 160, height: 160, alignItems: 'center', justifyContent: 'center' },
+  glyphWrap: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
+  glyph: { fontSize: 30, lineHeight: 40, textAlign: 'center', includeFontPadding: false, color: colors.gold },
   msg: { fontFamily: fonts.serif, fontSize: 18, fontWeight: '600', color: colors.cream, textAlign: 'center' },
 });

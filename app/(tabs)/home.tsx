@@ -1,6 +1,6 @@
 // app/(tabs)/home.tsx
 import React from 'react';
-import { View, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet, Alert } from 'react-native';
 import { router } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import Screen from '@/components/Screen';
@@ -10,10 +10,12 @@ import Disclaimer from '@/components/Disclaimer';
 import { useProfile } from '@/hooks/useProfile';
 import { useChart } from '@/hooks/useChart';
 import { useTransits } from '@/hooks/useTransits';
+import { useDailyEnergy } from '@/hooks/useDailyEnergy';
+import { useHealth } from '@/hooks/useHealth';
 import {
-  greeting, todayLong, tarasMessage, snapshot, cosmicWeather,
+  greeting, todayLong, tarasMessage, cosmicWeather,
 } from '@/data/mock';
-import { colors, fonts, spacing } from '@/theme';
+import { colors, spacing } from '@/theme';
 
 const QUICK = [
   { label: 'Ask Tara', route: '/(tabs)/tara' },
@@ -28,6 +30,21 @@ export default function Home() {
   const { profile } = useProfile();
   const chart = useChart();
   const transits = useTransits();
+  // Real daily energy (chart + Moon transit + moon phase + Apple Health), shared
+  // across Home, Love & Career via the hook so the numbers stay consistent.
+  const energy = useDailyEnergy();
+  const { metrics, connectAppleHealth, available, loading } = useHealth();
+  const needsHealth = metrics.source === 'mock';
+  const onConnectHealth = async () => {
+    if (!available) {
+      Alert.alert(
+        'Dev build required',
+        'Apple Health works in a development or production build (not Expo Go), on iPhone.',
+      );
+      return;
+    }
+    await connectAppleHealth(); // on success this refreshes metrics → Body switches to real data
+  };
   // Now fully live: nakshatra + dasha from the user's chart, and today's real sky.
   const weather: [string, string][] = [
     ['Nakshatra', chart?.nakshatra ?? cosmicWeather.nakshatra],
@@ -50,21 +67,20 @@ export default function Home() {
       <Card style={{ marginBottom: spacing.lg }}>
         <Eyebrow>Today's Energy</Eyebrow>
         <View style={{ marginTop: 12 }}>
-          <EnergyDashboard />
+          <EnergyDashboard domains={energy.domains} vedicDomains={needsHealth ? ['Body'] : []} />
         </View>
-      </Card>
-
-      {/* Snapshot */}
-      <Card style={{ marginBottom: spacing.lg }}>
-        <Eyebrow>Today's Snapshot</Eyebrow>
-        <View style={styles.snapRow}>
-          {snapshot.map((s) => (
-            <View key={s.label} style={styles.snapItem}>
-              <Text style={{ fontFamily: fonts.serif, fontSize: 20, fontWeight: '600', color: colors.goldSoft }}>{s.value}%</Text>
-              <Text variant="tiny" style={{ fontSize: 10 }}>{s.label}</Text>
-            </View>
-          ))}
-        </View>
+        {needsHealth && (
+          <Pressable onPress={onConnectHealth} disabled={loading} style={styles.connectRow}>
+            {loading ? (
+              <Text variant="tiny" color={colors.muted} style={{ fontSize: 11.5 }}>Connecting…</Text>
+            ) : (
+              <Text variant="tiny" color={colors.muted} style={{ fontSize: 11.5, textAlign: 'center' }}>
+                Body reads your chart only.{'  '}
+                <Text variant="tiny" color={colors.gold}>Connect Apple Health →</Text>
+              </Text>
+            )}
+          </Pressable>
+        )}
       </Card>
 
       {/* Tara's message */}
@@ -104,8 +120,10 @@ export default function Home() {
 }
 
 const styles = StyleSheet.create({
-  snapRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 14 },
-  snapItem: { alignItems: 'center', gap: 3 },
+  connectRow: {
+    marginTop: 12, paddingTop: 10, alignItems: 'center',
+    borderTopWidth: 1, borderTopColor: colors.line,
+  },
   quickGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 12 },
   quick: {
     width: '47.5%', paddingVertical: 16, paddingHorizontal: 14,

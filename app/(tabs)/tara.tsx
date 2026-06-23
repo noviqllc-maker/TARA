@@ -9,17 +9,21 @@ import Animated, { FadeInUp } from 'react-native-reanimated';
 import CosmicBackground from '@/components/CosmicBackground';
 import { Text, Eyebrow } from '@/components/ui';
 import { askTara, ChatMessage } from '@/lib/ai';
-import { suggestedQuestions } from '@/data/mock';
+import { taraQuestions, QuestionCategory } from '@/data/taraQuestions';
 import { useProfile } from '@/hooks/useProfile';
 import { useChart } from '@/hooks/useChart';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useHealth } from '@/hooks/useHealth';
 import { router } from 'expo-router';
-import { colors, fonts, radius, spacing } from '@/theme';
+import { colors, fonts, radius, spacing, domainColors } from '@/theme';
 import Markdown from 'react-native-markdown-display';
 
 const MEM_KEY = 'tara.chat.v1';
-const FREE_LIMIT = 20; // free users get 5 questions, then Premium
+const DAILY_LIMIT = 5; // non-premium: 5 free questions per calendar day (resets at midnight)
+
+// AsyncStorage key for today's question count, e.g. "tara.usage.2026-06-23".
+const usageKey = (d = new Date()) =>
+  `tara.usage.${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 export default function TaraAI() {
   const insets = useSafeAreaInsets();
@@ -29,15 +33,18 @@ export default function TaraAI() {
   const { metrics } = useHealth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
+  const [category, setCategory] = useState<QuestionCategory['key']>('Mind');
   const [thinking, setThinking] = useState(false);
+  const [usedToday, setUsedToday] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
 
-  const userMsgCount = messages.filter((m) => m.role === 'user').length;
-  const limitReached = !isPremium && userMsgCount >= FREE_LIMIT;
+  const limitReached = !isPremium && usedToday >= DAILY_LIMIT;
 
   // Load memory
   useEffect(() => {
     AsyncStorage.getItem(MEM_KEY).then((v) => { if (v) setMessages(JSON.parse(v)); });
+    // Load today's question count — auto-resets daily since a new day has no key yet.
+    AsyncStorage.getItem(usageKey()).then((v) => setUsedToday(v ? parseInt(v, 10) || 0 : 0));
   }, []);
   useEffect(() => {
     AsyncStorage.setItem(MEM_KEY, JSON.stringify(messages.slice(-30))).catch(() => {});
@@ -48,6 +55,12 @@ export default function TaraAI() {
     const t = text.trim();
     if (!t || thinking) return;
     if (limitReached) { router.push('/paywall'); return; }
+    // Count this question against today's free allowance (premium is unlimited).
+    if (!isPremium) {
+      const nextCount = usedToday + 1;
+      setUsedToday(nextCount);
+      AsyncStorage.setItem(usageKey(), String(nextCount)).catch(() => {});
+    }
     const next = [...messages, { role: 'user' as const, content: t }];
     setMessages(next);
     setInput('');
@@ -59,6 +72,12 @@ export default function TaraAI() {
 
   const empty = messages.length === 0;
 
+  // Start over → clears history and returns to the suggested-questions view.
+  const clearChat = () => {
+    setMessages([]);
+    AsyncStorage.removeItem(MEM_KEY).catch(() => {});
+  };
+
   return (
     <View style={{ flex: 1 }}>
       <CosmicBackground />
@@ -66,9 +85,16 @@ export default function TaraAI() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={{ flex: 1, paddingTop: insets.top + 8 }}
       >
-        <View style={{ paddingHorizontal: spacing.xl, marginBottom: 8 }}>
-          <Eyebrow>Tara AI · Your 24/7 Guide</Eyebrow>
-          <Text variant="h2" style={{ marginTop: 4 }}>Ask Tara anything</Text>
+        <View style={{ paddingHorizontal: spacing.xl, marginBottom: 8, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+          <View>
+            <Eyebrow>Tara AI · Your 24/7 Guide</Eyebrow>
+            <Text variant="h2" style={{ marginTop: 4 }}>Ask Tara anything</Text>
+          </View>
+          {!empty && (
+            <Pressable onPress={clearChat} hitSlop={8} style={{ paddingBottom: 4 }}>
+              <Text variant="tiny" color={colors.gold}>New chat</Text>
+            </Pressable>
+          )}
         </View>
 
         <ScrollView
@@ -83,8 +109,30 @@ export default function TaraAI() {
                 I know your chart, your dashas, today's transits and your wellness signals. Ask me about love, career, timing, or what to focus on.
               </Text>
               <Eyebrow color={colors.muted}>Suggested Questions</Eyebrow>
-              <View style={{ gap: 9, marginTop: 12 }}>
-                {suggestedQuestions.map((q) => (
+              {/* Category tabs — mirror the five Today energy rings */}
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ gap: 8, paddingVertical: 12 }}
+              >
+                {taraQuestions.map((c) => {
+                  const active = c.key === category;
+                  return (
+                    <Pressable
+                      key={c.key}
+                      onPress={() => setCategory(c.key)}
+                      style={[styles.catTab, active && { backgroundColor: domainColors[c.key], borderColor: domainColors[c.key] }]}
+                    >
+                      <Text variant="tiny" color={active ? '#1a1018' : colors.muted} style={{ fontSize: 11.5, fontWeight: active ? '600' : '400' }}>
+                        {c.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+              {/* Questions for the selected category */}
+              <View style={{ gap: 9 }}>
+                {(taraQuestions.find((c) => c.key === category)?.questions ?? []).map((q) => (
                   <Pressable key={q} style={styles.suggest} onPress={() => send(q)}>
                     <Text variant="body" style={{ fontSize: 13.5 }}>{q}</Text>
                   </Pressable>
@@ -121,7 +169,7 @@ export default function TaraAI() {
         {limitReached && (
           <Pressable onPress={() => router.push('/paywall')} style={{ marginHorizontal: spacing.xl, marginBottom: 8, padding: 14, borderRadius: 14, backgroundColor: 'rgba(205,163,73,0.12)', borderWidth: 1, borderColor: colors.line }}>
             <Text variant="body" color={colors.goldSoft} style={{ textAlign: 'center', fontSize: 13.5 }}>
-              ✦ You've used your free questions — tap for unlimited Tara AI with Premium
+              ✦ You've used today's {DAILY_LIMIT} free questions — upgrade for unlimited Tara AI
             </Text>
           </Pressable>
         )}
@@ -149,6 +197,10 @@ export default function TaraAI() {
 const styles = StyleSheet.create({
   suggest: {
     padding: 14, backgroundColor: colors.card, borderColor: colors.line, borderWidth: 1, borderRadius: radius.lg,
+  },
+  catTab: {
+    paddingVertical: 7, paddingHorizontal: 14, borderRadius: radius.pill,
+    borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card,
   },
   bubble: { maxWidth: '88%', borderRadius: 18, padding: 14, marginTop: 12 },
   user: { alignSelf: 'flex-end', backgroundColor: colors.goldSoft },

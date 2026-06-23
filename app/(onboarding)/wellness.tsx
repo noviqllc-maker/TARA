@@ -11,12 +11,11 @@ import { useHealth } from '@/hooks/useHealth';
 import { colors, radius, spacing } from '@/theme';
 
 const SOURCES = [
-  { id: 'apple', name: 'Apple Health', icon: '♥', color: '#ff4d6d' },
-  { id: 'google', name: 'Google Health', icon: '❤', color: '#4caf72' },
-  { id: 'oura', name: 'Oura', icon: '◯', color: '#cda3ff' },
-  { id: 'whoop', name: 'WHOOP', icon: '⬡', color: '#e8e8e8' },
-  { id: 'fitbit', name: 'Fitbit', icon: '◆', color: '#00b0b9' },
-  { id: 'garmin', name: 'Garmin', icon: '▲', color: '#2e7bd6' },
+  { id: 'apple', name: 'Apple Health', icon: '♥', color: '#ff4d6d', available: true },
+  { id: 'oura', name: 'Oura', icon: '◯', color: '#cda3ff', available: false },
+  { id: 'whoop', name: 'WHOOP', icon: '⬡', color: '#e8e8e8', available: false },
+  { id: 'fitbit', name: 'Fitbit', icon: '◆', color: '#00b0b9', available: false },
+  { id: 'garmin', name: 'Garmin', icon: '▲', color: '#2e7bd6', available: false },
 ];
 
 export default function WellnessScreen() {
@@ -24,18 +23,10 @@ export default function WellnessScreen() {
   const { update } = useProfile();
   const { connectAppleHealth } = useHealth();
   const [sel, setSel] = useState<string[]>([]);
+  // Apple Health is the only real integration; it connects for real in a dev/
+  // production build and safely no-ops in Expo Go (the user can still proceed).
   const toggle = async (id: string) => {
-    if (id === 'apple') {
-      // Apple Health connects for real (in a dev/production build).
-      const ok = await connectAppleHealth();
-      if (ok || sel.includes('apple')) {
-        setSel((s) => (s.includes('apple') ? s.filter((x) => x !== 'apple') : [...s, 'apple']));
-      } else {
-        // Not available (Expo Go / Android) — still let them mark intent.
-        setSel((s) => (s.includes('apple') ? s.filter((x) => x !== 'apple') : [...s, 'apple']));
-      }
-      return;
-    }
+    if (id === 'apple') await connectAppleHealth();
     setSel((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
   };
 
@@ -61,6 +52,23 @@ export default function WellnessScreen() {
           </Text>
 
           {SOURCES.map((s) => {
+            // Unbuilt integrations: non-tappable, muted "Coming soon".
+            if (!s.available) {
+              return (
+                <View key={s.id} style={[styles.row, styles.rowDisabled]}>
+                  <View style={styles.left}>
+                    <View style={styles.iconBox}>
+                      <Text style={{ fontSize: 18, color: s.color }}>{s.icon}</Text>
+                    </View>
+                    <Text variant="body" color={colors.muted}>{s.name}</Text>
+                  </View>
+                  <View style={styles.badgeSoon}>
+                    <Text variant="tiny" color={colors.muted}>Coming soon</Text>
+                  </View>
+                </View>
+              );
+            }
+            // Apple Health: real, tappable Connect with a connected state.
             const on = sel.includes(s.id);
             return (
               <Pressable key={s.id} onPress={() => toggle(s.id)} style={[styles.row, on && styles.rowOn]}>
@@ -101,4 +109,9 @@ const styles = StyleSheet.create({
   },
   badge: { borderWidth: 1, borderColor: colors.line, borderRadius: radius.pill, paddingVertical: 7, paddingHorizontal: 14 },
   badgeOn: { borderColor: 'rgba(126,155,122,0.5)', backgroundColor: 'rgba(126,155,122,0.15)' },
+  rowDisabled: { opacity: 0.5 },
+  badgeSoon: {
+    borderWidth: 1, borderColor: colors.line, borderRadius: radius.pill,
+    paddingVertical: 7, paddingHorizontal: 14, backgroundColor: 'rgba(255,255,255,0.03)',
+  },
 });
