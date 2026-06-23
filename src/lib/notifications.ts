@@ -79,6 +79,24 @@ export async function cancelDailyNotifications(): Promise<void> {
   await Notifications.cancelAllScheduledNotificationsAsync();
 }
 
+// TEMP (dev): fire a one-off notification ~12s out so the cold-start deep link can
+// be verified — enable, force-quit the app, then tap the banner. Routes to Tara AI
+// so it's distinguishable from the daily ones. Remove this + its settings button
+// once the cold-start path is confirmed.
+export async function scheduleTestNotification(): Promise<boolean> {
+  const ok = await requestNotificationPermission();
+  if (!ok) return false;
+  await Notifications.scheduleNotificationAsync({
+    content: {
+      title: 'Tara test ✦',
+      body: 'Tap me after force-quitting — should open Tara AI.',
+      data: { route: '/(tabs)/tara' satisfies NotifRoute },
+    },
+    trigger: { type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: 12, repeats: false },
+  });
+  return true;
+}
+
 export async function hasScheduledNotifications(): Promise<boolean> {
   const scheduled = await Notifications.getAllScheduledNotificationsAsync();
   return scheduled.length > 0;
