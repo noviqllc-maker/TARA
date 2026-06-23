@@ -11,15 +11,16 @@ import { colors, fonts } from '@/theme';
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 export default function Ring({
-  value, label, color = colors.gold, size = 120, stroke = 9,
-}: { value: number; label?: string; color?: string; size?: number; stroke?: number }) {
+  value, label, color = colors.gold, size = 120, stroke = 9, max = 100,
+}: { value: number; label?: string; color?: string; size?: number; stroke?: number; max?: number }) {
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
   const progress = useSharedValue(0);
 
   useEffect(() => {
-    progress.value = withTiming(value / 100, { duration: 1100, easing: Easing.out(Easing.cubic) });
-  }, [value]);
+    const frac = Math.max(0, Math.min(1, value / max));
+    progress.value = withTiming(frac, { duration: 1100, easing: Easing.out(Easing.cubic) });
+  }, [value, max]);
 
   const animatedProps = useAnimatedProps(() => ({
     strokeDashoffset: c - progress.value * c,

@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import CosmicBackground from '@/components/CosmicBackground';
-import { Text, Eyebrow } from '@/components/ui';
+import { Text, Eyebrow, Card, GoldButton } from '@/components/ui';
 import { askTara, ChatMessage } from '@/lib/ai';
 import { taraQuestions, QuestionCategory } from '@/data/taraQuestions';
 import { useProfile } from '@/hooks/useProfile';
@@ -36,6 +36,7 @@ export default function TaraAI() {
   const [category, setCategory] = useState<QuestionCategory['key']>('Mind');
   const [thinking, setThinking] = useState(false);
   const [usedToday, setUsedToday] = useState(0);
+  const [upsellDismissed, setUpsellDismissed] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 
   const limitReached = !isPremium && usedToday >= DAILY_LIMIT;
@@ -166,29 +167,35 @@ export default function TaraAI() {
           )}
         </ScrollView>
 
-        {limitReached && (
-          <Pressable onPress={() => router.push('/paywall')} style={{ marginHorizontal: spacing.xl, marginBottom: 8, padding: 14, borderRadius: 14, backgroundColor: 'rgba(205,163,73,0.12)', borderWidth: 1, borderColor: colors.line }}>
-            <Text variant="body" color={colors.goldSoft} style={{ textAlign: 'center', fontSize: 13.5 }}>
-              ✦ You've used today's {DAILY_LIMIT} free questions — upgrade for unlimited Tara AI
-            </Text>
-          </Pressable>
+        {limitReached && !upsellDismissed ? (
+          <Animated.View entering={FadeInUp.duration(300)} style={{ marginHorizontal: spacing.xl, marginTop: 8, marginBottom: insets.bottom + 70 }}>
+            <Card solid glow>
+              <Eyebrow color={colors.gold}>✦ Daily Limit Reached</Eyebrow>
+              <Text variant="serif" style={{ fontSize: 17, marginTop: 8 }}>You've reached today's {DAILY_LIMIT} free questions</Text>
+              <Text variant="tiny" style={{ marginTop: 6 }}>Upgrade to Tara Premium for unlimited conversations with Tara.</Text>
+              <GoldButton label="Upgrade to Premium" onPress={() => router.push('/paywall')} style={{ marginTop: 14 }} />
+              <Pressable onPress={() => setUpsellDismissed(true)} style={{ marginTop: 12 }}>
+                <Text variant="tiny" color={colors.muted} style={{ textAlign: 'center' }}>Maybe later</Text>
+              </Pressable>
+            </Card>
+          </Animated.View>
+        ) : (
+          <View style={[styles.inputBar, { paddingBottom: insets.bottom + 70 }]}>
+            <TextInput
+              value={input}
+              onChangeText={setInput}
+              placeholder={limitReached ? `Today's ${DAILY_LIMIT} free questions used · resets tomorrow` : 'Ask Tara…'}
+              placeholderTextColor={colors.mutedDim}
+              style={styles.input}
+              editable={!limitReached}
+              onSubmitEditing={() => send(input)}
+              returnKeyType="send"
+            />
+            <Pressable style={styles.sendBtn} onPress={() => send(input)}>
+              <Text style={{ fontSize: 18, color: '#1a1018' }}>↑</Text>
+            </Pressable>
+          </View>
         )}
-
-        <View style={[styles.inputBar, { paddingBottom: insets.bottom + 70 }]}>
-          <TextInput
-            value={input}
-            onChangeText={setInput}
-            placeholder={limitReached ? 'Upgrade for unlimited questions' : 'Ask Tara…'}
-            placeholderTextColor={colors.mutedDim}
-            style={styles.input}
-            editable={!limitReached}
-            onSubmitEditing={() => send(input)}
-            returnKeyType="send"
-          />
-          <Pressable style={styles.sendBtn} onPress={() => send(input)}>
-            <Text style={{ fontSize: 18, color: '#1a1018' }}>↑</Text>
-          </Pressable>
-        </View>
       </KeyboardAvoidingView>
     </View>
   );
