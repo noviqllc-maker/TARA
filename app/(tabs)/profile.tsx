@@ -1,7 +1,7 @@
 // app/(tabs)/profile.tsx
-import React, { useState } from 'react';
-import { View, Pressable, StyleSheet, Switch, Alert } from 'react-native';
-import { router } from 'expo-router';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, Pressable, StyleSheet, Switch, Alert, ScrollView } from 'react-native';
+import { router, useLocalSearchParams } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import Screen from '@/components/Screen';
 import { Text, Card, Eyebrow, Divider } from '@/components/ui';
@@ -38,6 +38,22 @@ export default function Profile() {
   const { isPremium } = useSubscription();
   const [editing, setEditing] = useState(false);
   const [comingSoon, setComingSoon] = useState<string[]>([]);
+
+  // Deep-link: Home's "Shop" Quick Action passes { scrollTo: 'shop' } to land here.
+  const params = useLocalSearchParams<{ scrollTo?: string }>();
+  const scrollRef = useRef<ScrollView>(null);
+  const shopY = useRef(0);
+  const didScroll = useRef(false);
+  const maybeScrollToShop = () => {
+    if (params.scrollTo === 'shop' && !didScroll.current && shopY.current > 0) {
+      didScroll.current = true;
+      requestAnimationFrame(() =>
+        scrollRef.current?.scrollTo({ y: Math.max(0, shopY.current - 12), animated: true }),
+      );
+    }
+  };
+  useEffect(() => { maybeScrollToShop(); }, [params.scrollTo]);
+
   const onPurchase = (productId: string) => {
     console.log('[shop] unlock tapped:', productId); // TODO: real IAP
     setComingSoon((s) => (s.includes(productId) ? s : [...s, productId]));
@@ -64,7 +80,7 @@ export default function Profile() {
     ]);
 
   return (
-    <Screen>
+    <Screen ref={scrollRef}>
       <Animated.View entering={FadeInDown.duration(500)} style={{ marginBottom: spacing.lg }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <View style={{ flex: 1 }}>
@@ -93,25 +109,27 @@ export default function Profile() {
       )}
 
       {/* Shop */}
-      <Eyebrow>Shop</Eyebrow>
-      <View style={{ gap: 12, marginTop: 12, marginBottom: spacing.lg }}>
-        {SHOP_ITEMS.map((item) => {
-          const soon = comingSoon.includes(item.id);
-          return (
-            <Card key={item.id}>
-              <Text variant="serif" style={{ fontSize: 16 }}>{item.title}</Text>
-              <Text variant="tiny" style={{ marginTop: 4 }}>{item.desc}</Text>
-              <View style={styles.shopRow}>
-                <Text variant="body" color={colors.goldSoft} style={{ fontWeight: '600' }}>{item.price}</Text>
-                <Pressable onPress={() => onPurchase(item.id)} style={[styles.unlockBtn, soon && styles.unlockBtnSoon]}>
-                  <Text variant="tiny" color={soon ? colors.muted : '#1a1018'} style={{ fontWeight: '600' }}>
-                    {soon ? 'Coming soon' : 'Unlock'}
-                  </Text>
-                </Pressable>
-              </View>
-            </Card>
-          );
-        })}
+      <View onLayout={(e) => { shopY.current = e.nativeEvent.layout.y; maybeScrollToShop(); }}>
+        <Eyebrow>Shop</Eyebrow>
+        <View style={{ gap: 12, marginTop: 12, marginBottom: spacing.lg }}>
+          {SHOP_ITEMS.map((item) => {
+            const soon = comingSoon.includes(item.id);
+            return (
+              <Card key={item.id}>
+                <Text variant="serif" style={{ fontSize: 16 }}>{item.title}</Text>
+                <Text variant="tiny" style={{ marginTop: 4 }}>{item.desc}</Text>
+                <View style={styles.shopRow}>
+                  <Text variant="body" color={colors.goldSoft} style={{ fontWeight: '600' }}>{item.price}</Text>
+                  <Pressable onPress={() => onPurchase(item.id)} style={[styles.unlockBtn, soon && styles.unlockBtnSoon]}>
+                    <Text variant="tiny" color={soon ? colors.muted : '#1a1018'} style={{ fontWeight: '600' }}>
+                      {soon ? 'Coming soon' : 'Unlock'}
+                    </Text>
+                  </Pressable>
+                </View>
+              </Card>
+            );
+          })}
+        </View>
       </View>
 
       {/* Subscription */}

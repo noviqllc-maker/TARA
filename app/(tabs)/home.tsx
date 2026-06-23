@@ -22,7 +22,7 @@ const QUICK = [
   { label: 'Birth Chart', route: '/(tabs)/chart' },
   { label: 'Compatibility', route: '/insights/love' },
   { label: "Today's Remedies", route: '/(tabs)/insights' },
-  { label: 'Daily Ritual', route: '/(tabs)/insights' },
+  { label: 'Shop', route: '/(tabs)/profile', params: { scrollTo: 'shop' } },
   { label: 'Life Timeline', route: '/chart/timeline' },
 ];
 
@@ -95,7 +95,11 @@ export default function Home() {
       <Eyebrow>Quick Actions</Eyebrow>
       <View style={styles.quickGrid}>
         {QUICK.map((q) => (
-          <Pressable key={q.label} style={styles.quick} onPress={() => router.push(q.route as any)}>
+          <Pressable
+            key={q.label}
+            style={styles.quick}
+            onPress={() => router.push(('params' in q ? { pathname: q.route, params: q.params } : q.route) as any)}
+          >
             <Text variant="body" style={{ fontSize: 13.5 }}>{q.label}</Text>
           </Pressable>
         ))}

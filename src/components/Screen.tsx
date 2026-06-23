@@ -1,13 +1,12 @@
 // src/components/Screen.tsx
-import React from 'react';
+import React, { forwardRef } from 'react';
 import { ScrollView, View, StyleSheet, ScrollViewProps } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import CosmicBackground from './CosmicBackground';
 import { spacing } from '@/theme';
 
-export default function Screen({
-  children, scroll = true, intense = false, contentStyle, ...rest
-}: ScrollViewProps & { scroll?: boolean; intense?: boolean; contentStyle?: any }) {
+const Screen = forwardRef<ScrollView, ScrollViewProps & { scroll?: boolean; intense?: boolean; contentStyle?: any }>(
+  function Screen({ children, scroll = true, intense = false, contentStyle, ...rest }, ref) {
   const insets = useSafeAreaInsets();
   const Inner = (
     <View style={[{ paddingTop: insets.top + 8, paddingHorizontal: spacing.xl }, contentStyle]}>
@@ -19,6 +18,7 @@ export default function Screen({
       <CosmicBackground intense={intense} />
       {scroll ? (
         <ScrollView
+          ref={ref}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 120 }}
           {...rest}
@@ -30,6 +30,8 @@ export default function Screen({
       )}
     </View>
   );
-}
+});
+
+export default Screen;
 
 const styles = StyleSheet.create({ root: { flex: 1 } });
