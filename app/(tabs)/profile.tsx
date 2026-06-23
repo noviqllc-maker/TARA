@@ -15,14 +15,12 @@ import { colors, radius, spacing } from '@/theme';
 
 // In-app purchase product IDs (real IAP wired later).
 const SHOP_PRODUCTS = {
-  compatibility: 'shop_compatibility',
   yearAhead: 'shop_year_ahead',
   birthBlueprint: 'shop_birth_blueprint',
   doshaRemedies: 'shop_dosha_remedies',
 } as const;
 
 const SHOP_ITEMS = [
-  { id: SHOP_PRODUCTS.compatibility, title: 'Compatibility Chart', desc: 'See how your charts align with someone else.', price: '$7.99' },
   { id: SHOP_PRODUCTS.yearAhead, title: 'Year Ahead Report', desc: 'Your personalized forecast for the next 12 months.', price: '$7.99' },
   { id: SHOP_PRODUCTS.birthBlueprint, title: 'Birth Blueprint', desc: 'A deep reading of your natal chart.', price: '$6.99' },
   { id: SHOP_PRODUCTS.doshaRemedies, title: 'Dosha Remedies', desc: 'Discover the doshas in your chart and personalized remedies to restore balance.', price: '$7.99' },
