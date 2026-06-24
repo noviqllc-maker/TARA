@@ -3,10 +3,9 @@ import React, { useEffect, useState } from 'react';
 import { View, Switch, Alert, ActivityIndicator } from 'react-native';
 import Screen from '@/components/Screen';
 import SubHeader from '@/components/SubHeader';
-import { Text, Card, GhostButton } from '@/components/ui';
+import { Text, Card } from '@/components/ui';
 import {
   scheduleDailyNotifications, cancelDailyNotifications, hasScheduledNotifications,
-  scheduleTestNotification,
 } from '@/lib/notifications';
 import { colors } from '@/theme';
 
@@ -69,27 +68,6 @@ export default function NotificationsSettings() {
             <ActivityIndicator color={colors.gold} size="small" />
           )}
         </View>
-      </Card>
-
-      {/* TEMP (dev): verify the cold-start deep link. Tap, then immediately
-          force-quit the app; in ~12s tap the banner — it should open Tara AI.
-          Remove this card once confirmed. */}
-      <Card style={{ marginBottom: 16 }}>
-        <Text variant="serif" style={{ fontSize: 15 }}>Test cold-start deep link</Text>
-        <Text variant="tiny" color={colors.muted} style={{ marginTop: 4 }}>
-          Sends a one-off notification in ~12s. Tap it, then force-quit the app before it arrives — tapping the banner should cold-launch Tara AI.
-        </Text>
-        <GhostButton
-          label="Send test notification (12s)"
-          style={{ marginTop: 12 }}
-          onPress={async () => {
-            const ok = await scheduleTestNotification();
-            Alert.alert(
-              ok ? 'Test scheduled ✦' : 'Notifications are off',
-              ok ? 'Force-quit the app now. Tap the banner in ~12s.' : 'Enable notifications for Tara in iOS Settings first.',
-            );
-          }}
-        />
       </Card>
 
       <Card>
