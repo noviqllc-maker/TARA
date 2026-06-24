@@ -14,7 +14,9 @@ import { useProfile } from '@/hooks/useProfile';
 import { useChart } from '@/hooks/useChart';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useHealth } from '@/hooks/useHealth';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
+import { getLanguage } from '@/lib/language';
+import { getRememberChat } from '@/lib/privacy';
 import { colors, fonts, radius, spacing, domainColors } from '@/theme';
 import Markdown from 'react-native-markdown-display';
 
@@ -38,16 +40,27 @@ export default function TaraAI() {
   const [thinking, setThinking] = useState(false);
   const [usedToday, setUsedToday] = useState(0);
   const [upsellDismissed, setUpsellDismissed] = useState(false);
+  const [rememberChat, setRememberChat] = useState(true);
   const scrollRef = useRef<ScrollView>(null);
 
   const limitReached = !isPremium && usedToday >= DAILY_LIMIT;
 
-  // Load memory
+  // Load memory — only if the privacy "remember conversations" setting is on.
   useEffect(() => {
-    AsyncStorage.getItem(MEM_KEY).then((v) => { if (v) setMessages(JSON.parse(v)); });
-    // Load today's question count — auto-resets daily since a new day has no key yet.
-    AsyncStorage.getItem(usageKey()).then((v) => setUsedToday(v ? parseInt(v, 10) || 0 : 0));
+    (async () => {
+      const remember = await getRememberChat();
+      setRememberChat(remember);
+      if (remember) {
+        const v = await AsyncStorage.getItem(MEM_KEY);
+        if (v) setMessages(JSON.parse(v));
+      }
+      // Load today's question count — auto-resets daily since a new day has no key yet.
+      const u = await AsyncStorage.getItem(usageKey());
+      setUsedToday(u ? parseInt(u, 10) || 0 : 0);
+    })();
   }, []);
+  // Re-check the privacy toggle whenever this tab regains focus.
+  useFocusEffect(React.useCallback(() => { getRememberChat().then(setRememberChat); }, []));
 
   // Pre-select a category when navigated here with a `category` param (e.g. from the
   // Love screen → "Relationships"). Case-insensitive; falls back to the current default.
@@ -60,9 +73,10 @@ export default function TaraAI() {
     if (match) setCategory(match.key);
   }, [params.category]);
   useEffect(() => {
-    AsyncStorage.setItem(MEM_KEY, JSON.stringify(messages.slice(-30))).catch(() => {});
+    if (rememberChat) AsyncStorage.setItem(MEM_KEY, JSON.stringify(messages.slice(-30))).catch(() => {});
+    else AsyncStorage.removeItem(MEM_KEY).catch(() => {});
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 80);
-  }, [messages]);
+  }, [messages, rememberChat]);
 
   const send = async (text: string) => {
     const t = text.trim();
@@ -78,7 +92,8 @@ export default function TaraAI() {
     setMessages(next);
     setInput('');
     setThinking(true);
-    const reply = await askTara(next, profile.name || 'friend', chart, metrics);
+    const language = await getLanguage();
+    const reply = await askTara(next, profile.name || 'friend', chart, metrics, language);
     setMessages([...next, { role: 'assistant', content: reply }]);
     setThinking(false);
   };

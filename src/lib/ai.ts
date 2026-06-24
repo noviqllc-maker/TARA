@@ -42,9 +42,16 @@ export async function askTara(
   name = 'friend',
   chart: BirthChart | null = null,
   health: HealthMetrics | null = null,
+  language = 'English',
 ): Promise<string> {
   const url = endpoint();
   if (!url) return fallbackReply(history); // no backend configured yet → graceful demo reply
+
+  const context = buildContext(name, chart, health) + (
+    language && language !== 'English'
+      ? ` Respond entirely in ${language}, in warm, natural phrasing. Keep Sanskrit astrology terms (nakshatra, dasha, rashi/sign names) as-is.`
+      : ''
+  );
 
   try {
     const res = await fetch(url, {
@@ -52,7 +59,7 @@ export async function askTara(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         messages: history.map((m) => ({ role: m.role, content: m.content })),
-        context: buildContext(name, chart, health),
+        context,
       }),
     });
     if (!res.ok) return fallbackReply(history);
