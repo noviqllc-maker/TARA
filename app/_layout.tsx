@@ -5,9 +5,6 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
-import { Fraunces_400Regular, Fraunces_500Medium, Fraunces_600SemiBold } from '@expo-google-fonts/fraunces';
-import { Manrope_400Regular, Manrope_600SemiBold, Manrope_700Bold, Manrope_800ExtraBold } from '@expo-google-fonts/manrope';
-import { IBMPlexMono_400Regular, IBMPlexMono_500Medium } from '@expo-google-fonts/ibm-plex-mono';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Notifications from 'expo-notifications';
 import { View } from 'react-native';
@@ -22,16 +19,11 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 export default function RootLayout() {
   // Load fonts BUNDLED in the app (assets/fonts), not over the network.
   const [loaded, error] = useFonts({
-    // Legacy bundled faces (still referenced by un-migrated screens).
     Fraunces: require('../assets/fonts/Fraunces-Regular.ttf'),
     'Fraunces-Medium': require('../assets/fonts/Fraunces-Medium.ttf'),
     Outfit: require('../assets/fonts/Outfit-Regular.ttf'),
     'Outfit-Medium': require('../assets/fonts/Outfit-Medium.ttf'),
     'Outfit-SemiBold': require('../assets/fonts/Outfit-SemiBold.ttf'),
-    // Temple-material design system (v2).
-    Fraunces_400Regular, Fraunces_500Medium, Fraunces_600SemiBold,
-    Manrope_400Regular, Manrope_600SemiBold, Manrope_700Bold, Manrope_800ExtraBold,
-    IBMPlexMono_400Regular, IBMPlexMono_500Medium,
   });
 
   useEffect(() => {
