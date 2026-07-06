@@ -9,11 +9,40 @@ import { colors, fonts, radius, spacing, shadow } from '@/theme';
 
 /* ---------- Text ---------- */
 type TVariant = 'h1' | 'h2' | 'h3' | 'body' | 'tiny' | 'eyebrow' | 'serif';
+const SERIF_VARIANTS = new Set<TVariant>(['h1', 'h2', 'h3', 'serif']);
+
+// Map a base face (Fraunces serif / Outfit sans) + numeric weight to the exact
+// bundled family. Custom fonts don't synthesize weight from fontWeight on iOS, so
+// we resolve the weight to a real family and drop fontWeight to avoid faux-bold.
+function familyFor(base: 'serif' | 'sans', weight?: unknown): string {
+  const w = parseInt(String(weight ?? '400'), 10) || 400;
+  if (base === 'serif') {
+    if (w >= 700) return fonts.serifBold;
+    if (w >= 600) return fonts.serifSemi;
+    if (w >= 500) return fonts.serifMed;
+    return fonts.serif;
+  }
+  if (w >= 600) return fonts.sansSemi;
+  if (w >= 500) return fonts.sansMed;
+  if (w <= 300) return fonts.sansLight;
+  return fonts.sans;
+}
+
 export function Text({
   variant = 'body', color, style, children, ...rest
 }: TextProps & { variant?: TVariant; color?: string }) {
+  const flat = (StyleSheet.flatten([styles[variant], style]) || {}) as any;
+  const { fontFamily, fontWeight, ...restStyle } = flat;
+  // Base face: an explicit Fraunces/Outfit family wins; otherwise the variant decides.
+  const base: 'serif' | 'sans' =
+    typeof fontFamily === 'string' && fontFamily.startsWith('Fraunces') ? 'serif'
+    : typeof fontFamily === 'string' && fontFamily.startsWith('Outfit') ? 'sans'
+    : SERIF_VARIANTS.has(variant) ? 'serif' : 'sans';
   return (
-    <RNText style={[styles[variant], color ? { color } : null, style]} {...rest}>
+    <RNText
+      style={[restStyle, color ? { color } : null, { fontFamily: familyFor(base, fontWeight) }]}
+      {...rest}
+    >
       {children}
     </RNText>
   );

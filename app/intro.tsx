@@ -89,10 +89,10 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.black },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   title: {
-    fontFamily: 'System', fontSize: 58, fontWeight: '800', letterSpacing: 10,
+    fontFamily: fonts.serif, fontSize: 58, fontWeight: '400', letterSpacing: 12,
     lineHeight: 70, color: colors.cream, textAlign: 'center', includeFontPadding: false,
   },
-  wellness: { fontFamily: 'System', fontSize: 18, fontWeight: '600', letterSpacing: 6, color: colors.gold, textAlign: 'center', marginTop: 2 },
+  wellness: { fontFamily: fonts.sans, fontSize: 18, fontWeight: '600', letterSpacing: 6, color: colors.gold, textAlign: 'center', marginTop: 2 },
   sub: { letterSpacing: 3, marginTop: 14, textAlign: 'center' },
   ctaWrap: { paddingBottom: 70, alignItems: 'center' },
   cta: { borderRadius: 16, paddingVertical: 16, paddingHorizontal: 48 },

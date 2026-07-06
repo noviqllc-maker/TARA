@@ -32,14 +32,21 @@ export const domainColors = {
   Spiritual: colors.saffron,
 } as const;
 
-// All text now uses the iOS system font (SF Pro). Weight is controlled per-style
-// via fontWeight ('400' regular, '600' semibold, '700' bold) — not via family name.
+// Brand type: Fraunces (elegant serif) for headings/wordmark/display numbers,
+// Outfit (clean sans) for body/labels/buttons/inputs. Loaded in app/_layout.tsx.
+// The shared <Text> (components/ui) maps fontWeight → the correct weighted family,
+// so existing `fontWeight` values keep rendering the right weight.
 export const fonts = {
-  serif: 'System',
-  serifMed: 'System',
-  sans: 'System',
-  sansMed: 'System',
-  sansSemi: 'System',
+  // Fraunces — display / headings
+  serif: 'Fraunces_400Regular',
+  serifMed: 'Fraunces_500Medium',
+  serifSemi: 'Fraunces_600SemiBold',
+  serifBold: 'Fraunces_700Bold',
+  // Outfit — body / supporting
+  sansLight: 'Outfit_300Light',
+  sans: 'Outfit_400Regular',
+  sansMed: 'Outfit_500Medium',
+  sansSemi: 'Outfit_600SemiBold',
 } as const;
 
 export const spacing = {

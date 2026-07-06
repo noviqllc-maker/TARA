@@ -5,6 +5,12 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
+import {
+  Fraunces_400Regular, Fraunces_500Medium, Fraunces_600SemiBold, Fraunces_700Bold,
+} from '@expo-google-fonts/fraunces';
+import {
+  Outfit_300Light, Outfit_400Regular, Outfit_500Medium, Outfit_600SemiBold,
+} from '@expo-google-fonts/outfit';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Notifications from 'expo-notifications';
 import { View } from 'react-native';
@@ -17,13 +23,11 @@ import { colors } from '@/theme';
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
-  // Load fonts BUNDLED in the app (assets/fonts), not over the network.
+  // Brand fonts — Fraunces (serif headings) + Outfit (sans body). Bundled via
+  // @expo-google-fonts, so they embed in native/EAS builds, not just Expo Go.
   const [loaded, error] = useFonts({
-    Fraunces: require('../assets/fonts/Fraunces-Regular.ttf'),
-    'Fraunces-Medium': require('../assets/fonts/Fraunces-Medium.ttf'),
-    Outfit: require('../assets/fonts/Outfit-Regular.ttf'),
-    'Outfit-Medium': require('../assets/fonts/Outfit-Medium.ttf'),
-    'Outfit-SemiBold': require('../assets/fonts/Outfit-SemiBold.ttf'),
+    Fraunces_400Regular, Fraunces_500Medium, Fraunces_600SemiBold, Fraunces_700Bold,
+    Outfit_300Light, Outfit_400Regular, Outfit_500Medium, Outfit_600SemiBold,
   });
 
   useEffect(() => {
