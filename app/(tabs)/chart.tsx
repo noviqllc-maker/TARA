@@ -183,7 +183,7 @@ function NorthIndianChart({ chart }: { chart: BirthChart }) {
             <SvgText
               x={a.x} y={a.y - (planets.length ? 7 : 0)}
               fill={isLagna ? colors.gold : colors.muted}
-              fontSize="7" textAnchor="middle" fontFamily={fonts.serif} fontWeight="600"
+              fontSize="7" textAnchor="middle" fontFamily={fonts.sansSemi} fontWeight="600"
             >
               {signNum}
             </SvgText>
@@ -191,7 +191,7 @@ function NorthIndianChart({ chart }: { chart: BirthChart }) {
               <SvgText
                 key={ri} x={a.x} y={a.y + 2 + ri * 8}
                 fill={isLagna ? colors.terra : colors.cream}
-                fontSize="8" textAnchor="middle" fontFamily={fonts.serif} fontWeight="600"
+                fontSize="8" textAnchor="middle" fontFamily={fonts.sansSemi} fontWeight="600"
               >
                 {r}
               </SvgText>
