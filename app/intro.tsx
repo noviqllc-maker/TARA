@@ -89,7 +89,10 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.black },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   title: {
-    fontFamily: fonts.serif, fontSize: 58, fontWeight: '400', letterSpacing: 12,
+    // Solid, grounded serif to match the logo wordmark — the static SemiBold weight
+    // (not Regular, which reads thin at this display size). Explicit family avoids any
+    // variable-font thin optical-size default.
+    fontFamily: fonts.serifSemi, fontSize: 58, fontWeight: '600', letterSpacing: 12,
     lineHeight: 70, color: colors.cream, textAlign: 'center', includeFontPadding: false,
   },
   wellness: { fontFamily: fonts.sans, fontSize: 18, fontWeight: '600', letterSpacing: 6, color: colors.gold, textAlign: 'center', marginTop: 2 },
