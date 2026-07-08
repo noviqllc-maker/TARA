@@ -1,6 +1,6 @@
 // app/(tabs)/profile.tsx
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Pressable, StyleSheet, Switch, Alert, ScrollView } from 'react-native';
+import { View, Pressable, StyleSheet, Switch, Alert, ScrollView, Linking } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import Screen from '@/components/Screen';
@@ -69,10 +69,21 @@ export default function Profile() {
       return;
     }
     setBusyId(item.id);
-    const ok = await purchaseShop(item.id);
-    setBusyId(null);
-    if (ok) Alert.alert('Unlocked ✦', `${item.title} is now yours — restore it anytime on any device.`);
-    else Alert.alert('Purchase not completed', 'No charge was made.');
+    try {
+      const ok = await purchaseShop(item.id);
+      if (ok) Alert.alert('Unlocked ✦', `${item.title} is now yours — restore it anytime on any device.`);
+      // ok === false → user cancelled → stay silent
+    } catch {
+      Alert.alert('Purchase failed', 'Something went wrong and no charge was made. Please try again.');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const onManageSubscription = () => {
+    Linking.openURL('https://apps.apple.com/account/subscriptions').catch(() =>
+      Alert.alert('Manage subscription', 'Open the App Store, tap your account, then Subscriptions to manage or cancel.'),
+    );
   };
 
   // Content screens for the reports aren't built yet; ownership is what gates them.
@@ -214,6 +225,14 @@ export default function Profile() {
               <Text style={{ color: colors.gold, fontSize: 18 }}>›</Text>
             </Pressable>
           ))}
+          <Pressable style={styles.row} onPress={onManageSubscription}>
+            <Text variant="body" style={{ fontSize: 14 }}>Manage Subscription</Text>
+            <Text style={{ color: colors.gold, fontSize: 18 }}>›</Text>
+          </Pressable>
+          <Pressable style={styles.row} onPress={onRestore} disabled={restoring}>
+            <Text variant="body" style={{ fontSize: 14 }}>{restoring ? 'Restoring…' : 'Restore Purchases'}</Text>
+            <Text style={{ color: colors.gold, fontSize: 18 }}>›</Text>
+          </Pressable>
           <View style={[styles.row, { borderBottomWidth: 0 }]}>
             <Text variant="body" style={{ fontSize: 14 }}>Dark Mode</Text>
             <Switch value disabled trackColor={{ true: colors.gold }} />

@@ -3,7 +3,7 @@
 // hardcoded price numbers in this file — the savings % and effective monthly rate
 // are derived from the live package prices.
 import React, { useState } from 'react';
-import { View, Pressable, ScrollView, Alert, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Pressable, ScrollView, Alert, ActivityIndicator, StyleSheet, Linking } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -22,6 +22,10 @@ const FEATURES = [
 ];
 
 type Tier = 'annual' | 'monthly';
+
+// App Review 3.1.2: paywalls must link to a privacy policy and terms of use (EULA).
+const PRIVACY_URL = 'https://tarawellness.org/privacy';
+const TERMS_URL = 'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/';
 
 // Format a computed amount in the store's currency. Prefers Intl.NumberFormat;
 // falls back to reusing the currency symbol from a RevenueCat priceString.
@@ -68,10 +72,15 @@ export default function Paywall() {
     const pkg = selected === 'annual' ? annualPkg : monthlyPkg;
     if (!pkg) return;
     setBusy(true);
-    const ok = await purchase(pkg); // passes the RevenueCat package object
-    setBusy(false);
-    if (ok) { Alert.alert('Welcome to Premium ✦', 'All features unlocked.'); router.back(); }
-    else Alert.alert('Purchase not completed', 'No charge was made.');
+    try {
+      const ok = await purchase(pkg); // passes the RevenueCat package object
+      if (ok) { Alert.alert('Welcome to Premium ✦', 'All features unlocked.'); router.back(); }
+      // ok === false → user cancelled → stay silent (no alert)
+    } catch {
+      Alert.alert('Purchase failed', 'Something went wrong and no charge was made. Please try again.');
+    } finally {
+      setBusy(false);
+    }
   };
 
   const onRestore = async () => {
@@ -156,9 +165,9 @@ export default function Paywall() {
                             </View>
                           )}
                         </View>
-                        {isAnnual && !!effectiveMonthly && (
+                        {isAnnual && (
                           <Text variant="tiny" color={colors.muted} style={{ marginTop: 5, fontSize: 11.5, lineHeight: 16 }}>
-                            Just {effectiveMonthly}/mo, billed annually
+                            1 Year Upfront{effectiveMonthly ? ` · just ${effectiveMonthly}/mo` : ''}
                           </Text>
                         )}
                       </View>
@@ -179,12 +188,22 @@ export default function Paywall() {
                 disabled={busy}
               />
               <Pressable onPress={onRestore} disabled={busy} style={{ marginTop: 16 }}>
-                <Text variant="tiny" color={colors.muted} style={{ textAlign: 'center' }}>Restore purchase</Text>
+                <Text variant="tiny" color={colors.muted} style={{ textAlign: 'center' }}>Restore Purchases</Text>
               </Pressable>
+
+              {/* App Review 3.1.2: price, period, auto-renew terms + Privacy/Terms links. */}
               <Text variant="tiny" color={colors.mutedDim} style={{ textAlign: 'center', marginTop: 18, fontSize: 10, lineHeight: 15 }}>
-                Billed through your app store. Cancel anytime in your account settings.
-                Subscription auto-renews unless turned off at least 24h before the period ends.
+                {(selected === 'annual' ? annualPkg : monthlyPkg).product.priceString}/{selected === 'annual' ? 'year' : 'month'}, auto-renewing. Your Apple account is charged at confirmation and renews automatically unless canceled at least 24 hours before the end of the current period. Manage or cancel anytime in your account settings.
               </Text>
+              <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, marginTop: 10 }}>
+                <Pressable onPress={() => Linking.openURL(PRIVACY_URL)} hitSlop={8}>
+                  <Text variant="tiny" color={colors.gold} style={{ fontSize: 10.5 }}>Privacy Policy</Text>
+                </Pressable>
+                <Text variant="tiny" color={colors.mutedDim} style={{ fontSize: 10.5 }}>·</Text>
+                <Pressable onPress={() => Linking.openURL(TERMS_URL)} hitSlop={8}>
+                  <Text variant="tiny" color={colors.gold} style={{ fontSize: 10.5 }}>Terms of Use</Text>
+                </Pressable>
+              </View>
             </>
           )}
         </Animated.View>

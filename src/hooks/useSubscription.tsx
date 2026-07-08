@@ -6,13 +6,12 @@
 // Setup (see PREMIUM-SETUP.md):
 //  1. RevenueCat account → add your app → entitlement "premium" + the subscription
 //     products in an Offering, and the three Non-Consumable shop products.
-//  2. Put your public API keys in app.json -> expo.extra.revenueCat.{ios,android}.
+//  2. Put your public iOS key in .env as EXPO_PUBLIC_REVENUECAT_IOS_KEY (never hardcoded).
 //  3. Runs in a DEV/production build (not Expo Go) — native module. In Expo Go it
 //     safely no-ops (Premium locked, nothing owned, prices unavailable).
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { Platform } from 'react-native';
-import Constants from 'expo-constants';
 
 // Non-consumable, one-time, restorable shop products.
 export const SHOP_PRODUCT_IDS = [
@@ -38,9 +37,9 @@ type SubState = {
 
 const Ctx = createContext<SubState>({} as SubState);
 
-function keys() {
-  const extra = (Constants.expoConfig?.extra ?? {}) as any;
-  return extra.revenueCat ?? {};
+// RevenueCat iOS public key from .env (EXPO_PUBLIC_ vars are inlined at bundle time).
+function apiKeyFor(): string | undefined {
+  return Platform.OS === 'ios' ? process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY : undefined;
 }
 
 // Lazy-require so Expo Go (no native module) doesn't crash.
@@ -83,8 +82,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
 
   useEffect(() => {
     const Purchases = getPurchases();
-    const k = keys();
-    const apiKey = Platform.OS === 'ios' ? k.ios : k.android;
+    const apiKey = apiKeyFor();
 
     if (!Purchases || !apiKey) {
       // Expo Go or not configured yet — everything stays locked, app still works.
@@ -133,8 +131,9 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       const { customerInfo } = await Purchases.purchasePackage(pkg);
       applyCustomerInfo(customerInfo); // premium flips on instantly → nudges turn off
       return !!customerInfo.entitlements.active['premium'];
-    } catch {
-      return false;
+    } catch (e: any) {
+      if (e?.userCancelled) return false; // user backed out → handle silently
+      throw e;                            // real error → caller shows a friendly message
     }
   }, [applyCustomerInfo]);
 
@@ -147,8 +146,9 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       const { customerInfo } = await Purchases.purchaseStoreProduct(product);
       applyCustomerInfo(customerInfo);
       return ownedFromInfo(customerInfo).has(productId);
-    } catch {
-      return false;
+    } catch (e: any) {
+      if (e?.userCancelled) return false; // silent
+      throw e;
     }
   }, [shopProducts, applyCustomerInfo]);
 

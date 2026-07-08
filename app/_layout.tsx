@@ -13,7 +13,6 @@ import {
 } from '@expo-google-fonts/outfit';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Notifications from 'expo-notifications';
-import Constants from 'expo-constants';
 import { View, Platform } from 'react-native';
 import { ProfileProvider } from '@/hooks/useProfile';
 import { SubscriptionProvider } from '@/hooks/useSubscription';
@@ -24,10 +23,11 @@ import { colors } from '@/theme';
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 // Configure RevenueCat ONCE at startup, before any purchase logic (the subscription
-// provider then reads customer info / offerings). Read safely so a missing key or the
-// native module being unavailable (e.g. Expo Go) never crashes the app.
-const rc = (Constants.expoConfig?.extra as any)?.revenueCat;
-const rcApiKey = Platform.OS === 'ios' ? rc?.ios : rc?.android;
+// provider then reads customer info / offerings). Key comes from .env via
+// process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY — never hardcoded. Guarded for iOS and
+// read safely so a missing key or the native module being unavailable (e.g. Expo Go)
+// never crashes the app.
+const rcApiKey = Platform.OS === 'ios' ? process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY : undefined;
 if (rcApiKey) {
   try {
     // Lazy-require so Expo Go (no native module) doesn't throw at import time.
