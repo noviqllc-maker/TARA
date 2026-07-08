@@ -28,6 +28,7 @@ type SubState = {
   packages: any[];
   purchase: (pkg: any) => Promise<boolean>;
   restore: () => Promise<boolean>;
+  refresh: () => Promise<void>; // re-fetch offerings + customer info (retry)
   available: boolean; // is the billing module usable in this build?
   // ---- Shop (non-consumables) ----
   shopProducts: Record<string, any>;        // productId -> StoreProduct (carries priceString)
@@ -158,10 +159,25 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
 
   const owns = useCallback((productId: string) => owned.has(productId), [owned]);
 
+  // Re-fetch offerings + customer info (for a paywall "try again" after a failure).
+  const refresh = useCallback(async () => {
+    const Purchases = getPurchases();
+    if (!Purchases) return;
+    try {
+      const offerings = await Purchases.getOfferings();
+      setPackages(offerings.current?.availablePackages ?? []);
+      const info = await Purchases.getCustomerInfo();
+      setIsPremium(!!info.entitlements.active['premium']);
+      setOwned(ownedFromInfo(info));
+    } catch {
+      // leave existing state; the UI shows its fallback
+    }
+  }, []);
+
   return (
     <Ctx.Provider
       value={{
-        isPremium, loading, packages, purchase, restore, available,
+        isPremium, loading, packages, purchase, restore, refresh, available,
         shopProducts, owns, purchaseShop,
       }}
     >
