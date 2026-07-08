@@ -24,7 +24,7 @@ subscription:
 
 ### B. RevenueCat
 1. revenuecat.com → create project → add your iOS and Android apps (bundle id
-   `com.tara.app`).
+   `org.tarawellness.app`).
 2. Add your App Store Connect shared secret and Google service-account credentials
    (RevenueCat walks you through this).
 3. Create an **Entitlement** named exactly **`premium`**.

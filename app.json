@@ -14,13 +14,13 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.tara.app",
+      "bundleIdentifier": "org.tarawellness.app",
       "infoPlist": {
         "NSUserTrackingUsageDescription": "Tara does not track you across apps."
       }
     },
     "android": {
-      "package": "com.tara.app",
+      "package": "org.tarawellness.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#08060c"
