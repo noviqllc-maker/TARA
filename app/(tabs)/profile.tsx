@@ -11,7 +11,6 @@ import { useProfile } from '@/hooks/useProfile';
 import { useChart } from '@/hooks/useChart';
 import { useSubscription } from '@/hooks/useSubscription';
 import { lifePathNumber, chineseZodiac } from '@/lib/numerology';
-import { pricing } from '@/lib/pricing';
 import { colors, radius, spacing } from '@/theme';
 
 // Non-consumable shop products. IDs match RevenueCat / the store; the PRICE is never
@@ -32,7 +31,16 @@ const SETTINGS_ROWS = [
 export default function Profile() {
   const { profile, reset } = useProfile();
   const chart = useChart();
-  const { isPremium, shopProducts, owns, purchaseShop, restore, available } = useSubscription();
+  const { isPremium, packages, shopProducts, owns, purchaseShop, restore, available } = useSubscription();
+
+  // Live subscription prices (RevenueCat) for the promo line — no hardcoded prices.
+  const monthlyPriceString: string | undefined =
+    (packages.find((p: any) => p.packageType === 'MONTHLY') ?? packages.find((p: any) => p.identifier === '$rc_monthly'))?.product?.priceString;
+  const annualPriceString: string | undefined =
+    (packages.find((p: any) => p.packageType === 'ANNUAL') ?? packages.find((p: any) => p.identifier === '$rc_annual'))?.product?.priceString;
+  const priceLine = monthlyPriceString && annualPriceString
+    ? ` — ${monthlyPriceString}/month or ${annualPriceString}/year`
+    : '';
   const [editing, setEditing] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [restoring, setRestoring] = useState(false);
@@ -187,7 +195,7 @@ export default function Profile() {
           <>
             <Text variant="serif" style={{ fontSize: 17, marginTop: 8 }}>Unlock Tara Premium</Text>
             <Text variant="tiny" style={{ marginTop: 6 }}>
-              Unlimited Tara AI, yearly forecast, deep compatibility, Life Timeline, AI memory, and no ads — {pricing.monthly.display}/month or {pricing.annual.display}/year.
+              Unlimited Tara AI, yearly forecast, deep compatibility, Life Timeline, AI memory, and no ads{priceLine}.
             </Text>
             <Pressable style={styles.upgrade} onPress={() => router.push('/paywall')}>
               <Text variant="body" color="#1a1018" style={{ fontWeight: '600' }}>Upgrade to Premium</Text>

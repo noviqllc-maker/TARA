@@ -87,7 +87,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
 
     (async () => {
       try {
-        Purchases.configure({ apiKey });
+        // configure() runs once at startup in app/_layout.tsx — here we just use it.
         setAvailable(true);
 
         const info = await Purchases.getCustomerInfo();

@@ -13,7 +13,8 @@ import {
 } from '@expo-google-fonts/outfit';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Notifications from 'expo-notifications';
-import { View } from 'react-native';
+import Constants from 'expo-constants';
+import { View, Platform } from 'react-native';
 import { ProfileProvider } from '@/hooks/useProfile';
 import { SubscriptionProvider } from '@/hooks/useSubscription';
 import { HealthProvider } from '@/hooks/useHealth';
@@ -21,6 +22,18 @@ import { routeFromResponse } from '@/lib/notifications';
 import { colors } from '@/theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
+
+// Configure RevenueCat ONCE at startup, before any purchase logic (the subscription
+// provider then reads customer info / offerings). Read safely so a missing key or the
+// native module being unavailable (e.g. Expo Go) never crashes the app.
+const rc = (Constants.expoConfig?.extra as any)?.revenueCat;
+const rcApiKey = Platform.OS === 'ios' ? rc?.ios : rc?.android;
+if (rcApiKey) {
+  try {
+    // Lazy-require so Expo Go (no native module) doesn't throw at import time.
+    require('react-native-purchases').default.configure({ apiKey: rcApiKey });
+  } catch {}
+}
 
 export default function RootLayout() {
   // Brand fonts — Fraunces (serif headings) + Outfit (sans body). Bundled via
