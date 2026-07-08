@@ -14,17 +14,13 @@ import { lifePathNumber, chineseZodiac } from '@/lib/numerology';
 import { pricing } from '@/lib/pricing';
 import { colors, radius, spacing } from '@/theme';
 
-// In-app purchase product IDs (real IAP wired later).
-const SHOP_PRODUCTS = {
-  yearAhead: 'shop_year_ahead',
-  birthBlueprint: 'shop_birth_blueprint',
-  doshaRemedies: 'shop_dosha_remedies',
-} as const;
-
+// Non-consumable shop products. IDs match RevenueCat / the store; the PRICE is never
+// hardcoded — it comes from each product's RevenueCat priceString (correct local
+// currency). Content/desc live here; price + ownership come from RevenueCat.
 const SHOP_ITEMS = [
-  { id: SHOP_PRODUCTS.yearAhead, title: 'Year Ahead Report', desc: 'Your personalized forecast for the next 12 months.', price: '$7.99' },
-  { id: SHOP_PRODUCTS.birthBlueprint, title: 'Birth Blueprint', desc: 'A deep reading of your natal chart.', price: '$6.99' },
-  { id: SHOP_PRODUCTS.doshaRemedies, title: 'Dosha Remedies', desc: 'Discover the doshas in your chart and personalized remedies to restore balance.', price: '$7.99' },
+  { id: 'shop_year_ahead', title: 'Year Ahead Report', desc: 'Your personalized forecast for the next 12 months.' },
+  { id: 'shop_birth_blueprint', title: 'Birth Blueprint', desc: 'A deep reading of your natal chart.' },
+  { id: 'shop_dosha_remedies', title: 'Dosha Remedies', desc: 'Discover the doshas in your chart and personalized remedies to restore balance.' },
 ];
 
 const SETTINGS_ROWS = [
@@ -36,9 +32,10 @@ const SETTINGS_ROWS = [
 export default function Profile() {
   const { profile, reset } = useProfile();
   const chart = useChart();
-  const { isPremium } = useSubscription();
+  const { isPremium, shopProducts, owns, purchaseShop, restore, available } = useSubscription();
   const [editing, setEditing] = useState(false);
-  const [comingSoon, setComingSoon] = useState<string[]>([]);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [restoring, setRestoring] = useState(false);
 
   // Deep-link: Home's "Shop" Quick Action passes { scrollTo: 'shop' } to land here.
   const params = useLocalSearchParams<{ scrollTo?: string }>();
@@ -55,9 +52,34 @@ export default function Profile() {
   };
   useEffect(() => { maybeScrollToShop(); }, [params.scrollTo]);
 
-  const onPurchase = (productId: string) => {
-    console.log('[shop] unlock tapped:', productId); // TODO: real IAP
-    setComingSoon((s) => (s.includes(productId) ? s : [...s, productId]));
+  const onUnlock = async (item: { id: string; title: string }) => {
+    if (!available) {
+      Alert.alert(
+        'Almost there',
+        'In-app purchases activate in a production build with RevenueCat configured. See PREMIUM-SETUP.md.',
+      );
+      return;
+    }
+    setBusyId(item.id);
+    const ok = await purchaseShop(item.id);
+    setBusyId(null);
+    if (ok) Alert.alert('Unlocked ✦', `${item.title} is now yours — restore it anytime on any device.`);
+    else Alert.alert('Purchase not completed', 'No charge was made.');
+  };
+
+  // Content screens for the reports aren't built yet; ownership is what gates them.
+  const onView = (item: { title: string }) =>
+    Alert.alert(item.title, 'Unlocked ✓ — your full report is coming soon.');
+
+  const onRestore = async () => {
+    if (!available) {
+      Alert.alert('Restore purchases', 'Restore works in a production build with RevenueCat configured.');
+      return;
+    }
+    setRestoring(true);
+    const ok = await restore();
+    setRestoring(false);
+    Alert.alert(ok ? 'Restored ✦' : 'Nothing to restore', ok ? 'Your purchases are active on this device.' : 'No previous purchases found.');
   };
 
   const facts: [string, string][] = [
@@ -112,25 +134,43 @@ export default function Profile() {
       {/* Shop */}
       <View onLayout={(e) => { shopY.current = e.nativeEvent.layout.y; maybeScrollToShop(); }}>
         <Eyebrow>Shop</Eyebrow>
-        <View style={{ gap: 12, marginTop: 12, marginBottom: spacing.lg }}>
+        <View style={{ gap: 12, marginTop: 12 }}>
           {SHOP_ITEMS.map((item) => {
-            const soon = comingSoon.includes(item.id);
+            const owned = owns(item.id);
+            const busy = busyId === item.id;
+            const priceString = shopProducts[item.id]?.priceString as string | undefined;
             return (
               <Card key={item.id}>
                 <Text variant="serif" style={{ fontSize: 16 }}>{item.title}</Text>
                 <Text variant="tiny" style={{ marginTop: 4 }}>{item.desc}</Text>
                 <View style={styles.shopRow}>
-                  <Text variant="body" color={colors.goldSoft} style={{ fontWeight: '600' }}>{item.price}</Text>
-                  <Pressable onPress={() => onPurchase(item.id)} style={[styles.unlockBtn, soon && styles.unlockBtnSoon]}>
-                    <Text variant="tiny" color={soon ? colors.muted : '#1a1018'} style={{ fontWeight: '600' }}>
-                      {soon ? 'Coming soon' : 'Unlock'}
-                    </Text>
-                  </Pressable>
+                  {owned ? (
+                    <Text variant="body" color={colors.sage} style={{ fontWeight: '600' }}>✓ Unlocked</Text>
+                  ) : (
+                    // Price comes from RevenueCat (local currency). Blank until it loads.
+                    <Text variant="body" color={colors.goldSoft} style={{ fontWeight: '600' }}>{priceString ?? ' '}</Text>
+                  )}
+                  {owned ? (
+                    <Pressable onPress={() => onView(item)} style={styles.unlockBtn}>
+                      <Text variant="tiny" color="#1a1018" style={{ fontWeight: '600' }}>View</Text>
+                    </Pressable>
+                  ) : (
+                    <Pressable onPress={() => onUnlock(item)} disabled={busy} style={[styles.unlockBtn, busy && styles.unlockBtnSoon]}>
+                      <Text variant="tiny" color={busy ? colors.muted : '#1a1018'} style={{ fontWeight: '600' }}>
+                        {busy ? 'Processing…' : 'Unlock'}
+                      </Text>
+                    </Pressable>
+                  )}
                 </View>
               </Card>
             );
           })}
         </View>
+        <Pressable onPress={onRestore} disabled={restoring} style={{ marginTop: 12, marginBottom: spacing.lg }}>
+          <Text variant="tiny" color={colors.muted} style={{ textAlign: 'center' }}>
+            {restoring ? 'Restoring…' : 'Restore purchases'}
+          </Text>
+        </Pressable>
       </View>
 
       {/* Subscription */}
