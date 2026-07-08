@@ -7,6 +7,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import CosmicBackground from '@/components/CosmicBackground';
 import { Text, Eyebrow, GoldButton } from '@/components/ui';
 import { useSubscription } from '@/hooks/useSubscription';
+import { pricing } from '@/lib/pricing';
 import { colors, radius, spacing } from '@/theme';
 
 const FEATURES = [
@@ -18,12 +19,11 @@ const FEATURES = [
   'No ads — ever',
 ];
 
-// Subscription tiers — prices + product IDs ready to wire to RevenueCat later.
+// Subscription tiers — product IDs for RevenueCat; prices/savings come from `pricing`.
 const PRODUCTS = {
-  monthly: { id: 'tara_premium_monthly', label: 'Monthly', price: '$4.99', period: 'month' },
-  annual: { id: 'tara_premium_annual', label: 'Annual', price: '$39.99', period: 'year' },
+  monthly: { id: 'tara_premium_monthly', label: 'Monthly', ...pricing.monthly },
+  annual: { id: 'tara_premium_annual', label: 'Annual', ...pricing.annual },
 } as const;
-const ANNUAL_BADGE = 'Save 33% · 4 months free';
 type Tier = keyof typeof PRODUCTS;
 
 export default function Paywall() {
@@ -92,18 +92,28 @@ export default function Paywall() {
                 {(['annual', 'monthly'] as const).map((key) => {
                   const t = PRODUCTS[key];
                   const active = selected === key;
+                  const isAnnual = key === 'annual';
                   return (
                     <Pressable key={key} onPress={() => setSelected(key)} style={[styles.tier, active && styles.tierActive]}>
                       <View style={{ flex: 1 }}>
-                        <Text variant="serif" style={{ fontSize: 16 }}>{t.label}</Text>
-                        {key === 'annual' && (
-                          <View style={styles.badge}>
-                            <Text variant="tiny" color="#1a1018" style={{ fontSize: 10, fontWeight: '600' }}>{ANNUAL_BADGE}</Text>
-                          </View>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                          <Text variant="serif" style={{ fontSize: 16 }}>{t.label}</Text>
+                          {isAnnual && (
+                            <View style={styles.badge}>
+                              <Text variant="tiny" color="#1a1018" style={{ fontSize: 10, fontWeight: '700', letterSpacing: 0.4 }}>
+                                SAVE {pricing.savingsPercent}%
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+                        {isAnnual && (
+                          <Text variant="tiny" color={colors.muted} style={{ marginTop: 5, fontSize: 11.5, lineHeight: 16 }}>
+                            Just {pricing.effectiveMonthly}/mo · save {pricing.savings} vs monthly
+                          </Text>
                         )}
                       </View>
                       <View style={{ alignItems: 'flex-end' }}>
-                        <Text variant="serif" color={colors.goldSoft} style={{ fontSize: 17 }}>{t.price}</Text>
+                        <Text variant="serif" color={colors.goldSoft} style={{ fontSize: 17 }}>{t.display}</Text>
                         <Text variant="tiny" color={colors.muted}>per {t.period}</Text>
                       </View>
                     </Pressable>
@@ -112,7 +122,7 @@ export default function Paywall() {
               </View>
 
               <GoldButton
-                label={busy ? <ActivityIndicator color="#1a1018" /> : `Start Premium — ${PRODUCTS[selected].price}/${PRODUCTS[selected].period}`}
+                label={busy ? <ActivityIndicator color="#1a1018" /> : `Start Premium — ${PRODUCTS[selected].display}/${PRODUCTS[selected].period}`}
                 onPress={onBuy}
                 disabled={busy}
               />
@@ -120,7 +130,7 @@ export default function Paywall() {
                 <Text variant="tiny" color={colors.muted} style={{ textAlign: 'center' }}>Restore purchase</Text>
               </Pressable>
               <Text variant="tiny" color={colors.mutedDim} style={{ textAlign: 'center', marginTop: 18, fontSize: 10, lineHeight: 15 }}>
-                Billed monthly through your app store. Cancel anytime in your account settings.
+                Billed through your app store. Cancel anytime in your account settings.
                 Subscription auto-renews unless turned off at least 24h before the period ends.
               </Text>
             </>

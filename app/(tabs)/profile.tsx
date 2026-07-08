@@ -11,6 +11,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { useChart } from '@/hooks/useChart';
 import { useSubscription } from '@/hooks/useSubscription';
 import { lifePathNumber, chineseZodiac } from '@/lib/numerology';
+import { pricing } from '@/lib/pricing';
 import { colors, radius, spacing } from '@/theme';
 
 // In-app purchase product IDs (real IAP wired later).
@@ -146,7 +147,7 @@ export default function Profile() {
           <>
             <Text variant="serif" style={{ fontSize: 17, marginTop: 8 }}>Unlock Tara Premium</Text>
             <Text variant="tiny" style={{ marginTop: 6 }}>
-              Unlimited Tara AI, yearly forecast, deep compatibility, Life Timeline, AI memory, and no ads — $4.99/month or $39.99/year.
+              Unlimited Tara AI, yearly forecast, deep compatibility, Life Timeline, AI memory, and no ads — {pricing.monthly.display}/month or {pricing.annual.display}/year.
             </Text>
             <Pressable style={styles.upgrade} onPress={() => router.push('/paywall')}>
               <Text variant="body" color="#1a1018" style={{ fontWeight: '600' }}>Upgrade to Premium</Text>
