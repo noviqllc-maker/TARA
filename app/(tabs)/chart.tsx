@@ -7,15 +7,19 @@ import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import Screen from '@/components/Screen';
 import { Text, Card, Eyebrow, GhostButton } from '@/components/ui';
 import Disclaimer from '@/components/Disclaimer';
+import { PremiumHint, PremiumSheet } from '@/components/PremiumNudge';
 import { useProfile } from '@/hooks/useProfile';
 import { useChart } from '@/hooks/useChart';
+import { useSubscription } from '@/hooks/useSubscription';
 import { PlanetPosition, BirthChart } from '@/lib/vedic';
 import { colors, fonts, spacing } from '@/theme';
 
 export default function Chart() {
   const { profile } = useProfile();
   const chart = useChart();
+  const { isPremium } = useSubscription();
   const [selected, setSelected] = useState<PlanetPosition | null>(null);
+  const [premiumSheet, setPremiumSheet] = useState(false);
 
   if (!chart) {
     return (
@@ -126,6 +130,23 @@ export default function Chart() {
         <GhostButton label="View Dasha Timeline →" onPress={() => router.push('/chart/timeline')} />
         <GhostButton label="Compatibility →" onPress={() => router.push('/insights/love')} />
       </View>
+
+      {/* Full chart stays free above; this only invites a deeper reading. */}
+      {!isPremium && (
+        <PremiumHint
+          style={{ marginTop: spacing.lg }}
+          message="Unlock your full birth blueprint — a deep natal reading with personalized remedies, dasha guidance and timing."
+          onPress={() => setPremiumSheet(true)}
+        />
+      )}
+
+      <PremiumSheet
+        visible={premiumSheet}
+        onClose={() => setPremiumSheet(false)}
+        title="Your full birth blueprint"
+        message="Go beyond the chart with a deep natal reading — planet-by-planet guidance, remedies, and the timing of your dashas."
+        benefits={['Deep natal reading & remedies', 'Dasha timeline guidance', 'Personalized planetary insights']}
+      />
 
       <Disclaimer />
     </Screen>
