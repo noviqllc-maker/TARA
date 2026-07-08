@@ -73,6 +73,14 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   const [shopProducts, setShopProducts] = useState<Record<string, any>>({});
   const [owned, setOwned] = useState<Set<string>>(new Set());
 
+  // Single place that maps a RevenueCat CustomerInfo → app state. Used by the initial
+  // fetch, purchases, restore, and the live update listener, so premium + ownership
+  // stay consistent everywhere and update instantly.
+  const applyCustomerInfo = useCallback((info: any) => {
+    setIsPremium(!!info?.entitlements?.active?.['premium']);
+    setOwned(ownedFromInfo(info));
+  }, []);
+
   useEffect(() => {
     const Purchases = getPurchases();
     const k = keys();
@@ -85,14 +93,18 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       return;
     }
 
+    // Keep premium/ownership LIVE across the app — fires on upgrade, restore, expiry,
+    // promo, family sharing, etc. — so nudges react immediately, no restart needed.
+    const listener = (info: any) => applyCustomerInfo(info);
+    try { Purchases.addCustomerInfoUpdateListener(listener); } catch {}
+
     (async () => {
       try {
         // configure() runs once at startup in app/_layout.tsx — here we just use it.
         setAvailable(true);
 
         const info = await Purchases.getCustomerInfo();
-        setIsPremium(!!info.entitlements.active['premium']);
-        setOwned(ownedFromInfo(info)); // restores non-consumables across restarts/reinstall
+        applyCustomerInfo(info); // restores premium + non-consumables across restarts
 
         const offerings = await Purchases.getOfferings();
         setPackages(offerings.current?.availablePackages ?? []);
@@ -110,21 +122,21 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
         setLoading(false);
       }
     })();
-  }, []);
+
+    return () => { try { Purchases.removeCustomerInfoUpdateListener(listener); } catch {} };
+  }, [applyCustomerInfo]);
 
   const purchase = useCallback(async (pkg: any) => {
     const Purchases = getPurchases();
     if (!Purchases) return false;
     try {
       const { customerInfo } = await Purchases.purchasePackage(pkg);
-      const ok = !!customerInfo.entitlements.active['premium'];
-      setIsPremium(ok);
-      setOwned(ownedFromInfo(customerInfo));
-      return ok;
+      applyCustomerInfo(customerInfo); // premium flips on instantly → nudges turn off
+      return !!customerInfo.entitlements.active['premium'];
     } catch {
       return false;
     }
-  }, []);
+  }, [applyCustomerInfo]);
 
   const purchaseShop = useCallback(async (productId: string) => {
     const Purchases = getPurchases();
@@ -133,13 +145,12 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     if (!product) return false;
     try {
       const { customerInfo } = await Purchases.purchaseStoreProduct(product);
-      const next = ownedFromInfo(customerInfo);
-      setOwned(next);
-      return next.has(productId);
+      applyCustomerInfo(customerInfo);
+      return ownedFromInfo(customerInfo).has(productId);
     } catch {
       return false;
     }
-  }, [shopProducts]);
+  }, [shopProducts, applyCustomerInfo]);
 
   // Restores everything RevenueCat knows about — subscription AND non-consumables.
   const restore = useCallback(async () => {
@@ -147,15 +158,12 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     if (!Purchases) return false;
     try {
       const info = await Purchases.restorePurchases();
-      const premium = !!info.entitlements.active['premium'];
-      const next = ownedFromInfo(info);
-      setIsPremium(premium);
-      setOwned(next);
-      return premium || next.size > 0;
+      applyCustomerInfo(info);
+      return !!info.entitlements.active['premium'] || ownedFromInfo(info).size > 0;
     } catch {
       return false;
     }
-  }, []);
+  }, [applyCustomerInfo]);
 
   const owns = useCallback((productId: string) => owned.has(productId), [owned]);
 
@@ -167,12 +175,11 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       const offerings = await Purchases.getOfferings();
       setPackages(offerings.current?.availablePackages ?? []);
       const info = await Purchases.getCustomerInfo();
-      setIsPremium(!!info.entitlements.active['premium']);
-      setOwned(ownedFromInfo(info));
+      applyCustomerInfo(info);
     } catch {
       // leave existing state; the UI shows its fallback
     }
-  }, []);
+  }, [applyCustomerInfo]);
 
   return (
     <Ctx.Provider
