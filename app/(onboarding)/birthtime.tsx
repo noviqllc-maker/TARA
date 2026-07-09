@@ -1,77 +1,119 @@
 // app/(onboarding)/birthtime.tsx
-import React, { useState } from 'react';
-import { View, Platform, Pressable } from 'react-native';
+import React, { useRef, useState } from 'react';
+import { View, TextInput, Pressable, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import OnboardingShell from '@/components/OnboardingShell';
 import { Text } from '@/components/ui';
 import { useProfile } from '@/hooks/useProfile';
-import { colors, radius } from '@/theme';
+import { colors, fonts, radius } from '@/theme';
 
-function fmt(d: Date) {
-  const h = d.getHours().toString().padStart(2, '0');
-  const m = d.getMinutes().toString().padStart(2, '0');
-  return `${h}:${m}`;
-}
-function label(d: Date) {
-  let h = d.getHours();
-  const m = d.getMinutes().toString().padStart(2, '0');
-  const ap = h >= 12 ? 'PM' : 'AM';
-  h = h % 12 || 12;
-  return `${h}:${m} ${ap}`;
-}
+const pad = (n: number | string) => n.toString().padStart(2, '0');
 
 export default function BirthTimeScreen() {
   const { profile, update } = useProfile();
-  // seed from saved value or a sensible default of 6:00 AM
-  const init = (() => {
-    const d = new Date();
-    if (profile.birthTime && /^\d{1,2}:\d{2}/.test(profile.birthTime)) {
-      const [h, m] = profile.birthTime.split(':').map(Number);
-      d.setHours(h, m, 0, 0);
-    } else {
-      d.setHours(6, 0, 0, 0);
-    }
-    return d;
-  })();
-  const [time, setTime] = useState<Date>(init);
-  const [show, setShow] = useState(Platform.OS === 'ios'); // iOS shows inline; Android on tap
+
+  // Seed from a previously saved 24-hour "HH:MM" (e.g. navigating back) → 12-hour fields.
+  const seed = /^(\d{1,2}):(\d{2})/.exec(profile.birthTime || '');
+  const seedH24 = seed ? parseInt(seed[1], 10) : NaN;
+  const [hh, setHH] = useState(seed ? pad(seedH24 % 12 || 12) : '');
+  const [mm, setMM] = useState(seed ? pad(parseInt(seed[2], 10)) : '');
+  const [ampm, setAmpm] = useState<'AM' | 'PM'>(seed && seedH24 >= 12 ? 'PM' : 'AM');
+
+  const mmRef = useRef<TextInput>(null);
+
+  const onlyDigits = (t: string, max: number) => t.replace(/[^0-9]/g, '').slice(0, max);
+  const onHH = (t: string) => { const v = onlyDigits(t, 2); setHH(v); if (v.length === 2) mmRef.current?.focus(); };
+  const onMM = (t: string) => setMM(onlyDigits(t, 2));
+  // Zero-pad on blur so a single digit reads as e.g. 07 / 05.
+  const padHH = () => { if (hh.length === 1) setHH(pad(hh)); };
+  const padMM = () => { if (mm.length === 1) setMM(pad(mm)); };
+
+  const hN = parseInt(hh, 10);
+  const mN = parseInt(mm, 10);
+  const hourOk = hh !== '' && hN >= 1 && hN <= 12;
+  const minOk = mm !== '' && mN >= 0 && mN <= 59;
+  const valid = hourOk && minOk;
+
+  // Only flag a field once it's filled but out of range — no nagging mid-type.
+  const hourBad = hh !== '' && (hN < 1 || hN > 12);
+  const minBad = mm !== '' && (mN < 0 || mN > 59);
+  const errorMsg = hourBad ? 'Enter an hour between 1 and 12.'
+    : minBad ? 'Enter minutes between 0 and 59.'
+    : '';
+
+  const onContinue = () => {
+    // Convert 12-hour → the SAME 24-hour "HH:MM" shape the app already saves.
+    const h24 = ampm === 'PM' ? (hN % 12) + 12 : (hN % 12);
+    update({ birthTime: `${pad(h24)}:${pad(mN)}` });
+    router.push('/(onboarding)/birthplace');
+  };
 
   return (
     <OnboardingShell
       step={3} total={5}
       question="What time were you born?"
-      helper="Even a few minutes can shift your chart. Tap to spin the dial."
-      onContinue={() => { update({ birthTime: fmt(time) }); router.push('/(onboarding)/birthplace'); }}
+      helper="Enter the hour and minute from your birth records."
+      disabled={!valid}
+      onContinue={onContinue}
     >
-      {/* Big tappable time chip */}
-      <Pressable
-        onPress={() => setShow(true)}
-        style={{
-          backgroundColor: 'rgba(255,255,255,0.04)',
-          borderColor: colors.line, borderWidth: 1, borderRadius: radius.lg,
-          paddingVertical: 22, alignItems: 'center', marginBottom: 8,
-        }}
-      >
-        <Text variant="eyebrow" color={colors.muted} style={{ marginBottom: 6 }}>Selected time</Text>
-        <Text variant="h1" style={{ fontSize: 38 }}>{label(time)}</Text>
-      </Pressable>
-
-      {show && (
-        <View style={{ alignItems: 'center' }}>
-          <DateTimePicker
-            value={time}
-            mode="time"
-            display={Platform.OS === 'ios' ? 'spinner' : 'clock'}
-            themeVariant="dark"
-            textColor={colors.cream}
-            onChange={(_, d) => {
-              if (Platform.OS === 'android') setShow(false);
-              if (d) setTime(d);
-            }}
+      <View style={styles.row}>
+        <View style={{ flex: 1 }}>
+          <Text variant="eyebrow" color={colors.muted} style={styles.label}>HH</Text>
+          <TextInput
+            value={hh} onChangeText={onHH} onBlur={padHH}
+            placeholder="07" placeholderTextColor={colors.mutedDim}
+            keyboardType="number-pad" maxLength={2} autoFocus
+            style={styles.field}
           />
         </View>
-      )}
+        <View style={{ flex: 1 }}>
+          <Text variant="eyebrow" color={colors.muted} style={styles.label}>MM</Text>
+          <TextInput
+            ref={mmRef} value={mm} onChangeText={onMM} onBlur={padMM}
+            placeholder="05" placeholderTextColor={colors.mutedDim}
+            keyboardType="number-pad" maxLength={2}
+            style={styles.field}
+          />
+        </View>
+      </View>
+
+      <Text variant="eyebrow" color={colors.muted} style={[styles.label, { marginTop: 18 }]}>AM / PM</Text>
+      <View style={styles.pillRow}>
+        {(['AM', 'PM'] as const).map((p) => {
+          const active = ampm === p;
+          return (
+            <Pressable key={p} onPress={() => setAmpm(p)} style={[styles.pill, active && styles.pillActive]}>
+              <Text variant="body" color={active ? '#1a1018' : colors.cream} style={{ fontWeight: '600' }}>{p}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      {errorMsg ? <Text variant="tiny" color={colors.terra} style={{ marginTop: 12 }}>{errorMsg}</Text> : null}
     </OnboardingShell>
   );
 }
+
+const styles = StyleSheet.create({
+  row: { flexDirection: 'row', gap: 12 },
+  label: { marginBottom: 8, marginLeft: 2 },
+  field: {
+    width: '100%',
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderColor: colors.line,
+    borderWidth: 1,
+    borderRadius: radius.md,
+    paddingVertical: 15,
+    paddingHorizontal: 16,
+    color: colors.cream,
+    fontFamily: fonts.sans,
+    fontSize: 20,
+    textAlign: 'center',
+  },
+  pillRow: { flexDirection: 'row', gap: 12 },
+  pill: {
+    flex: 1, alignItems: 'center', paddingVertical: 14, borderRadius: radius.md,
+    borderWidth: 1, borderColor: colors.line, backgroundColor: 'rgba(255,255,255,0.04)',
+  },
+  pillActive: { backgroundColor: colors.goldSoft, borderColor: colors.gold },
+});
