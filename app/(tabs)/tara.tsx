@@ -21,6 +21,21 @@ import { colors, fonts, radius, spacing, domainColors } from '@/theme';
 import Markdown from 'react-native-markdown-display';
 
 const MEM_KEY = 'tara.chat.v1';
+const STORE_CAP = 200;       // most-recent messages persisted on-device (bounds storage)
+const CTX_MAX_MSGS = 20;     // most-recent messages sent to the AI …
+const CTX_MAX_CHARS = 4000;  // … further bounded by a ~char budget (whichever is smaller)
+
+// The recent slice sent to the AI: last CTX_MAX_MSGS messages, then trimmed from the
+// front until under CTX_MAX_CHARS. Older messages stay visible in the UI, just not sent.
+function contextWindow(msgs: ChatMessage[]): ChatMessage[] {
+  let window = msgs.slice(-CTX_MAX_MSGS);
+  let total = window.reduce((n, m) => n + m.content.length, 0);
+  while (window.length > 1 && total > CTX_MAX_CHARS) {
+    total -= window[0].content.length;
+    window = window.slice(1);
+  }
+  return window;
+}
 const DAILY_LIMIT = 5; // non-premium: 5 free questions per calendar day (resets at midnight)
 
 // AsyncStorage key for today's question count, e.g. "tara.usage.2026-06-23".
@@ -73,7 +88,7 @@ export default function TaraAI() {
     if (match) setCategory(match.key);
   }, [params.category]);
   useEffect(() => {
-    if (rememberChat) AsyncStorage.setItem(MEM_KEY, JSON.stringify(messages.slice(-30))).catch(() => {});
+    if (rememberChat) AsyncStorage.setItem(MEM_KEY, JSON.stringify(messages.slice(-STORE_CAP))).catch(() => {});
     else AsyncStorage.removeItem(MEM_KEY).catch(() => {});
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 80);
   }, [messages, rememberChat]);
@@ -93,7 +108,7 @@ export default function TaraAI() {
     setInput('');
     setThinking(true);
     const language = await getLanguage();
-    const reply = await askTara(next, profile.name || 'friend', chart, metrics, language);
+    const reply = await askTara(contextWindow(next), profile.name || 'friend', chart, metrics, language);
     setMessages([...next, { role: 'assistant', content: reply }]);
     setThinking(false);
   };
@@ -120,7 +135,7 @@ export default function TaraAI() {
           </View>
           {!empty && (
             <Pressable onPress={clearChat} hitSlop={8} style={{ paddingBottom: 4 }}>
-              <Text variant="tiny" color={colors.gold}>New chat</Text>
+              <Text variant="tiny" color={colors.gold}>New conversation</Text>
             </Pressable>
           )}
         </View>
