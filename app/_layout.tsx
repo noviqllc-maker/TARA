@@ -28,11 +28,21 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 // read safely so a missing key or the native module being unavailable (e.g. Expo Go)
 // never crashes the app.
 const rcApiKey = Platform.OS === 'ios' ? process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY : undefined;
-if (rcApiKey) {
-  try {
-    // Lazy-require so Expo Go (no native module) doesn't throw at import time.
-    require('react-native-purchases').default.configure({ apiKey: rcApiKey });
-  } catch {}
+if (Platform.OS === 'ios') {
+  if (rcApiKey) {
+    try {
+      // Lazy-require so Expo Go (no native module) doesn't throw at import time.
+      require('react-native-purchases').default.configure({ apiKey: rcApiKey });
+      if (__DEV__) console.log(`[RC] configured (key ${rcApiKey.slice(0, 8)}…)`);
+    } catch (e: any) {
+      if (__DEV__) console.warn('[RC] configure() threw:', e?.message ?? e);
+    }
+  } else if (__DEV__) {
+    console.warn(
+      '[RC] EXPO_PUBLIC_REVENUECAT_IOS_KEY is undefined — set it in .env and restart Metro ' +
+      '(npx expo start -c). Purchases are disabled until then.',
+    );
+  }
 }
 
 export default function RootLayout() {

@@ -52,6 +52,19 @@ function getPurchases(): any | null {
   }
 }
 
+// Wait until configure() (called synchronously at app root in _layout) has taken
+// effect on the native side before any getOfferings/getProducts/getCustomerInfo call —
+// this is the fix for the throwIfNotConfigured race. Resolves true as soon as the SDK
+// reports configured (usually the first check), polling briefly as a safety net.
+async function ensureConfigured(Purchases: any): Promise<boolean> {
+  if (typeof Purchases?.isConfigured !== 'function') return true; // older SDK: assume ok
+  for (let i = 0; i < 10; i++) {
+    try { if (await Purchases.isConfigured()) return true; } catch {}
+    await new Promise((r) => setTimeout(r, 100));
+  }
+  return false;
+}
+
 // Ownership for non-consumables comes from customerInfo.nonSubscriptionTransactions.
 // Each transaction's productIdentifier means that one-time product is owned forever.
 function ownedFromInfo(info: any): Set<string> {
@@ -80,53 +93,82 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     setOwned(ownedFromInfo(info));
   }, []);
 
+  // Fetch offerings + shop products. Wrapped in try/catch so a transient App Store
+  // error (common in sandbox) is retryable via the paywall's "try again" — never a crash.
+  const loadCatalog = useCallback(async (Purchases: any): Promise<boolean> => {
+    try {
+      const offerings = await Purchases.getOfferings();
+      setPackages(offerings.current?.availablePackages ?? []);
+
+      // getProducts defaults to SUBSCRIPTION; request NON_SUBSCRIPTION or shop items won't return.
+      const category = Purchases.PRODUCT_CATEGORY?.NON_SUBSCRIPTION ?? 'NON_SUBSCRIPTION';
+      const products = await Purchases.getProducts([...SHOP_PRODUCT_IDS], category);
+      const map: Record<string, any> = {};
+      for (const p of products) map[p.identifier] = p;
+      setShopProducts(map);
+
+      if (__DEV__) {
+        const pkgIds = (offerings.current?.availablePackages ?? []).map((p: any) => p.product?.identifier);
+        console.log('[RC] offering products:', pkgIds, '· shop products:', products.map((p: any) => p.identifier));
+      }
+      return true;
+    } catch (e: any) {
+      if (__DEV__) console.warn('[RC] catalog fetch failed (retryable):', e?.message ?? e);
+      return false;
+    }
+  }, []);
+
   useEffect(() => {
     const Purchases = getPurchases();
     const apiKey = apiKeyFor();
 
     if (!Purchases || !apiKey) {
-      // Expo Go or not configured yet — everything stays locked, app still works.
+      // Expo Go or missing key — everything stays locked, app still works.
       setAvailable(false);
       setLoading(false);
       return;
     }
 
-    // Keep premium/ownership LIVE across the app — fires on upgrade, restore, expiry,
-    // promo, family sharing, etc. — so nudges react immediately, no restart needed.
+    let cancelled = false;
     const listener = (info: any) => applyCustomerInfo(info);
-    try { Purchases.addCustomerInfoUpdateListener(listener); } catch {}
 
     (async () => {
       try {
-        // configure() runs once at startup in app/_layout.tsx — here we just use it.
+        // Wait for configure() (root layout) to take effect BEFORE any RC call.
+        const configured = await ensureConfigured(Purchases);
+        if (cancelled) return;
+        if (!configured) {
+          if (__DEV__) console.warn('[RC] not configured after wait — is EXPO_PUBLIC_REVENUECAT_IOS_KEY set?');
+          setAvailable(false);
+          return;
+        }
         setAvailable(true);
 
-        const info = await Purchases.getCustomerInfo();
-        applyCustomerInfo(info); // restores premium + non-consumables across restarts
+        // Keep premium/ownership LIVE (upgrade, restore, expiry, promo…) — only after configured.
+        try { Purchases.addCustomerInfoUpdateListener(listener); } catch {}
 
-        const offerings = await Purchases.getOfferings();
-        setPackages(offerings.current?.availablePackages ?? []);
+        try {
+          const info = await Purchases.getCustomerInfo();
+          if (!cancelled) applyCustomerInfo(info); // restores premium + non-consumables
+        } catch (e: any) {
+          if (__DEV__) console.warn('[RC] getCustomerInfo failed:', e?.message ?? e);
+        }
 
-        // Non-consumables: getProducts defaults to SUBSCRIPTION, so request the
-        // NON_SUBSCRIPTION category explicitly or the shop products won't come back.
-        const category = Purchases.PRODUCT_CATEGORY?.NON_SUBSCRIPTION ?? 'NON_SUBSCRIPTION';
-        const products = await Purchases.getProducts([...SHOP_PRODUCT_IDS], category);
-        const map: Record<string, any> = {};
-        for (const p of products) map[p.identifier] = p;
-        setShopProducts(map);
-      } catch {
-        setAvailable(false);
+        await loadCatalog(Purchases);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     })();
 
-    return () => { try { Purchases.removeCustomerInfoUpdateListener(listener); } catch {} };
-  }, [applyCustomerInfo]);
+    return () => {
+      cancelled = true;
+      try { Purchases.removeCustomerInfoUpdateListener(listener); } catch {}
+    };
+  }, [applyCustomerInfo, loadCatalog]);
 
   const purchase = useCallback(async (pkg: any) => {
     const Purchases = getPurchases();
-    if (!Purchases) return false;
+    if (!Purchases || !(await ensureConfigured(Purchases))) return false;
     try {
       const { customerInfo } = await Purchases.purchasePackage(pkg);
       applyCustomerInfo(customerInfo); // premium flips on instantly → nudges turn off
@@ -139,7 +181,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
 
   const purchaseShop = useCallback(async (productId: string) => {
     const Purchases = getPurchases();
-    if (!Purchases) return false;
+    if (!Purchases || !(await ensureConfigured(Purchases))) return false;
     const product = shopProducts[productId];
     if (!product) return false;
     try {
@@ -155,7 +197,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   // Restores everything RevenueCat knows about — subscription AND non-consumables.
   const restore = useCallback(async () => {
     const Purchases = getPurchases();
-    if (!Purchases) return false;
+    if (!Purchases || !(await ensureConfigured(Purchases))) return false;
     try {
       const info = await Purchases.restorePurchases();
       applyCustomerInfo(info);
@@ -167,19 +209,19 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
 
   const owns = useCallback((productId: string) => owned.has(productId), [owned]);
 
-  // Re-fetch offerings + customer info (for a paywall "try again" after a failure).
+  // Re-fetch customer info + full catalog (offerings AND shop products) for the paywall/
+  // shop "try again" after a transient failure. Gated on configuration.
   const refresh = useCallback(async () => {
     const Purchases = getPurchases();
-    if (!Purchases) return;
+    if (!Purchases || !(await ensureConfigured(Purchases))) return;
     try {
-      const offerings = await Purchases.getOfferings();
-      setPackages(offerings.current?.availablePackages ?? []);
       const info = await Purchases.getCustomerInfo();
       applyCustomerInfo(info);
     } catch {
-      // leave existing state; the UI shows its fallback
+      // leave existing state
     }
-  }, [applyCustomerInfo]);
+    await loadCatalog(Purchases);
+  }, [applyCustomerInfo, loadCatalog]);
 
   return (
     <Ctx.Provider
