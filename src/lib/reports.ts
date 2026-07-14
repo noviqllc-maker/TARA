@@ -20,9 +20,9 @@ export type Report = {
 };
 
 export const REPORT_META: Record<ReportKind, { title: string; loading: string }> = {
-  shop_year_ahead: { title: 'Year Ahead Report', loading: 'Tara is mapping your year…' },
-  shop_birth_blueprint: { title: 'Birth Blueprint', loading: 'Tara is reading your chart…' },
-  shop_dosha_remedies: { title: 'Dosha Remedies', loading: 'Tara is preparing your remedies…' },
+  shop_year_ahead: { title: 'Year Ahead', loading: 'Tara is mapping your year…' },
+  shop_birth_blueprint: { title: 'Soul Blueprint', loading: 'Tara is reading your chart…' },
+  shop_dosha_remedies: { title: 'Personal Remedies', loading: 'Tara is preparing your remedies…' },
 };
 
 export const REPORT_FOOTER = 'For reflection and wellness purposes.';

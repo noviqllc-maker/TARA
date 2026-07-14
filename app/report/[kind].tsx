@@ -114,7 +114,7 @@ export default function ReportScreen() {
   // ---- ready ----
   return (
     <Screen>
-      <SubHeader eyebrow={isPreview ? 'Preview · dev' : 'Your report'} title={report?.title ?? REPORT_META[kind].title} />
+      <SubHeader eyebrow={isPreview ? 'Preview · dev' : 'Your report'} title={REPORT_META[kind].title} />
       {report?.sections.map((s, i) => (
         <Card key={`${i}-${s.heading}`} style={{ marginBottom: spacing.md }}>
           <Text variant="h3" style={styles.sectionHeading}>{s.heading}</Text>

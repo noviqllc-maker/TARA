@@ -19,21 +19,24 @@ import { colors, radius, spacing } from '@/theme';
 const SHOP_ITEMS = [
   {
     id: 'shop_year_ahead',
-    title: 'Year Ahead Report',
-    subtitle: 'Month-by-month forecast for the next 12 months, mapped to your dasha periods and major transits.',
-    inside: '12 monthly readings · key dates · career & relationship outlook',
+    title: 'Year Ahead',
+    description: 'See how your next 12 months unfold — the opportunities, challenges, and milestones written in your stars, month by month.',
+    features: 'Monthly forecasts • Career • Love • Key dates • Health',
+    cta: 'Unlock Your Year',
   },
   {
     id: 'shop_birth_blueprint',
-    title: 'Birth Blueprint',
-    subtitle: 'Your personality, strengths, career direction, and love patterns — decoded from your natal chart.',
-    inside: '5 sections · personality, career, love, strengths, growth',
+    title: 'Soul Blueprint',
+    description: 'Understand who you are at your core — your strengths, purpose, hidden talents, and the unique energy you were born with.',
+    features: 'Personality • Career • Relationships • Growth',
+    cta: 'Reveal My Blueprint',
   },
   {
     id: 'shop_dosha_remedies',
-    title: 'Dosha Remedies',
-    subtitle: 'The doshas in your chart, plus your personal colors, days, and donations to restore balance.',
-    inside: 'dosha analysis · colors · gemstone guidance · donation days',
+    title: 'Personal Remedies',
+    description: 'Personalized colors, rituals, donation guidance, and spiritual remedies designed for your unique chart.',
+    features: 'Lucky colors • Rituals • Donation days • Gemstone guidance',
+    cta: 'Get My Remedies',
   },
 ];
 
@@ -46,16 +49,8 @@ const SETTINGS_ROWS = [
 export default function Profile() {
   const { profile, reset } = useProfile();
   const chart = useChart();
-  const { isPremium, packages, shopProducts, owns, purchaseShop, restore, available, loading, refresh } = useSubscription();
+  const { isPremium, shopProducts, owns, purchaseShop, restore, available, loading, refresh } = useSubscription();
 
-  // Live subscription prices (RevenueCat) for the promo line — no hardcoded prices.
-  const monthlyPriceString: string | undefined =
-    (packages.find((p: any) => p.packageType === 'MONTHLY') ?? packages.find((p: any) => p.identifier === '$rc_monthly'))?.product?.priceString;
-  const annualPriceString: string | undefined =
-    (packages.find((p: any) => p.packageType === 'ANNUAL') ?? packages.find((p: any) => p.identifier === '$rc_annual'))?.product?.priceString;
-  const priceLine = monthlyPriceString && annualPriceString
-    ? ` — ${monthlyPriceString}/month or ${annualPriceString}/year`
-    : '';
   const [editing, setEditing] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [restoring, setRestoring] = useState(false);
@@ -182,22 +177,23 @@ export default function Profile() {
             // Catalog finished but the product didn't resolve → let the user retry.
             const priceFailed = !loading && !priceString;
 
-            // CTA label + action for the un-owned state.
+            // CTA label + action for the un-owned state. Verb is per-item; the price
+            // is ALWAYS from RevenueCat (never hardcoded).
             const ctaLabel = busy
               ? 'Processing…'
               : priceLoading
                 ? 'Loading…'
                 : priceString
-                  ? `Unlock · ${priceString}`
-                  : 'Unlock'; // fetch failed → tap retries, never a hardcoded price
+                  ? `${item.cta} · ${priceString}`
+                  : item.cta; // fetch failed → tap retries, never a hardcoded price
             const ctaDisabled = busy || priceLoading;
             const onCta = priceFailed ? () => refresh() : () => onUnlock(item);
 
             return (
               <Card key={item.id}>
                 <Text variant="serif" style={{ fontSize: 16 }}>{item.title}</Text>
-                <Text variant="tiny" style={{ marginTop: 4, lineHeight: 17 }}>{item.subtitle}</Text>
-                <Text variant="tiny" color={colors.muted} style={{ marginTop: 6, fontSize: 11 }}>{item.inside}</Text>
+                <Text variant="tiny" style={{ marginTop: 4, lineHeight: 17 }}>{item.description}</Text>
+                <Text variant="tiny" color={colors.muted} style={{ marginTop: 6, fontSize: 11 }}>{item.features}</Text>
                 {owned ? (
                   <View style={styles.shopRow}>
                     <Text variant="body" color={colors.sage} style={{ fontWeight: '600' }}>✓ Unlocked</Text>
@@ -241,11 +237,18 @@ export default function Profile() {
         ) : (
           <>
             <Text variant="serif" style={{ fontSize: 17, marginTop: 8 }}>Unlock Tara Premium</Text>
-            <Text variant="tiny" style={{ marginTop: 6 }}>
-              Unlimited Tara AI, yearly forecast, deep compatibility, Life Timeline, and AI memory{priceLine}.
+            <Text variant="body" color={colors.goldSoft} style={{ marginTop: 6, fontSize: 14 }}>
+              Everything Tara knows about you, in one place.
             </Text>
+            <Text variant="tiny" style={{ marginTop: 6, lineHeight: 17 }}>
+              Unlimited Tara AI, Life Timeline, yearly forecasts, deep compatibility, and personalized insights.
+            </Text>
+            <Text variant="tiny" color={colors.muted} style={{ marginTop: 6, fontSize: 11 }}>
+              Unlimited AI • Exclusive reports • Premium insights
+            </Text>
+            {/* Prices are shown on the paywall, sourced only from RevenueCat offerings. */}
             <Pressable style={styles.upgrade} onPress={() => router.push('/paywall')}>
-              <Text variant="body" color="#1a1018" style={{ fontWeight: '600' }}>Upgrade to Premium</Text>
+              <Text variant="body" color="#1a1018" style={{ fontWeight: '600' }}>Start Premium</Text>
             </Pressable>
           </>
         )}

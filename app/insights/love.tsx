@@ -297,7 +297,7 @@ export default function Love() {
                   </Text>
                 )}
                 <Pressable onPress={() => router.push('/(tabs)/profile')} style={{ marginTop: 2 }}>
-                  <Text variant="tiny" color={colors.gold}>Explore Dosha Remedies →</Text>
+                  <Text variant="tiny" color={colors.gold}>Explore Personal Remedies →</Text>
                 </Pressable>
               </View>
             )}
