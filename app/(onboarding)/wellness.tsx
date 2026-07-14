@@ -1,6 +1,6 @@
 // app/(onboarding)/wellness.tsx
-import React, { useState } from 'react';
-import { View, Pressable, StyleSheet, ScrollView } from 'react-native';
+import React from 'react';
+import { View, Pressable, StyleSheet, ScrollView, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -21,17 +21,25 @@ const SOURCES = [
 export default function WellnessScreen() {
   const insets = useSafeAreaInsets();
   const { update } = useProfile();
-  const { connectAppleHealth } = useHealth();
-  const [sel, setSel] = useState<string[]>([]);
+  // Single source of truth: the connected state comes from the health hook, not a
+  // local flag — so the badge reflects reality (the sheet actually appeared & the
+  // flow completed) instead of optimistically showing "Connected".
+  const { connected, connectAppleHealth } = useHealth();
+
   // Apple Health is the only real integration; it connects for real in a dev/
   // production build and safely no-ops in Expo Go (the user can still proceed).
-  const toggle = async (id: string) => {
-    if (id === 'apple') await connectAppleHealth();
-    setSel((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
+  const connect = async () => {
+    console.log('[Onboarding] Apple Health Connect tapped'); // task 3: confirms the tap registers
+    const res = await connectAppleHealth();
+    if (res === 'unavailable') {
+      Alert.alert('Dev build required', 'Apple Health works in a development or production build (not Expo Go), on iPhone.');
+    } else if (res === 'no-data') {
+      Alert.alert('Enable Health data', 'Apple Health is connected, but Tara isn’t receiving data yet. You can turn on categories later in the Health app.');
+    }
   };
 
-  const finish = (connected: string[]) => {
-    update({ wellnessConnected: connected });
+  const finish = () => {
+    update({ wellnessConnected: connected ? ['apple'] : [] });
     router.replace('/loading');
   };
 
@@ -68,10 +76,10 @@ export default function WellnessScreen() {
                 </View>
               );
             }
-            // Apple Health: real, tappable Connect with a connected state.
-            const on = sel.includes(s.id);
+            // Apple Health: real, tappable Connect. Connected state = the hook (truth).
+            const on = connected;
             return (
-              <Pressable key={s.id} onPress={() => toggle(s.id)} style={[styles.row, on && styles.rowOn]}>
+              <Pressable key={s.id} onPress={connect} style={[styles.row, on && styles.rowOn]}>
                 <View style={styles.left}>
                   <View style={styles.iconBox}>
                     <Text style={{ fontSize: 18, color: s.color }}>{s.icon}</Text>
@@ -87,9 +95,9 @@ export default function WellnessScreen() {
         </Animated.View>
 
         <View style={{ height: 18 }} />
-        <GoldButton label={sel.length ? 'Connect Wellness' : 'Continue'} onPress={() => finish(sel)} />
+        <GoldButton label="Continue" onPress={finish} />
         <View style={{ height: 10 }} />
-        <GhostButton label="Skip For Now" onPress={() => finish([])} />
+        <GhostButton label="Skip For Now" onPress={finish} />
       </ScrollView>
     </View>
   );

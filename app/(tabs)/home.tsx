@@ -1,6 +1,6 @@
 // app/(tabs)/home.tsx
 import React from 'react';
-import { View, Pressable, StyleSheet, Alert } from 'react-native';
+import { View, Pressable, StyleSheet, Alert, Linking } from 'react-native';
 import { router } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import Screen from '@/components/Screen';
@@ -35,15 +35,29 @@ export default function Home() {
   // Real daily energy (chart + Moon transit + moon phase + Apple Health), shared
   // across Home, Love & Career via the hook so the numbers stay consistent.
   const energy = useDailyEnergy();
-  const { metrics, connectAppleHealth, available, loading } = useHealth();
-  const needsHealth = metrics.source === 'mock';
+  const { metrics, connected, needsPermissionCheck, connectAppleHealth, available, loading } = useHealth();
+  // Body ring is a chart-only estimate until real Health data flows in (✦ marker).
+  const bodyChartOnly = metrics.source !== 'apple-health';
 
   // Premium nudges (hidden entirely for premium users). The persistent upsell card
   // shows until dismissed (then rests 5 days); the subtle banner is a once-per-session,
   // 3-day-cooldown reminder that only appears when the card isn't already showing.
   const upsell = usePremiumNudge('home-upsell', { cooldownDays: 5 });
   const banner = usePremiumNudge('session-banner', { cooldownDays: 3, oncePerSession: true, markOnShow: true });
+  // iOS won't re-show the permission sheet once the user has decided, so when Health
+  // is connected but sending no data we send them to the Health app to enable it.
+  const openHealthApp = () =>
+    Alert.alert(
+      'Enable Health data',
+      'Apple Health is connected, but Tara isn’t receiving data yet. Open Health → Sharing → Apps → Tara and turn on the categories.',
+      [
+        { text: 'Open Health', onPress: () => Linking.openURL('x-apple-health://').catch(() => {}) },
+        { text: 'Later', style: 'cancel' },
+      ],
+    );
+
   const onConnectHealth = async () => {
+    console.log('[Home] Connect Apple Health tapped'); // task 3: confirms the tap registers
     if (!available) {
       Alert.alert(
         'Dev build required',
@@ -51,7 +65,8 @@ export default function Home() {
       );
       return;
     }
-    await connectAppleHealth(); // on success this refreshes metrics → Body switches to real data
+    const res = await connectAppleHealth(); // shows the sheet; on grant, metrics → Body real data
+    if (res === 'no-data') openHealthApp();
   };
   // Now fully live: nakshatra + dasha from the user's chart, and today's real sky.
   const weather: [string, string][] = [
@@ -75,10 +90,14 @@ export default function Home() {
       <Card style={{ marginBottom: spacing.lg }}>
         <Eyebrow>Today's Energy</Eyebrow>
         <View style={{ marginTop: 12 }}>
-          <EnergyDashboard domains={energy.domains} vedicDomains={needsHealth ? ['Body'] : []} />
+          <EnergyDashboard domains={energy.domains} vedicDomains={bodyChartOnly ? ['Body'] : []} />
         </View>
-        {needsHealth && (
-          <Pressable onPress={onConnectHealth} disabled={loading} style={styles.connectRow}>
+        {/* Not connected → offer connect. Connected but no data → guide to Health app. */}
+        {!connected ? (
+          <Pressable
+            onPress={onConnectHealth} disabled={loading}
+            hitSlop={10} style={({ pressed }) => [styles.connectRow, pressed && { opacity: 0.55 }]}
+          >
             {loading ? (
               <Text variant="tiny" color={colors.muted} style={{ fontSize: 11.5 }}>Connecting…</Text>
             ) : (
@@ -88,7 +107,17 @@ export default function Home() {
               </Text>
             )}
           </Pressable>
-        )}
+        ) : needsPermissionCheck ? (
+          <Pressable
+            onPress={openHealthApp} hitSlop={10}
+            style={({ pressed }) => [styles.connectRow, pressed && { opacity: 0.55 }]}
+          >
+            <Text variant="tiny" color={colors.muted} style={{ fontSize: 11.5, textAlign: 'center' }}>
+              Apple Health connected, no data yet.{'  '}
+              <Text variant="tiny" color={colors.gold}>Enable in Health →</Text>
+            </Text>
+          </Pressable>
+        ) : null}
       </Card>
 
       {/* Tara's message */}

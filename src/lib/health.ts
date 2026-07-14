@@ -34,25 +34,38 @@ export function isHealthAvailable(): boolean {
   return !!getHealthKit();
 }
 
+// The read-only types Tara uses. Shared by the auth request and the dev logging.
+const READ_TYPES = [
+  'HKQuantityTypeIdentifierHeartRateVariabilitySDNN',
+  'HKQuantityTypeIdentifierRestingHeartRate',
+  'HKQuantityTypeIdentifierStepCount',
+  'HKQuantityTypeIdentifierActiveEnergyBurned',
+  'HKCategoryTypeIdentifierSleepAnalysis',
+];
+
 // Request read permission for the metrics Tara uses.
+//
+// v14 of @kingstinct/react-native-healthkit (nitro rewrite) changed the signature:
+// requestAuthorization now takes a SINGLE object { toShare, toRead } — NOT the old
+// two positional arrays (read, write). Passing arrays made the native side read
+// `.toRead` off an array (undefined) → it requested NOTHING → no permission sheet
+// ever appeared and it silently resolved. This is the fix.
+//
+// Returns whether the auth *flow completed* (dialog shown or already decided) — NOT
+// whether read access was granted. iOS never reveals read-denial (reads just return
+// empty), so callers must not treat "no data" as "not connected".
 export async function requestHealthPermissions(): Promise<boolean> {
   const HK = getHealthKit();
-  if (!HK) return false;
+  if (!HK) { if (__DEV__) console.log('[Health] requestPermissions: no native module (Expo Go / non-iOS)'); return false; }
   try {
-    const available = await HK.isHealthDataAvailable();
-    if (!available) return false;
-    await HK.requestAuthorization(
-      [
-        'HKQuantityTypeIdentifierHeartRateVariabilitySDNN',
-        'HKQuantityTypeIdentifierRestingHeartRate',
-        'HKQuantityTypeIdentifierStepCount',
-        'HKQuantityTypeIdentifierActiveEnergyBurned',
-        'HKCategoryTypeIdentifierSleepAnalysis',
-      ],
-      [], // no write access
-    );
-    return true;
-  } catch {
+    const available = HK.isHealthDataAvailable(); // synchronous in v14
+    if (!available) { if (__DEV__) console.log('[Health] requestPermissions: isHealthDataAvailable=false'); return false; }
+    if (__DEV__) console.log('[Health] requestAuthorization → { toShare: [], toRead:', READ_TYPES, '}');
+    const ok = await HK.requestAuthorization({ toShare: [], toRead: READ_TYPES });
+    if (__DEV__) console.log('[Health] requestAuthorization resolved:', ok);
+    return ok !== false; // v14 returns a boolean; treat anything non-false as "flow completed"
+  } catch (e) {
+    if (__DEV__) console.warn('[Health] requestAuthorization threw:', e);
     return false;
   }
 }
@@ -131,19 +144,27 @@ async function safeLatest(HK: any, type: string, unit: string): Promise<number> 
 }
 async function safeSum(HK: any, type: string, from: Date, to: Date, unit: string): Promise<number> {
   try {
-    const samples = await HK.queryQuantitySamples(type, { from, to, unit });
+    // v14 query options: { filter: { date: { startDate, endDate } }, limit, unit }.
+    // The old { from, to, unit } shape passed no filter/limit → the query returned nothing.
+    const samples = await HK.queryQuantitySamples(type, {
+      filter: { date: { startDate: from, endDate: to } }, limit: 0, unit, ascending: false,
+    });
     if (Array.isArray(samples)) return samples.reduce((a: number, s: any) => a + (s.quantity || 0), 0);
     return 0;
   } catch { return 0; }
 }
 async function safeSleepHours(HK: any, from: Date, to: Date): Promise<number> {
   try {
-    const samples = await HK.queryCategorySamples('HKCategoryTypeIdentifierSleepAnalysis', { from, to });
+    const samples = await HK.queryCategorySamples('HKCategoryTypeIdentifierSleepAnalysis', {
+      filter: { date: { startDate: from, endDate: to } }, limit: 0, ascending: false,
+    });
     if (!Array.isArray(samples)) return 0;
-    // value 1 = asleep (older API) or 'asleep*' string values; sum durations in hours
+    // CategoryValueSleepAnalysis: 0 inBed, 1 asleep(Unspecified), 2 awake, 3 core, 4 deep, 5 REM.
+    // "Asleep" = 1 or ≥3 (older strings kept as a fallback). Sum durations → hours.
     let ms = 0;
     for (const s of samples) {
-      const asleep = s.value === 1 || (typeof s.value === 'string' && s.value.toLowerCase().includes('asleep'));
+      const v = s.value;
+      const asleep = v === 1 || v >= 3 || (typeof v === 'string' && v.toLowerCase().includes('asleep'));
       if (asleep && s.startDate && s.endDate) {
         ms += new Date(s.endDate).getTime() - new Date(s.startDate).getTime();
       }

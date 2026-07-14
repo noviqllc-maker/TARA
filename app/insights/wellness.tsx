@@ -23,8 +23,12 @@ export default function Wellness() {
       );
       return;
     }
-    const ok = await connectAppleHealth();
-    if (!ok) Alert.alert('Not connected', 'Permission was denied or no data was available.');
+    const res = await connectAppleHealth();
+    if (res === 'no-data') {
+      Alert.alert('Almost there', 'Apple Health is connected, but no data came back yet. Enable categories in the Health app → Sharing → Apps → Tara.');
+    } else if (res === 'failed') {
+      Alert.alert('Not connected', 'Something went wrong requesting Health access. Please try again.');
+    }
   };
 
   return (
@@ -34,18 +38,20 @@ export default function Wellness() {
       {/* Live / connect banner */}
       <Card style={{ marginBottom: spacing.lg, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <View style={{ flex: 1 }}>
-          <Eyebrow color={live ? colors.sage : colors.gold}>
-            {live ? '● Apple Health connected' : 'Connect Apple Health'}
+          <Eyebrow color={connected ? colors.sage : colors.gold}>
+            {connected ? '● Apple Health connected' : 'Connect Apple Health'}
           </Eyebrow>
           <Text variant="tiny" style={{ marginTop: 6 }}>
             {live
               ? `Showing your real data${metrics.sleepHours ? ` · ${metrics.sleepHours}h sleep` : ''}.`
-              : 'Blend your real sleep, recovery & HRV with your chart.'}
+              : connected
+                ? 'Connected, but no data yet — enable categories in the Health app.'
+                : 'Blend your real sleep, recovery & HRV with your chart.'}
           </Text>
         </View>
         {loading ? (
           <ActivityIndicator color={colors.gold} />
-        ) : live ? (
+        ) : connected ? (
           <Pressable onPress={refresh}><Text variant="tiny" color={colors.gold}>Refresh</Text></Pressable>
         ) : (
           <Pressable onPress={onConnect} style={styles.connectBtn}>
