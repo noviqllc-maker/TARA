@@ -27,20 +27,32 @@ serve(async (req) => {
       return json({ error: 'Server not configured' }, 500);
     }
 
-    const { messages, context } = await req.json();
+    // `system` (full override) and `maxTokens` are optional — chat omits them and
+    // keeps the original short-reply behavior; the reports feature sends both so a
+    // long structured report isn't truncated. Both are clamped server-side.
+    const { messages, context, system: systemOverride, maxTokens } = await req.json();
     if (!Array.isArray(messages)) {
       return json({ error: 'messages array required' }, 400);
     }
 
-    // Basic guard: cap message count/length to control cost/abuse.
+    // Cap per-message length to control cost/abuse. Reports send a large chart-data
+    // prompt, so the cap must be generous enough not to truncate it mid-JSON.
     const trimmed = messages.slice(-20).map((m: any) => ({
       role: m.role === 'assistant' ? 'assistant' : 'user',
-      content: String(m.content || '').slice(0, 4000),
+      content: String(m.content || '').slice(0, 16000),
     }));
 
-    const system = context
-      ? `${SYSTEM}\n\nContext for this user:\n${String(context).slice(0, 2000)}`
+    // Reports fully replace the concise chat persona with their own JSON-only system
+    // prompt. Chat (no override) keeps SYSTEM + optional context, exactly as before.
+    const base = typeof systemOverride === 'string' && systemOverride.trim()
+      ? String(systemOverride).slice(0, 4000)
       : SYSTEM;
+    const system = context
+      ? `${base}\n\nContext for this user:\n${String(context).slice(0, 2000)}`
+      : base;
+
+    // Default 1000 (chat), clamp to [256, 8000] so a long report can complete.
+    const max_tokens = Math.min(Math.max(Math.floor(Number(maxTokens) || 1000), 256), 8000);
 
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -51,7 +63,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 1000,
+        max_tokens,
         system,
         messages: trimmed,
       }),

@@ -188,59 +188,131 @@ function endpoint(): string | undefined {
   return extra.taraAiUrl || undefined;
 }
 
-function buildPrompt(kind: ReportKind, chart: BirthChart): { context: string; prompt: string } {
+// Output-token budget per report. The Year Ahead report (12 monthly readings) is
+// the longest; the edge function clamps this to <= 8000. These MUST be generous —
+// too small and the JSON is truncated mid-object and parsing fails.
+const MAX_TOKENS: Record<ReportKind, number> = {
+  shop_year_ahead: 6000,
+  shop_birth_blueprint: 3000,
+  shop_dosha_remedies: 3500,
+};
+
+function buildPrompt(kind: ReportKind, chart: BirthChart): { system: string; prompt: string; maxTokens: number } {
   const data = chartData(kind, chart);
-  const context =
+  // Full system override — replaces the concise chat persona so the model returns a
+  // long, JSON-only report instead of a 3–6 sentence markdown chat reply.
+  const system =
     `You are Tara, a warm, grounded Vedic astrology guide writing a premium "${REPORT_META[kind].title}". ` +
-    'Base everything ONLY on the chart data provided — do not invent positions. Write with warmth and clarity, ' +
-    'second person ("you"). This is for reflection and wellness, not prediction or fear.';
+    'Base everything ONLY on the chart data provided — never invent positions. Write with warmth and clarity, ' +
+    'in second person ("you"). This is for reflection and wellness, not prediction or fear. ' +
+    'CRITICAL: reply with ONLY valid JSON of the form {"sections":[{"heading":"...","body":"..."}]} — ' +
+    'no markdown, no code fences, no preamble, no trailing commentary. Use "\\n\\n" between paragraphs in a body.';
   const prompt = [
     `Write the "${REPORT_META[kind].title}" using this chart data (JSON):`,
-    '```json',
-    JSON.stringify(data, null, 2),
-    '```',
+    JSON.stringify(data),
     '',
     sectionSpec(kind, chart),
     '',
-    'Return ONLY valid minified JSON in EXACTLY this shape, no prose, no markdown fences:',
-    '{"sections":[{"heading":"...","body":"..."}]}',
-    'Use "\\n\\n" between paragraphs inside a body. Do not include any key other than "sections".',
+    'Return ONLY the JSON object {"sections":[{"heading":"...","body":"..."}]} and nothing else.',
   ].join('\n');
-  return { context, prompt };
+  return { system, prompt, maxTokens: MAX_TOKENS[kind] };
 }
 
-// Pull the {"sections":[...]} object out of the model text, tolerant of stray
-// prose or ```json fences around it.
+const toSections = (arr: any[]): ReportSection[] =>
+  arr
+    .map((x: any) => ({ heading: String(x?.heading ?? '').trim(), body: String(x?.body ?? '').trim() }))
+    .filter((x) => x.heading && x.body);
+
+// Pull {"sections":[...]} out of the model text. Tolerant of ```json fences and
+// stray preamble, AND of a response that was cut off mid-JSON (max_tokens) — in
+// that case we salvage every COMPLETE {heading,body} object we can find.
 function parseSections(text: string): ReportSection[] {
   if (!text) return [];
-  let s = text.trim().replace(/^```(?:json)?/i, '').replace(/```$/i, '').trim();
-  const start = s.indexOf('{');
-  const end = s.lastIndexOf('}');
-  if (start === -1 || end === -1 || end <= start) return [];
-  s = s.slice(start, end + 1);
-  try {
-    const obj = JSON.parse(s) as { sections?: unknown };
-    if (!Array.isArray(obj.sections)) return [];
-    return obj.sections
-      .map((x: any) => ({ heading: String(x?.heading ?? '').trim(), body: String(x?.body ?? '').trim() }))
-      .filter((x) => x.heading && x.body);
-  } catch { return []; }
+  const cleaned = text.trim().replace(/^```(?:json)?/i, '').replace(/```$/i, '').trim();
+  const start = cleaned.indexOf('{');
+  const end = cleaned.lastIndexOf('}');
+
+  // Happy path: a complete, parseable JSON object.
+  if (start !== -1 && end > start) {
+    try {
+      const obj = JSON.parse(cleaned.slice(start, end + 1)) as { sections?: unknown };
+      if (Array.isArray(obj.sections)) {
+        const secs = toSections(obj.sections);
+        if (secs.length) return secs;
+      }
+    } catch { /* fall through to salvage */ }
+  }
+
+  // Salvage path: extract each complete {"heading":"...","body":"..."} object even
+  // if the surrounding array/object is unterminated (truncated response).
+  const salvaged: ReportSection[] = [];
+  const re = /\{\s*"heading"\s*:\s*"((?:[^"\\]|\\.)*)"\s*,\s*"body"\s*:\s*"((?:[^"\\]|\\.)*)"\s*\}/g;
+  const unescape = (v: string) => {
+    try { return JSON.parse(`"${v}"`); } catch { return v; }
+  };
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(cleaned))) {
+    const heading = unescape(m[1]).trim();
+    const body = unescape(m[2]).trim();
+    if (heading && body) salvaged.push({ heading, body });
+  }
+  return salvaged;
 }
+
+// A long report can take 30–60s to generate — allow well beyond that so a slow
+// generation isn't aborted mid-flight (the loading state persists meanwhile).
+const REPORT_TIMEOUT_MS = 90_000;
 
 // Generate a fresh report. Throws on failure so the screen can show retry UI.
 export async function generateReport(kind: ReportKind, chart: BirthChart, hash: string): Promise<Report> {
   const url = endpoint();
   if (!url) throw new Error('AI backend not configured');
-  const { context, prompt } = buildPrompt(kind, chart);
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ messages: [{ role: 'user', content: prompt }], context }),
-  });
-  if (!res.ok) throw new Error(`AI backend error ${res.status}`);
+  const { system, prompt, maxTokens } = buildPrompt(kind, chart);
+
+  if (__DEV__) {
+    console.log('[Report] generate', kind, {
+      endpoint: url,                    // function URL only — no keys are sent from the client
+      promptChars: prompt.length,
+      maxTokens,
+      timeoutMs: REPORT_TIMEOUT_MS,
+    });
+  }
+
+  // Bound the request so it can't hang forever, but generously (see above).
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), REPORT_TIMEOUT_MS);
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: [{ role: 'user', content: prompt }], system, maxTokens }),
+      signal: ctrl.signal,
+    });
+  } catch (e: any) {
+    if (__DEV__) console.warn('[Report] fetch failed/aborted:', e?.name, e?.message ?? e);
+    throw new Error(e?.name === 'AbortError' ? 'Report timed out' : 'Network error');
+  } finally {
+    clearTimeout(timer);
+  }
+
+  if (!res.ok) {
+    const errBody = await res.text().catch(() => '');
+    if (__DEV__) console.warn('[Report] backend not ok:', res.status, errBody.slice(0, 300));
+    throw new Error(`AI backend error ${res.status}`);
+  }
+
   const data = await res.json();
-  const sections = parseSections(String(data?.text ?? ''));
-  if (!sections.length) throw new Error('Could not parse report');
+  const rawText = String(data?.text ?? '');
+  if (__DEV__) console.log('[Report] response ok · textChars:', rawText.length);
+
+  const sections = parseSections(rawText);
+  if (!sections.length) {
+    // Log the raw text so we can see WHY parsing failed (truncation, prose, fences…).
+    if (__DEV__) console.warn('[Report] parse produced 0 sections. Raw text:\n', rawText.slice(0, 1500));
+    throw new Error('Could not parse report');
+  }
+  if (__DEV__) console.log('[Report] parsed sections:', sections.length);
   return {
     kind,
     title: REPORT_META[kind].title,
