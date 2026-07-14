@@ -17,9 +17,24 @@ import { colors, radius, spacing } from '@/theme';
 // hardcoded — it comes from each product's RevenueCat priceString (correct local
 // currency). Content/desc live here; price + ownership come from RevenueCat.
 const SHOP_ITEMS = [
-  { id: 'shop_year_ahead', title: 'Year Ahead Report', desc: 'Your personalized forecast for the next 12 months.' },
-  { id: 'shop_birth_blueprint', title: 'Birth Blueprint', desc: 'A deep reading of your natal chart.' },
-  { id: 'shop_dosha_remedies', title: 'Dosha Remedies', desc: 'Discover the doshas in your chart and personalized remedies to restore balance.' },
+  {
+    id: 'shop_year_ahead',
+    title: 'Year Ahead Report',
+    subtitle: 'Month-by-month forecast for the next 12 months, mapped to your dasha periods and major transits.',
+    inside: '12 monthly readings · key dates · career & relationship outlook',
+  },
+  {
+    id: 'shop_birth_blueprint',
+    title: 'Birth Blueprint',
+    subtitle: 'Your personality, strengths, career direction, and love patterns — decoded from your natal chart.',
+    inside: '5 sections · personality, career, love, strengths, growth',
+  },
+  {
+    id: 'shop_dosha_remedies',
+    title: 'Dosha Remedies',
+    subtitle: 'The doshas in your chart, plus your personal colors, days, and donations to restore balance.',
+    inside: 'dosha analysis · colors · gemstone guidance · donation days',
+  },
 ];
 
 const SETTINGS_ROWS = [
@@ -31,7 +46,7 @@ const SETTINGS_ROWS = [
 export default function Profile() {
   const { profile, reset } = useProfile();
   const chart = useChart();
-  const { isPremium, packages, shopProducts, owns, purchaseShop, restore, available } = useSubscription();
+  const { isPremium, packages, shopProducts, owns, purchaseShop, restore, available, loading, refresh } = useSubscription();
 
   // Live subscription prices (RevenueCat) for the promo line — no hardcoded prices.
   const monthlyPriceString: string | undefined =
@@ -157,30 +172,43 @@ export default function Profile() {
           {SHOP_ITEMS.map((item) => {
             const owned = owns(item.id);
             const busy = busyId === item.id;
+            // Price is ALWAYS from RevenueCat (local currency) — never hardcoded.
             const priceString = shopProducts[item.id]?.priceString as string | undefined;
+            // Still fetching the catalog and this product hasn't arrived yet.
+            const priceLoading = loading && !priceString;
+            // Catalog finished but the product didn't resolve → let the user retry.
+            const priceFailed = !loading && !priceString;
+
+            // CTA label + action for the un-owned state.
+            const ctaLabel = busy
+              ? 'Processing…'
+              : priceLoading
+                ? 'Loading…'
+                : priceString
+                  ? `Unlock · ${priceString}`
+                  : 'Unlock'; // fetch failed → tap retries, never a hardcoded price
+            const ctaDisabled = busy || priceLoading;
+            const onCta = priceFailed ? () => refresh() : () => onUnlock(item);
+
             return (
               <Card key={item.id}>
                 <Text variant="serif" style={{ fontSize: 16 }}>{item.title}</Text>
-                <Text variant="tiny" style={{ marginTop: 4 }}>{item.desc}</Text>
-                <View style={styles.shopRow}>
-                  {owned ? (
+                <Text variant="tiny" style={{ marginTop: 4, lineHeight: 17 }}>{item.subtitle}</Text>
+                <Text variant="tiny" color={colors.muted} style={{ marginTop: 6, fontSize: 11 }}>{item.inside}</Text>
+                {owned ? (
+                  <View style={styles.shopRow}>
                     <Text variant="body" color={colors.sage} style={{ fontWeight: '600' }}>✓ Unlocked</Text>
-                  ) : (
-                    // Price comes from RevenueCat (local currency). Blank until it loads.
-                    <Text variant="body" color={colors.goldSoft} style={{ fontWeight: '600' }}>{priceString ?? ' '}</Text>
-                  )}
-                  {owned ? (
                     <Pressable onPress={() => onView(item)} style={styles.unlockBtn}>
                       <Text variant="tiny" color="#1a1018" style={{ fontWeight: '600' }}>View</Text>
                     </Pressable>
-                  ) : (
-                    <Pressable onPress={() => onUnlock(item)} disabled={busy} style={[styles.unlockBtn, busy && styles.unlockBtnSoon]}>
-                      <Text variant="tiny" color={busy ? colors.muted : '#1a1018'} style={{ fontWeight: '600' }}>
-                        {busy ? 'Processing…' : 'Unlock'}
-                      </Text>
-                    </Pressable>
-                  )}
-                </View>
+                  </View>
+                ) : (
+                  <Pressable onPress={onCta} disabled={ctaDisabled} style={[styles.shopCta, ctaDisabled && styles.unlockBtnSoon]}>
+                    <Text variant="body" color={ctaDisabled ? colors.muted : '#1a1018'} style={{ fontWeight: '600' }}>
+                      {ctaLabel}
+                    </Text>
+                  </Pressable>
+                )}
               </Card>
             );
           })}
@@ -206,7 +234,7 @@ export default function Profile() {
           <>
             <Text variant="serif" style={{ fontSize: 17, marginTop: 8 }}>Unlock Tara Premium</Text>
             <Text variant="tiny" style={{ marginTop: 6 }}>
-              Unlimited Tara AI, yearly forecast, deep compatibility, Life Timeline, AI memory, and no ads{priceLine}.
+              Unlimited Tara AI, yearly forecast, deep compatibility, Life Timeline, and AI memory{priceLine}.
             </Text>
             <Pressable style={styles.upgrade} onPress={() => router.push('/paywall')}>
               <Text variant="body" color="#1a1018" style={{ fontWeight: '600' }}>Upgrade to Premium</Text>
@@ -256,6 +284,7 @@ const styles = StyleSheet.create({
   },
   editBtn: { backgroundColor: colors.goldSoft, borderRadius: radius.pill, paddingVertical: 8, paddingHorizontal: 18, marginLeft: 12 },
   shopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 },
+  shopCta: { marginTop: 14, alignItems: 'center', backgroundColor: colors.goldSoft, borderRadius: radius.pill, paddingVertical: 11 },
   unlockBtn: { backgroundColor: colors.goldSoft, borderRadius: radius.pill, paddingVertical: 8, paddingHorizontal: 18 },
   unlockBtnSoon: { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.line },
   upgrade: {
