@@ -10,16 +10,8 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import CosmicBackground from '@/components/CosmicBackground';
 import { Text, GoldButton } from '@/components/ui';
 import { useSubscription } from '@/hooks/useSubscription';
+import { PREMIUM_BENEFITS } from '@/lib/premium';
 import { colors, radius, spacing } from '@/theme';
-
-const FEATURES = [
-  'Unlimited Tara AI conversations',
-  'Full yearly forecast & timing windows',
-  'Deep compatibility reports',
-  'Complete Life Timeline & dashas',
-  'AI memory across conversations',
-  'No ads — ever',
-];
 
 type Tier = 'annual' | 'monthly';
 
@@ -114,11 +106,11 @@ export default function Paywall() {
           <Text style={{ fontSize: 30, lineHeight: 40, textAlign: 'center', includeFontPadding: false, color: colors.gold }}>✦</Text>
           <Text variant="h1" style={{ textAlign: 'center', marginTop: 12 }}>Tara Premium</Text>
           <Text variant="tiny" style={{ textAlign: 'center', marginTop: 8, marginBottom: 28 }}>
-            Your full Vedic life guide — unlimited and ad-free.
+            Your full Vedic life guide — unlimited.
           </Text>
 
           <View style={{ gap: 14, marginBottom: 28 }}>
-            {FEATURES.map((f) => (
+            {PREMIUM_BENEFITS.map((f) => (
               <View key={f} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                 <Text style={{ color: colors.gold, fontSize: 16 }}>✓</Text>
                 <Text variant="body" style={{ flex: 1 }}>{f}</Text>
@@ -131,9 +123,13 @@ export default function Paywall() {
               ✦ You're a Premium member
             </Text>
           ) : loading ? (
-            <View style={styles.stateBox}>
-              <ActivityIndicator color={colors.gold} />
-              <Text variant="tiny" color={colors.muted} style={{ marginTop: 10 }}>Loading plans…</Text>
+            // Skeletons while the offering loads — never placeholder numbers.
+            <View accessibilityLabel="Loading plans">
+              <View style={{ gap: 12, marginBottom: 24 }}>
+                <View style={styles.skelTier} />
+                <View style={styles.skelTier} />
+              </View>
+              <View style={styles.skelButton} />
             </View>
           ) : !plansReady ? (
             <View style={styles.stateBox}>
@@ -224,6 +220,8 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill, paddingVertical: 3, paddingHorizontal: 9,
   },
   stateBox: { alignItems: 'center', paddingVertical: 28 },
+  skelTier: { height: 74, borderRadius: radius.lg, backgroundColor: 'rgba(244,236,225,0.06)', borderWidth: 1, borderColor: colors.line },
+  skelButton: { height: 54, borderRadius: radius.pill, backgroundColor: 'rgba(205,163,73,0.14)' },
   retryBtn: {
     marginTop: 16, borderWidth: 1, borderColor: colors.gold, borderRadius: radius.pill,
     paddingVertical: 10, paddingHorizontal: 24,

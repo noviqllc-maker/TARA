@@ -10,6 +10,7 @@ import ProfileEditForm from '@/components/ProfileEditForm';
 import { useProfile } from '@/hooks/useProfile';
 import { useChart } from '@/hooks/useChart';
 import { useSubscription } from '@/hooks/useSubscription';
+import { PREMIUM_BENEFITS } from '@/lib/premium';
 import { lifePathNumber, chineseZodiac } from '@/lib/numerology';
 import { colors, radius, spacing } from '@/theme';
 
@@ -240,12 +241,15 @@ export default function Profile() {
             <Text variant="body" color={colors.goldSoft} style={{ marginTop: 6, fontSize: 14 }}>
               Everything Tara knows about you, in one place.
             </Text>
-            <Text variant="tiny" style={{ marginTop: 6, lineHeight: 17 }}>
-              Unlimited Tara AI, Life Timeline, yearly forecasts, deep compatibility, and personalized insights.
-            </Text>
-            <Text variant="tiny" color={colors.muted} style={{ marginTop: 6, fontSize: 11 }}>
-              Unlimited AI • Exclusive reports • Premium insights
-            </Text>
+            {/* Same benefits as the paywall — single source of truth (PREMIUM_BENEFITS). */}
+            <View style={{ marginTop: 12, gap: 8 }}>
+              {PREMIUM_BENEFITS.map((b) => (
+                <View key={b} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                  <Text style={{ color: colors.gold, fontSize: 13 }}>✓</Text>
+                  <Text variant="tiny" style={{ flex: 1, fontSize: 12.5 }}>{b}</Text>
+                </View>
+              ))}
+            </View>
             {/* Prices are shown on the paywall, sourced only from RevenueCat offerings. */}
             <Pressable style={styles.upgrade} onPress={() => router.push('/paywall')}>
               <Text variant="body" color="#1a1018" style={{ fontWeight: '600' }}>Start Premium</Text>
