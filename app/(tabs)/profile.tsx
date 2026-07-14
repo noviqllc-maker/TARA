@@ -101,9 +101,12 @@ export default function Profile() {
     );
   };
 
-  // Content screens for the reports aren't built yet; ownership is what gates them.
-  const onView = (item: { title: string }) =>
-    Alert.alert(item.title, 'Unlocked ✓ — your full report is coming soon.');
+  // Open the report screen (generates on first open, cached thereafter).
+  const onView = (item: { id: string }) =>
+    router.push({ pathname: '/report/[kind]', params: { kind: item.id } } as any);
+  // Dev-only: QA report content with real charts, without a purchase.
+  const onPreview = (item: { id: string }) =>
+    router.push({ pathname: '/report/[kind]', params: { kind: item.id, preview: '1' } } as any);
 
   const onRestore = async () => {
     if (!available) {
@@ -209,6 +212,11 @@ export default function Profile() {
                     </Text>
                   </Pressable>
                 )}
+                {__DEV__ && !owned && (
+                  <Pressable onPress={() => onPreview(item)} style={styles.previewBtn}>
+                    <Text variant="tiny" color={colors.muted}>Preview report (dev)</Text>
+                  </Pressable>
+                )}
               </Card>
             );
           })}
@@ -285,6 +293,7 @@ const styles = StyleSheet.create({
   editBtn: { backgroundColor: colors.goldSoft, borderRadius: radius.pill, paddingVertical: 8, paddingHorizontal: 18, marginLeft: 12 },
   shopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 },
   shopCta: { marginTop: 14, alignItems: 'center', backgroundColor: colors.goldSoft, borderRadius: radius.pill, paddingVertical: 11 },
+  previewBtn: { marginTop: 10, alignItems: 'center', paddingVertical: 4 },
   unlockBtn: { backgroundColor: colors.goldSoft, borderRadius: radius.pill, paddingVertical: 8, paddingHorizontal: 18 },
   unlockBtnSoon: { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.line },
   upgrade: {
