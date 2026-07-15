@@ -50,7 +50,7 @@ const SETTINGS_ROWS = [
 export default function Profile() {
   const { profile, reset } = useProfile();
   const chart = useChart();
-  const { isPremium, shopProducts, owns, purchaseShop, restore, available, loading, refresh } = useSubscription();
+  const { isPremium, shopProducts, shopStatus, retryShop, owns, purchaseShop, restore, available } = useSubscription();
 
   const [editing, setEditing] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -173,22 +173,20 @@ export default function Profile() {
             const busy = busyId === item.id;
             // Price is ALWAYS from RevenueCat (local currency) — never hardcoded.
             const priceString = shopProducts[item.id]?.priceString as string | undefined;
-            // Still fetching the catalog and this product hasn't arrived yet.
-            const priceLoading = loading && !priceString;
-            // Catalog finished but the product didn't resolve → let the user retry.
-            const priceFailed = !loading && !priceString;
+            const priceLoading = shopStatus === 'loading' && !priceString;
+            // Fetch finished but returned no price → manual retry only (no auto-loop).
+            const priceUnavailable = shopStatus === 'empty' && !priceString;
 
-            // CTA label + action for the un-owned state. Verb is per-item; the price
-            // is ALWAYS from RevenueCat (never hardcoded).
+            // Verb is per-item; price is ALWAYS from RevenueCat. The button is only
+            // actionable once we have a real price — otherwise it's a disabled state.
             const ctaLabel = busy
               ? 'Processing…'
               : priceLoading
                 ? 'Loading…'
                 : priceString
                   ? `${item.cta} · ${priceString}`
-                  : item.cta; // fetch failed → tap retries, never a hardcoded price
-            const ctaDisabled = busy || priceLoading;
-            const onCta = priceFailed ? () => refresh() : () => onUnlock(item);
+                  : item.cta;
+            const ctaDisabled = busy || !priceString;
 
             return (
               <Card key={item.id}>
@@ -203,11 +201,23 @@ export default function Profile() {
                     </Pressable>
                   </View>
                 ) : (
-                  <Pressable onPress={onCta} disabled={ctaDisabled} style={[styles.shopCta, ctaDisabled && styles.unlockBtnSoon]}>
-                    <Text variant="body" color={ctaDisabled ? colors.muted : '#1a1018'} style={{ fontWeight: '600' }}>
-                      {ctaLabel}
-                    </Text>
-                  </Pressable>
+                  <>
+                    <Pressable
+                      onPress={priceString ? () => onUnlock(item) : undefined}
+                      disabled={ctaDisabled}
+                      style={[styles.shopCta, ctaDisabled && styles.unlockBtnSoon]}
+                    >
+                      <Text variant="body" color={ctaDisabled ? colors.muted : '#1a1018'} style={{ fontWeight: '600' }}>
+                        {ctaLabel}
+                      </Text>
+                    </Pressable>
+                    {/* Single manual retry — never an automatic re-fetch loop. */}
+                    {priceUnavailable && (
+                      <Pressable onPress={retryShop} style={styles.previewBtn}>
+                        <Text variant="tiny" color={colors.gold}>Prices unavailable — tap to retry</Text>
+                      </Pressable>
+                    )}
+                  </>
                 )}
                 {__DEV__ && !owned && (
                   <Pressable onPress={() => onPreview(item)} style={styles.previewBtn}>

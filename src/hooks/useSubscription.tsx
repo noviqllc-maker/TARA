@@ -10,7 +10,7 @@
 //  3. Runs in a DEV/production build (not Expo Go) — native module. In Expo Go it
 //     safely no-ops (Premium locked, nothing owned, prices unavailable).
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { Platform } from 'react-native';
 
 // Non-consumable, one-time, restorable shop products.
@@ -20,6 +20,10 @@ export const SHOP_PRODUCT_IDS = [
   'shop_dosha_remedies',
 ] as const;
 export type ShopProductId = (typeof SHOP_PRODUCT_IDS)[number];
+
+// Shop-catalog fetch state, so the UI can show prices / a loading state / a single
+// manual "retry" — and never spin in an auto-refetch loop on an empty result.
+export type ShopStatus = 'loading' | 'ready' | 'empty';
 
 type SubState = {
   isPremium: boolean;
@@ -31,6 +35,8 @@ type SubState = {
   available: boolean; // is the billing module usable in this build?
   // ---- Shop (non-consumables) ----
   shopProducts: Record<string, any>;        // productId -> StoreProduct (carries priceString)
+  shopStatus: ShopStatus;                    // 'loading' | 'ready' (non-empty) | 'empty'
+  retryShop: () => Promise<void>;            // manual, one-shot re-fetch of shop products
   owns: (productId: string) => boolean;      // owned permanently (non-consumable)
   purchaseShop: (productId: string) => Promise<boolean>;
 };
@@ -83,7 +89,16 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   const [packages, setPackages] = useState<any[]>([]);
   const [available, setAvailable] = useState(false);
   const [shopProducts, setShopProducts] = useState<Record<string, any>>({});
+  const [shopStatus, setShopStatus] = useState<ShopStatus>('loading');
   const [owned, setOwned] = useState<Set<string>>(new Set());
+
+  // Shop products are fetched ONCE and cached. shopFetchedRef flips true on the first
+  // NON-EMPTY result; after that, automatic paths skip the fetch entirely (only an
+  // explicit manual retry forces a re-fetch). shopAttemptRef numbers attempts so the
+  // [RC] log fires once per fetch attempt, never per render.
+  const shopFetchedRef = useRef(false);
+  const shopAttemptRef = useRef(0);
+  const shopInFlightRef = useRef(false);
 
   // Single place that maps a RevenueCat CustomerInfo → app state. Used by the initial
   // fetch, purchases, restore, and the live update listener, so premium + ownership
@@ -93,28 +108,47 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     setOwned(ownedFromInfo(info));
   }, []);
 
-  // Fetch offerings + shop products. Wrapped in try/catch so a transient App Store
-  // error (common in sandbox) is retryable via the paywall's "try again" — never a crash.
-  const loadCatalog = useCallback(async (Purchases: any): Promise<boolean> => {
+  // Load subscription offerings (for the paywall tiers). Cheap and idempotent.
+  const loadOfferings = useCallback(async (Purchases: any): Promise<void> => {
     try {
       const offerings = await Purchases.getOfferings();
       setPackages(offerings.current?.availablePackages ?? []);
+    } catch (e: any) {
+      if (__DEV__) console.warn('[RC] getOfferings failed (retryable):', e?.message ?? e);
+    }
+  }, []);
 
+  // Fetch the shop (non-consumable) products EXACTLY ONCE, then cache. Never loops on
+  // an empty result — an empty/failed fetch parks in 'empty' until the user manually
+  // retries (force=true). Logs once per attempt.
+  const fetchShop = useCallback(async (Purchases: any, force = false): Promise<void> => {
+    if (shopInFlightRef.current) return;                 // a fetch is already running
+    if (shopFetchedRef.current && !force) return;        // already cached → don't refetch
+    shopInFlightRef.current = true;
+    const attempt = (shopAttemptRef.current += 1);
+    setShopStatus('loading');
+    try {
       // getProducts defaults to SUBSCRIPTION; request NON_SUBSCRIPTION or shop items won't return.
       const category = Purchases.PRODUCT_CATEGORY?.NON_SUBSCRIPTION ?? 'NON_SUBSCRIPTION';
       const products = await Purchases.getProducts([...SHOP_PRODUCT_IDS], category);
-      const map: Record<string, any> = {};
-      for (const p of products) map[p.identifier] = p;
-      setShopProducts(map);
-
       if (__DEV__) {
-        const pkgIds = (offerings.current?.availablePackages ?? []).map((p: any) => p.product?.identifier);
-        console.log('[RC] offering products:', pkgIds, '· shop products:', products.map((p: any) => p.identifier));
+        console.log(`[RC] shop getProducts attempt #${attempt} → ${products?.length ?? 0} product(s):`, (products ?? []).map((p: any) => p.identifier));
       }
-      return true;
+      if (Array.isArray(products) && products.length > 0) {
+        const map: Record<string, any> = {};
+        for (const p of products) map[p.identifier] = p;
+        setShopProducts(map);
+        shopFetchedRef.current = true;                   // cache the successful result
+        setShopStatus('ready');
+      } else {
+        // Apple returned an empty array — DO NOT retry automatically.
+        setShopStatus('empty');
+      }
     } catch (e: any) {
-      if (__DEV__) console.warn('[RC] catalog fetch failed (retryable):', e?.message ?? e);
-      return false;
+      if (__DEV__) console.warn(`[RC] shop getProducts attempt #${attempt} failed:`, e?.message ?? e);
+      setShopStatus('empty');                            // manual retry only
+    } finally {
+      shopInFlightRef.current = false;
     }
   }, []);
 
@@ -126,6 +160,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       // Expo Go or missing key — everything stays locked, app still works.
       setAvailable(false);
       setLoading(false);
+      setShopStatus('empty'); // no billing module → prices unavailable (no spinner forever)
       return;
     }
 
@@ -154,7 +189,8 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
           if (__DEV__) console.warn('[RC] getCustomerInfo failed:', e?.message ?? e);
         }
 
-        await loadCatalog(Purchases);
+        await loadOfferings(Purchases);
+        await fetchShop(Purchases); // one-shot (guarded by shopFetchedRef)
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -164,7 +200,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       cancelled = true;
       try { Purchases.removeCustomerInfoUpdateListener(listener); } catch {}
     };
-  }, [applyCustomerInfo, loadCatalog]);
+  }, [applyCustomerInfo, loadOfferings, fetchShop]);
 
   const purchase = useCallback(async (pkg: any) => {
     const Purchases = getPurchases();
@@ -209,8 +245,8 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
 
   const owns = useCallback((productId: string) => owned.has(productId), [owned]);
 
-  // Re-fetch customer info + full catalog (offerings AND shop products) for the paywall/
-  // shop "try again" after a transient failure. Gated on configuration.
+  // Re-fetch customer info + offerings + shop products for the paywall's "try again"
+  // after a transient failure. Gated on configuration. Forces the shop re-fetch.
   const refresh = useCallback(async () => {
     const Purchases = getPurchases();
     if (!Purchases || !(await ensureConfigured(Purchases))) return;
@@ -220,14 +256,23 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     } catch {
       // leave existing state
     }
-    await loadCatalog(Purchases);
-  }, [applyCustomerInfo, loadCatalog]);
+    await loadOfferings(Purchases);
+    await fetchShop(Purchases, true);
+  }, [applyCustomerInfo, loadOfferings, fetchShop]);
+
+  // Manual, one-shot retry for the shop cards when prices are unavailable.
+  // Forces a single fetch — never part of an automatic loop.
+  const retryShop = useCallback(async () => {
+    const Purchases = getPurchases();
+    if (!Purchases || !(await ensureConfigured(Purchases))) { setShopStatus('empty'); return; }
+    await fetchShop(Purchases, true);
+  }, [fetchShop]);
 
   return (
     <Ctx.Provider
       value={{
         isPremium, loading, packages, purchase, restore, refresh, available,
-        shopProducts, owns, purchaseShop,
+        shopProducts, shopStatus, retryShop, owns, purchaseShop,
       }}
     >
       {children}
