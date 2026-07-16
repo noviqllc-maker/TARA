@@ -40,7 +40,7 @@ export default function TabsLayout() {
     >
       <Tabs.Screen name="home" options={{ title: 'Today', tabBarIcon: ({ color }) => <Icon name="home" color={color} /> }} />
       <Tabs.Screen name="chart" options={{ title: 'Chart', tabBarIcon: ({ color }) => <Icon name="chart" color={color} /> }} />
-      <Tabs.Screen name="tara" options={{ title: 'Tara AI', tabBarIcon: ({ color }) => <Icon name="tara" color={color} /> }} />
+      <Tabs.Screen name="tara" options={{ title: 'Ask Tara', tabBarIcon: ({ color }) => <Icon name="tara" color={color} /> }} />
       <Tabs.Screen name="insights" options={{ title: 'Insights', tabBarIcon: ({ color }) => <Icon name="insights" color={color} /> }} />
       <Tabs.Screen name="profile" options={{ title: 'Profile', tabBarIcon: ({ color }) => <Icon name="profile" color={color} /> }} />
     </Tabs>

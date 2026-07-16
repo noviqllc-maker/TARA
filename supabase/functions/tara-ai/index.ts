@@ -1,5 +1,5 @@
 // supabase/functions/tara-ai/index.ts
-// Secure server-side proxy for Tara AI.
+// Secure server-side proxy for Ask Tara.
 // The Anthropic API key lives ONLY here (as a Supabase secret), never in the app.
 // The app calls this function; this function calls Anthropic and returns the text.
 //

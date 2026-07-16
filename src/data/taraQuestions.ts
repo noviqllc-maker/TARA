@@ -1,5 +1,5 @@
 // src/data/taraQuestions.ts
-// Suggested questions for Tara AI, grouped into the same five categories as the
+// Suggested questions for Ask Tara, grouped into the same five categories as the
 // Today energy rings. Warm, personal, first-person — what someone would actually
 // ask a trusted Vedic life guide.
 

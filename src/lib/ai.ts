@@ -1,5 +1,5 @@
 // src/lib/ai.ts
-// Tara AI client — calls YOUR Supabase Edge Function (which holds the API key
+// Ask Tara client — calls YOUR Supabase Edge Function (which holds the API key
 // server-side). The Anthropic key is never in the app. Set the function URL in
 // app.json -> expo.extra.taraAiUrl.
 

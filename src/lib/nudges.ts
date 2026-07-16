@@ -14,7 +14,7 @@ export const NUDGE_MESSAGES: Record<NudgeContext, NudgeMessage[]> = {
     { line: 'See your whole year, not just today.', cta: 'Unlock Year View' },
   ],
   tara_ai: [
-    { line: 'Never run out of questions — unlimited Tara AI with Premium.', cta: 'Go Unlimited' },
+    { line: 'Never run out of questions — unlimited Ask Tara with Premium.', cta: 'Go Unlimited' },
     { line: 'Tara remembers your journey with Premium AI memory.', cta: 'Begin Premium' },
   ],
   chart: [

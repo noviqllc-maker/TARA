@@ -16,7 +16,7 @@ import { NudgeContext, nudgeForContext } from '@/lib/nudges';
 import { colors, radius, spacing } from '@/theme';
 
 const DEFAULT_BENEFITS = [
-  'Unlimited Tara AI conversations',
+  'Unlimited Ask Tara conversations',
   'Your full year-ahead forecast',
   'Deeper remedies & guidance',
 ];

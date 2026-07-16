@@ -1,6 +1,6 @@
 // src/lib/reports.ts
 // Deliverable content for the three shop products. Uses ONLY the existing Vedic
-// engine outputs (BirthChart + transits) and the existing Tara AI backend — no new
+// engine outputs (BirthChart + transits) and the existing Ask Tara backend — no new
 // astronomy. Each report is generated once, then cached permanently keyed by
 // product + a hash of the birth data, so it regenerates only if birth data changes.
 

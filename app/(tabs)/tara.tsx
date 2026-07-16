@@ -43,7 +43,7 @@ const DAILY_LIMIT = 5; // non-premium: 5 free questions per calendar day (resets
 const usageKey = (d = new Date()) =>
   `tara.usage.${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
-export default function TaraAI() {
+export default function AskTara() {
   const insets = useSafeAreaInsets();
   const { profile } = useProfile();
   const chart = useChart();
@@ -131,7 +131,7 @@ export default function TaraAI() {
       >
         <View style={{ paddingHorizontal: spacing.xl, marginBottom: 8, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <View>
-            <Eyebrow>Tara AI · Your 24/7 Guide</Eyebrow>
+            <Eyebrow>Ask Tara · Your 24/7 Guide</Eyebrow>
             <Text variant="h2" style={{ marginTop: 4 }}>Ask Tara anything</Text>
           </View>
           {!empty && (
@@ -141,7 +141,7 @@ export default function TaraAI() {
           )}
         </View>
 
-        {/* Premium nudge — free users only, persistent at the top of Tara AI */}
+        {/* Premium nudge — free users only, persistent at the top of Ask Tara */}
         <View style={{ paddingHorizontal: spacing.xl, marginBottom: 8 }}>
           <PremiumNudgeBar context="tara_ai" />
         </View>

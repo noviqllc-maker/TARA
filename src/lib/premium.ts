@@ -3,7 +3,7 @@
 // checklist (app/paywall.tsx) and the profile upgrade banner (app/(tabs)/profile.tsx)
 // so the two never drift. No ad references — the free tier has no ads either.
 export const PREMIUM_BENEFITS = [
-  'Unlimited Tara AI conversations',
+  'Unlimited Ask Tara conversations',
   'Full yearly forecast & timing windows',
   'Deep compatibility reports',
   'Complete Life Timeline & dashas',

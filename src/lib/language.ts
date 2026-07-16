@@ -1,4 +1,4 @@
-// src/lib/language.ts — the language Tara AI replies in (persisted on-device).
+// src/lib/language.ts — the language Ask Tara replies in (persisted on-device).
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const KEY = 'tara.lang.v1';

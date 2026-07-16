@@ -18,7 +18,7 @@ export default function PrivacySettings() {
   const toggleRemember = async (next: boolean) => { setRemember(next); await setRememberChat(next); };
 
   const onClearChat = () =>
-    Alert.alert('Clear chat history', 'This removes your Tara AI conversation memory on this device.', [
+    Alert.alert('Clear chat history', 'This removes your Ask Tara conversation memory on this device.', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Clear', style: 'destructive', onPress: () => clearChatHistory() },
     ]);
@@ -43,7 +43,7 @@ export default function PrivacySettings() {
 
       <Card style={{ marginBottom: 16 }}>
         <Text variant="tiny" color={colors.muted}>
-          Your birth chart is computed on this device, and your data is stored locally on your phone — not on our servers. Tara AI questions are sent to our service to generate a reply.
+          Your birth chart is computed on this device, and your data is stored locally on your phone — not on our servers. Ask Tara questions are sent to our service to generate a reply.
         </Text>
       </Card>
 
@@ -61,7 +61,7 @@ export default function PrivacySettings() {
 
       <Card>
         <Pressable onPress={onClearChat} style={{ paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(205,163,73,0.1)' }}>
-          <Text variant="body" style={{ fontSize: 14 }}>Clear Tara AI history</Text>
+          <Text variant="body" style={{ fontSize: 14 }}>Clear Ask Tara history</Text>
         </Pressable>
         <Pressable onPress={onWipe} style={{ paddingVertical: 12 }}>
           <Text variant="body" color={colors.rose} style={{ fontSize: 14 }}>Delete all my data</Text>
