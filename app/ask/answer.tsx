@@ -14,6 +14,7 @@ import AspectDiagram from '@/components/AspectDiagram';
 import { useChart } from '@/hooks/useChart';
 import { useProfile } from '@/hooks/useProfile';
 import { useHealth } from '@/hooks/useHealth';
+import { useCredits } from '@/hooks/useCredits';
 import { computeTransitFactor, TransitFactor } from '@/lib/vedic';
 import { askTaraAnswer, ChatMessage } from '@/lib/ai';
 import { getLanguage } from '@/lib/language';
@@ -24,7 +25,7 @@ const MEM_KEY = 'tara.chat.v1';       // shared with the Ask Tara screen
 const STORE_CAP = 200;                // keep in sync with the Ask Tara screen
 const FEEDBACK_KEY = 'tara.answer.feedback.v1';
 
-type UIState = 'loading' | 'ready' | 'nochart';
+type UIState = 'loading' | 'ready' | 'nochart' | 'nocredits';
 
 export default function AnswerView() {
   const { q } = useLocalSearchParams<{ q?: string }>();
@@ -32,34 +33,48 @@ export default function AnswerView() {
   const chart = useChart();
   const { profile } = useProfile();
   const { metrics } = useHealth();
+  const { authorize } = useCredits();
 
   const factor: TransitFactor | null = useMemo(() => (chart ? computeTransitFactor(chart) : null), [chart]);
   const [state, setState] = useState<UIState>('loading');
   const [answer, setAnswer] = useState('');
   const [rating, setRating] = useState<'up' | 'down' | null>(null);
-  const ranRef = useRef(false); // generate + append exactly once
+  const startedRef = useRef(false);   // effect runs run() once
+  const authorizedRef = useRef(false); // a credit was already spent for this question
 
-  useEffect(() => {
-    if (ranRef.current) return;
+  // The AUTHORITATIVE gate: a question is generated ONLY if the server decrement
+  // succeeds. authorizedRef ensures we never double-spend on a retry.
+  const run = useCallback(async () => {
     if (!question) { router.back(); return; }
     if (!chart || !factor) { setState('nochart'); return; }
-    ranRef.current = true;
-    (async () => {
-      const language = await getLanguage();
-      const res = await askTaraAnswer(question, factor.label, profile.name || 'friend', chart, metrics, language);
-      setAnswer(res.answer);
-      setState('ready');
-      // Append Q&A to history (persistence unchanged) unless privacy opted out.
-      if (await getRememberChat()) {
-        try {
-          const raw = await AsyncStorage.getItem(MEM_KEY);
-          const prev: ChatMessage[] = raw ? JSON.parse(raw) : [];
-          const next = [...prev, { role: 'user' as const, content: question }, { role: 'assistant' as const, content: res.answer }];
-          await AsyncStorage.setItem(MEM_KEY, JSON.stringify(next.slice(-STORE_CAP)));
-        } catch {}
-      }
-    })();
-  }, [question, chart, factor, profile.name, metrics]);
+    setState('loading');
+
+    if (!authorizedRef.current) {
+      const ok = await authorize(); // server-side atomic decrement
+      if (!ok) { setState('nocredits'); return; }
+      authorizedRef.current = true;
+    }
+
+    const language = await getLanguage();
+    const res = await askTaraAnswer(question, factor.label, profile.name || 'friend', chart, metrics, language);
+    setAnswer(res.answer);
+    setState('ready');
+    // Append Q&A to history (persistence unchanged) unless privacy opted out.
+    if (await getRememberChat()) {
+      try {
+        const raw = await AsyncStorage.getItem(MEM_KEY);
+        const prev: ChatMessage[] = raw ? JSON.parse(raw) : [];
+        const next = [...prev, { role: 'user' as const, content: question }, { role: 'assistant' as const, content: res.answer }];
+        await AsyncStorage.setItem(MEM_KEY, JSON.stringify(next.slice(-STORE_CAP)));
+      } catch {}
+    }
+  }, [question, chart, factor, profile.name, metrics, authorize]);
+
+  useEffect(() => {
+    if (startedRef.current) return;
+    startedRef.current = true;
+    run();
+  }, [run]);
 
   const rate = useCallback(async (r: 'up' | 'down') => {
     setRating(r);
@@ -82,6 +97,26 @@ export default function AnswerView() {
           <View style={{ alignSelf: 'stretch', paddingHorizontal: spacing.xl }}>
             <GoldButton label="Go back" onPress={() => router.back()} />
           </View>
+        </View>
+      </Screen>
+    );
+  }
+
+  if (state === 'nocredits') {
+    return (
+      <Screen scroll={false} contentStyle={{ flex: 1 }}>
+        <View style={styles.center}>
+          <Text variant="eyebrow" color={colors.gold} style={{ marginBottom: 10 }}>✦ Out of Questions</Text>
+          <Text variant="serif" style={{ fontSize: 22, textAlign: 'center' }}>You're out of credits</Text>
+          <Text variant="tiny" color={colors.muted} style={{ marginTop: 8, marginBottom: 22, textAlign: 'center' }}>
+            Buy a credit pack to ask this question. Credits never expire.
+          </Text>
+          <View style={{ alignSelf: 'stretch', paddingHorizontal: spacing.xl }}>
+            <GoldButton label="Get Credits" onPress={() => router.push('/credits')} />
+          </View>
+          <Pressable onPress={() => run()} style={{ marginTop: 14 }}>
+            <Text variant="tiny" color={colors.muted}>Try again</Text>
+          </Pressable>
         </View>
       </Screen>
     );

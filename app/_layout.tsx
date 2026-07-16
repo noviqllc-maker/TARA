@@ -16,6 +16,7 @@ import * as Notifications from 'expo-notifications';
 import { View, Platform } from 'react-native';
 import { ProfileProvider } from '@/hooks/useProfile';
 import { SubscriptionProvider } from '@/hooks/useSubscription';
+import { CreditsProvider } from '@/hooks/useCredits';
 import { HealthProvider } from '@/hooks/useHealth';
 import { routeFromResponse } from '@/lib/notifications';
 import { colors } from '@/theme';
@@ -90,10 +91,12 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <ProfileProvider>
           <SubscriptionProvider>
-            <HealthProvider>
-              <StatusBar style="light" />
-              <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.black }, animation: 'fade' }} />
-            </HealthProvider>
+            <CreditsProvider>
+              <HealthProvider>
+                <StatusBar style="light" />
+                <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.black }, animation: 'fade' }} />
+              </HealthProvider>
+            </CreditsProvider>
           </SubscriptionProvider>
         </ProfileProvider>
       </SafeAreaProvider>

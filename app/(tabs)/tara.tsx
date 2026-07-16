@@ -7,12 +7,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import CosmicBackground from '@/components/CosmicBackground';
-import { PremiumNudgeBar } from '@/components/PremiumNudge';
 import { Text, Eyebrow, Card, GoldButton } from '@/components/ui';
 import { ChatMessage } from '@/lib/ai';
 import { taraQuestions, QuestionCategory, chartTodayPrompts } from '@/data/taraQuestions';
 import { useChart } from '@/hooks/useChart';
-import { useSubscription } from '@/hooks/useSubscription';
+import { useCredits } from '@/hooks/useCredits';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { getRememberChat } from '@/lib/privacy';
 import { colors, fonts, radius, spacing } from '@/theme';
@@ -20,28 +19,22 @@ import Markdown from 'react-native-markdown-display';
 
 const MEM_KEY = 'tara.chat.v1';
 const STORE_CAP = 200;       // most-recent messages persisted on-device (bounds storage)
-const DAILY_LIMIT = 5; // non-premium: 5 free questions per calendar day (resets at midnight)
-
-// AsyncStorage key for today's question count, e.g. "tara.usage.2026-06-23".
-const usageKey = (d = new Date()) =>
-  `tara.usage.${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 export default function AskTara() {
   const insets = useSafeAreaInsets();
-  const { isPremium } = useSubscription();
   const chart = useChart();
+  // Question credits are server-authoritative; the balance here just mirrors the server.
+  const { balance } = useCredits();
   const params = useLocalSearchParams<{ category?: string }>();
   // Per-day prompts from the user's active transits/dasha (deterministic within a day).
   const todayPrompts = useMemo(() => (chart ? chartTodayPrompts(chart) : []), [chart]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [category, setCategory] = useState<QuestionCategory['key']>('Mind');
-  const [usedToday, setUsedToday] = useState(0);
-  const [upsellDismissed, setUpsellDismissed] = useState(false);
   const [rememberChat, setRememberChat] = useState(true);
   const scrollRef = useRef<ScrollView>(null);
 
-  const limitReached = !isPremium && usedToday >= DAILY_LIMIT;
+  const outOfCredits = balance !== null && balance <= 0;
 
   // Load memory — only if the privacy "remember conversations" setting is on.
   useEffect(() => {
@@ -52,9 +45,6 @@ export default function AskTara() {
         const v = await AsyncStorage.getItem(MEM_KEY);
         if (v) setMessages(JSON.parse(v));
       }
-      // Load today's question count — auto-resets daily since a new day has no key yet.
-      const u = await AsyncStorage.getItem(usageKey());
-      setUsedToday(u ? parseInt(u, 10) || 0 : 0);
     })();
   }, []);
   // On focus: re-check the privacy toggle AND reload history so a Q&A just added by
@@ -86,18 +76,13 @@ export default function AskTara() {
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 80);
   }, [messages, rememberChat]);
 
-  // A question now opens the full-screen answer view (which generates the answer,
-  // shows the Calculation Card, and appends the Q&A back into history on return).
+  // A question opens the full-screen answer view, which performs the AUTHORITATIVE
+  // server-side credit decrement before generating. We only fast-path to the credits
+  // paywall here when we already know the balance is 0 (server still has final say).
   const send = (text: string) => {
     const t = text.trim();
     if (!t) return;
-    if (limitReached) { router.push('/paywall'); return; }
-    // Count this question against today's free allowance (premium is unlimited).
-    if (!isPremium) {
-      const nextCount = usedToday + 1;
-      setUsedToday(nextCount);
-      AsyncStorage.setItem(usageKey(), String(nextCount)).catch(() => {});
-    }
+    if (outOfCredits) { router.push('/credits'); return; }
     setInput('');
     router.push({ pathname: '/ask/answer', params: { q: t } });
   };
@@ -129,9 +114,16 @@ export default function AskTara() {
           )}
         </View>
 
-        {/* Premium nudge — free users only, persistent at the top of Ask Tara */}
+        {/* Server-authoritative credit balance. Tap to buy more. */}
         <View style={{ paddingHorizontal: spacing.xl, marginBottom: 8 }}>
-          <PremiumNudgeBar context="tara_ai" />
+          <Pressable onPress={() => router.push('/credits')} hitSlop={6} style={styles.balanceRow}>
+            <Text variant="tiny" color={outOfCredits ? colors.terra : colors.gold} style={{ fontWeight: '600' }}>
+              ✦ {balance === null ? '—' : balance} {balance === 1 ? 'question' : 'questions'} left
+            </Text>
+            <Text variant="tiny" color={colors.gold} style={{ fontWeight: '600' }}>
+              {outOfCredits ? 'Get more →' : 'Get more'}
+            </Text>
+          </Pressable>
         </View>
 
         <ScrollView
@@ -214,16 +206,13 @@ export default function AskTara() {
 
         </ScrollView>
 
-        {limitReached && !upsellDismissed ? (
+        {outOfCredits ? (
           <Animated.View entering={FadeInUp.duration(300)} style={{ marginHorizontal: spacing.xl, marginTop: 8, marginBottom: insets.bottom + 70 }}>
             <Card solid glow>
-              <Eyebrow color={colors.gold}>✦ Daily Limit Reached</Eyebrow>
-              <Text variant="serif" style={{ fontSize: 17, marginTop: 8 }}>You've reached today's {DAILY_LIMIT} free questions</Text>
-              <Text variant="tiny" style={{ marginTop: 6 }}>Upgrade to Tara Premium for unlimited conversations with Tara.</Text>
-              <GoldButton label="Upgrade to Premium" onPress={() => router.push('/paywall')} style={{ marginTop: 14 }} />
-              <Pressable onPress={() => setUpsellDismissed(true)} style={{ marginTop: 12 }}>
-                <Text variant="tiny" color={colors.muted} style={{ textAlign: 'center' }}>Maybe later</Text>
-              </Pressable>
+              <Eyebrow color={colors.gold}>✦ Out of Questions</Eyebrow>
+              <Text variant="serif" style={{ fontSize: 17, marginTop: 8 }}>You've used all your Ask Tara credits</Text>
+              <Text variant="tiny" style={{ marginTop: 6 }}>Buy a credit pack to keep asking. Credits never expire.</Text>
+              <GoldButton label="Get Credits" onPress={() => router.push('/credits')} style={{ marginTop: 14 }} />
             </Card>
           </Animated.View>
         ) : (
@@ -231,10 +220,9 @@ export default function AskTara() {
             <TextInput
               value={input}
               onChangeText={setInput}
-              placeholder={limitReached ? `Today's ${DAILY_LIMIT} free questions used · resets tomorrow` : 'Ask Tara…'}
+              placeholder="Ask Tara…"
               placeholderTextColor={colors.mutedDim}
               style={styles.input}
-              editable={!limitReached}
               onSubmitEditing={() => send(input)}
               returnKeyType="send"
             />
@@ -249,6 +237,11 @@ export default function AskTara() {
 }
 
 const styles = StyleSheet.create({
+  balanceRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingVertical: 9, paddingHorizontal: 14,
+    backgroundColor: 'rgba(205,163,73,0.06)', borderColor: colors.line, borderWidth: 1, borderRadius: radius.pill,
+  },
   suggest: {
     padding: 14, backgroundColor: colors.card, borderColor: colors.line, borderWidth: 1, borderRadius: radius.lg,
   },
