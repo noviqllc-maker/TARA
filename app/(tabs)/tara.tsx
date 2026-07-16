@@ -1,7 +1,7 @@
 // app/(tabs)/tara.tsx
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  View, ScrollView, Pressable, StyleSheet, KeyboardAvoidingView, Platform, TextInput, ActivityIndicator,
+  View, ScrollView, Pressable, StyleSheet, KeyboardAvoidingView, Platform, TextInput,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -9,34 +9,16 @@ import Animated, { FadeInUp } from 'react-native-reanimated';
 import CosmicBackground from '@/components/CosmicBackground';
 import { PremiumNudgeBar } from '@/components/PremiumNudge';
 import { Text, Eyebrow, Card, GoldButton } from '@/components/ui';
-import { askTara, ChatMessage } from '@/lib/ai';
+import { ChatMessage } from '@/lib/ai';
 import { taraQuestions, QuestionCategory } from '@/data/taraQuestions';
-import { useProfile } from '@/hooks/useProfile';
-import { useChart } from '@/hooks/useChart';
 import { useSubscription } from '@/hooks/useSubscription';
-import { useHealth } from '@/hooks/useHealth';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
-import { getLanguage } from '@/lib/language';
 import { getRememberChat } from '@/lib/privacy';
 import { colors, fonts, radius, spacing, domainColors } from '@/theme';
 import Markdown from 'react-native-markdown-display';
 
 const MEM_KEY = 'tara.chat.v1';
 const STORE_CAP = 200;       // most-recent messages persisted on-device (bounds storage)
-const CTX_MAX_MSGS = 20;     // most-recent messages sent to the AI …
-const CTX_MAX_CHARS = 4000;  // … further bounded by a ~char budget (whichever is smaller)
-
-// The recent slice sent to the AI: last CTX_MAX_MSGS messages, then trimmed from the
-// front until under CTX_MAX_CHARS. Older messages stay visible in the UI, just not sent.
-function contextWindow(msgs: ChatMessage[]): ChatMessage[] {
-  let window = msgs.slice(-CTX_MAX_MSGS);
-  let total = window.reduce((n, m) => n + m.content.length, 0);
-  while (window.length > 1 && total > CTX_MAX_CHARS) {
-    total -= window[0].content.length;
-    window = window.slice(1);
-  }
-  return window;
-}
 const DAILY_LIMIT = 5; // non-premium: 5 free questions per calendar day (resets at midnight)
 
 // AsyncStorage key for today's question count, e.g. "tara.usage.2026-06-23".
@@ -45,15 +27,11 @@ const usageKey = (d = new Date()) =>
 
 export default function AskTara() {
   const insets = useSafeAreaInsets();
-  const { profile } = useProfile();
-  const chart = useChart();
   const { isPremium } = useSubscription();
-  const { metrics } = useHealth();
   const params = useLocalSearchParams<{ category?: string }>();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [category, setCategory] = useState<QuestionCategory['key']>('Mind');
-  const [thinking, setThinking] = useState(false);
   const [usedToday, setUsedToday] = useState(0);
   const [upsellDismissed, setUpsellDismissed] = useState(false);
   const [rememberChat, setRememberChat] = useState(true);
@@ -75,8 +53,18 @@ export default function AskTara() {
       setUsedToday(u ? parseInt(u, 10) || 0 : 0);
     })();
   }, []);
-  // Re-check the privacy toggle whenever this tab regains focus.
-  useFocusEffect(React.useCallback(() => { getRememberChat().then(setRememberChat); }, []));
+  // On focus: re-check the privacy toggle AND reload history so a Q&A just added by
+  // the answer view appears here (persistence is unchanged — same MEM_KEY).
+  useFocusEffect(React.useCallback(() => {
+    (async () => {
+      const remember = await getRememberChat();
+      setRememberChat(remember);
+      if (remember) {
+        const v = await AsyncStorage.getItem(MEM_KEY);
+        if (v) setMessages(JSON.parse(v));
+      }
+    })();
+  }, []));
 
   // Pre-select a category when navigated here with a `category` param (e.g. from the
   // Love screen → "Relationships"). Case-insensitive; falls back to the current default.
@@ -94,9 +82,11 @@ export default function AskTara() {
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 80);
   }, [messages, rememberChat]);
 
-  const send = async (text: string) => {
+  // A question now opens the full-screen answer view (which generates the answer,
+  // shows the Calculation Card, and appends the Q&A back into history on return).
+  const send = (text: string) => {
     const t = text.trim();
-    if (!t || thinking) return;
+    if (!t) return;
     if (limitReached) { router.push('/paywall'); return; }
     // Count this question against today's free allowance (premium is unlimited).
     if (!isPremium) {
@@ -104,14 +94,8 @@ export default function AskTara() {
       setUsedToday(nextCount);
       AsyncStorage.setItem(usageKey(), String(nextCount)).catch(() => {});
     }
-    const next = [...messages, { role: 'user' as const, content: t }];
-    setMessages(next);
     setInput('');
-    setThinking(true);
-    const language = await getLanguage();
-    const reply = await askTara(contextWindow(next), profile.name || 'friend', chart, metrics, language);
-    setMessages([...next, { role: 'assistant', content: reply }]);
-    setThinking(false);
+    router.push({ pathname: '/ask/answer', params: { q: t } });
   };
 
   const empty = messages.length === 0;
@@ -207,12 +191,6 @@ export default function AskTara() {
             </Animated.View>
           ))}
 
-          {thinking && (
-            <View style={[styles.bubble, styles.assistant, { flexDirection: 'row', alignItems: 'center', gap: 8 }]}>
-              <ActivityIndicator color={colors.gold} size="small" />
-              <Text variant="tiny" color={colors.muted}>Tara is reflecting…</Text>
-            </View>
-          )}
         </ScrollView>
 
         {limitReached && !upsellDismissed ? (

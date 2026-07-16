@@ -70,6 +70,65 @@ export async function askTara(
   }
 }
 
+// ---- Ask Tara answer view -------------------------------------------------------
+// A single, short, factor-grounded answer for the new answer experience. Sends the
+// engine-derived transit factor and asks the model to (a) stay under 110 words and
+// (b) echo the factor it used, returned as JSON {factor, answer}. Degrades to plain
+// text if the backend returns prose (older deploy) — the card still shows the real,
+// app-computed factor either way.
+export type TaraAnswer = { answer: string; factorEcho?: string };
+
+export async function askTaraAnswer(
+  question: string,
+  factorLabel: string,
+  name = 'friend',
+  chart: BirthChart | null = null,
+  health: HealthMetrics | null = null,
+  language = 'English',
+): Promise<TaraAnswer> {
+  const url = endpoint();
+  const q = question.trim();
+  if (!url) return { answer: fallbackReply([{ role: 'user', content: q }]), factorEcho: factorLabel };
+
+  const context = buildContext(name, chart, health);
+  const system =
+    'You are Tara, a warm, grounded Vedic astrology guide. Answer in under 110 words. ' +
+    'Lead with the observation, land on one insight. No lists, no headers, no hedging filler. ' +
+    'Second person, honest and specific; never doom or fear; no medical, legal, or financial directives. ' +
+    `Ground the answer in this astrological factor: "${factorLabel}". ` +
+    'Return ONLY JSON: {"factor":"<echo the exact factor you used>","answer":"<your answer>"}' +
+    (language && language !== 'English' ? ` Write the answer in ${language}; keep Sanskrit terms as-is.` : '');
+  const userMsg = `Astrological factor: ${factorLabel}\n\nQuestion: ${q}`;
+
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: [{ role: 'user', content: userMsg }], context, system, maxTokens: 400 }),
+    });
+    if (!res.ok) return { answer: fallbackReply([{ role: 'user', content: q }]), factorEcho: factorLabel };
+    const data = await res.json();
+    const text = String(data?.text ?? '').trim();
+    return parseAnswer(text) ?? { answer: text || fallbackReply([{ role: 'user', content: q }]), factorEcho: factorLabel };
+  } catch {
+    return { answer: fallbackReply([{ role: 'user', content: q }]), factorEcho: factorLabel };
+  }
+}
+
+// Pull {"factor","answer"} from the model text; tolerant of ```json fences/preamble.
+function parseAnswer(text: string): TaraAnswer | null {
+  if (!text) return null;
+  const s = text.replace(/^```(?:json)?/i, '').replace(/```$/i, '').trim();
+  const a = s.indexOf('{'), b = s.lastIndexOf('}');
+  if (a === -1 || b <= a) return null;
+  try {
+    const o = JSON.parse(s.slice(a, b + 1));
+    const answer = typeof o.answer === 'string' ? o.answer.trim() : '';
+    if (!answer) return null;
+    return { answer, factorEcho: typeof o.factor === 'string' ? o.factor : undefined };
+  } catch { return null; }
+}
+
 // Offline / not-yet-deployed fallback so the chat never dead-ends.
 function fallbackReply(history: ChatMessage[]): string {
   const last = (history[history.length - 1]?.content || '').toLowerCase();

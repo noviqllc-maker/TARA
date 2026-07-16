@@ -365,6 +365,91 @@ export function computeChart(input: BirthInput): BirthChart {
   };
 }
 
+// ---- Live transits vs the natal chart: the single most relevant factor ----------
+// Powers the Ask Tara answer view's Calculation Card. Reuses the SAME sidereal
+// ephemeris as the natal chart, applied to "now", then finds the tightest, most
+// significant major aspect between a transiting graha and a natal graha (falling
+// back to a notable house transit). Accurate, not decorative.
+export type TransitBody = { name: string; glyph: string };
+export type TransitFactor = {
+  label: string;             // "TRANSITING SUN TRINE NATAL VENUS" / "TRANSITING SATURN IN YOUR 8TH HOUSE"
+  transiting: string;        // transiting graha
+  aspectName?: string;       // "Conjunction" | "Trine" | … (absent for a pure house factor)
+  natalPlanet?: string;      // aspected natal graha (aspect factors only)
+  house?: number;            // natal house the transiting graha occupies
+  transitSign: string;       // transiting graha's current sidereal sign
+  orbDeg?: number;           // aspect exactness (smaller = tighter)
+  angle: number;             // aspect angle 0/60/90/120/180 for the diagram; 0 for a house factor
+  bodyA: TransitBody;        // the transiting graha (always drawn)
+  bodyB: TransitBody | null; // the natal graha, or null for a house factor
+};
+
+const TRANSIT_ASPECTS = [
+  { name: 'Conjunction', angle: 0, orb: 8, weight: 1.0 },
+  { name: 'Opposition', angle: 180, orb: 8, weight: 0.92 },
+  { name: 'Trine', angle: 120, orb: 7, weight: 0.96 },
+  { name: 'Square', angle: 90, orb: 6, weight: 0.78 },
+  { name: 'Sextile', angle: 60, orb: 5, weight: 0.62 },
+];
+const GRAHA_WEIGHT: Record<string, number> = {
+  Sun: 1.0, Moon: 1.0, Jupiter: 0.95, Saturn: 0.95, Venus: 0.85, Mars: 0.8, Mercury: 0.7, Rahu: 0.78, Ketu: 0.72,
+};
+
+function ordinal(n: number): string {
+  const s = ['th', 'st', 'nd', 'rd'], v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+
+export function computeTransitFactor(chart: BirthChart, date: Date = new Date()): TransitFactor {
+  const ayan = lahiriAyanamsa(date);
+  const ascSignIdx = chart.ascendant.signIndex;
+  const houseOf = (signIdx: number) => ((signIdx - ascSignIdx + 12) % 12) + 1;
+  const glyphOf = (name: string) => PLANET_GLYPHS[name] || (name === 'Rahu' ? '☊' : name === 'Ketu' ? '☋' : '✦');
+  const signOf = (lon: number) => SIGNS[Math.floor(lon / 30)];
+
+  // Transiting sidereal longitudes for "now" (same ephemeris as the natal chart).
+  const transiting: { name: string; lon: number }[] =
+    ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn']
+      .map((b) => ({ name: b, lon: siderealLongitude(b, date, ayan).lon }));
+  const rahuLon = computeRahu(date, ayan);
+  transiting.push({ name: 'Rahu', lon: rahuLon }, { name: 'Ketu', lon: norm(rahuLon + 180) });
+
+  // Tightest, most significant transiting→natal aspect wins.
+  let best: { score: number; f: TransitFactor } | null = null;
+  for (const t of transiting) {
+    for (const n of chart.planets) {
+      let sep = Math.abs(norm(t.lon) - norm(n.longitude)) % 360;
+      if (sep > 180) sep = 360 - sep;
+      for (const asp of TRANSIT_ASPECTS) {
+        const delta = Math.abs(sep - asp.angle);
+        if (delta > asp.orb) continue;
+        const score = asp.weight * (1 - delta / asp.orb) * (GRAHA_WEIGHT[t.name] ?? 0.6) * (GRAHA_WEIGHT[n.name] ?? 0.6);
+        if (!best || score > best.score) {
+          best = { score, f: {
+            label: `TRANSITING ${t.name.toUpperCase()} ${asp.name.toUpperCase()} NATAL ${n.name.toUpperCase()}`,
+            transiting: t.name, aspectName: asp.name, natalPlanet: n.name,
+            house: houseOf(Math.floor(t.lon / 30)), transitSign: signOf(t.lon),
+            orbDeg: Math.round(delta * 10) / 10, angle: asp.angle,
+            bodyA: { name: t.name, glyph: glyphOf(t.name) },
+            bodyB: { name: n.name, glyph: glyphOf(n.name) },
+          } };
+        }
+      }
+    }
+  }
+  if (best) return best.f;
+
+  // Fallback: a notable house transit by the most significant slow-moving graha.
+  const priority = ['Saturn', 'Jupiter', 'Rahu', 'Ketu', 'Mars', 'Moon', 'Sun', 'Venus', 'Mercury'];
+  const pick = (priority.map((p) => transiting.find((t) => t.name === p)).find(Boolean)) ?? transiting[0];
+  const house = houseOf(Math.floor(pick.lon / 30));
+  return {
+    label: `TRANSITING ${pick.name.toUpperCase()} IN YOUR ${ordinal(house).toUpperCase()} HOUSE`,
+    transiting: pick.name, house, transitSign: signOf(pick.lon), angle: 0,
+    bodyA: { name: pick.name, glyph: glyphOf(pick.name) }, bodyB: null,
+  };
+}
+
 // Houses a graha casts its drishti onto, given the house it occupies.
 function aspectedHouses(planet: string, house: number): number[] {
   const offsets = ASPECT_OFFSETS[planet] || DEFAULT_ASPECTS;
