@@ -1,5 +1,5 @@
 // app/(tabs)/tara.tsx
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View, ScrollView, Pressable, StyleSheet, KeyboardAvoidingView, Platform, TextInput,
 } from 'react-native';
@@ -10,11 +10,12 @@ import CosmicBackground from '@/components/CosmicBackground';
 import { PremiumNudgeBar } from '@/components/PremiumNudge';
 import { Text, Eyebrow, Card, GoldButton } from '@/components/ui';
 import { ChatMessage } from '@/lib/ai';
-import { taraQuestions, QuestionCategory } from '@/data/taraQuestions';
+import { taraQuestions, QuestionCategory, chartTodayPrompts } from '@/data/taraQuestions';
+import { useChart } from '@/hooks/useChart';
 import { useSubscription } from '@/hooks/useSubscription';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { getRememberChat } from '@/lib/privacy';
-import { colors, fonts, radius, spacing, domainColors } from '@/theme';
+import { colors, fonts, radius, spacing } from '@/theme';
 import Markdown from 'react-native-markdown-display';
 
 const MEM_KEY = 'tara.chat.v1';
@@ -28,7 +29,10 @@ const usageKey = (d = new Date()) =>
 export default function AskTara() {
   const insets = useSafeAreaInsets();
   const { isPremium } = useSubscription();
+  const chart = useChart();
   const params = useLocalSearchParams<{ category?: string }>();
+  // Per-day prompts from the user's active transits/dasha (deterministic within a day).
+  const todayPrompts = useMemo(() => (chart ? chartTodayPrompts(chart) : []), [chart]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [category, setCategory] = useState<QuestionCategory['key']>('Mind');
@@ -141,8 +145,25 @@ export default function AskTara() {
               <Text variant="serif" color={colors.muted} style={{ fontSize: 15, lineHeight: 23, marginBottom: 18 }}>
                 I know your chart, your dashas, today's transits and your wellness signals. Ask me about love, career, timing, or what to focus on.
               </Text>
+
+              {/* Based on your chart today — personalized, per-day prompts. Tapping
+                  prefills the input; sending routes through the same gated answer flow. */}
+              {todayPrompts.length > 0 && (
+                <View style={{ marginBottom: 22 }}>
+                  <Eyebrow color={colors.gold}>✦ Based on your chart today</Eyebrow>
+                  <View style={{ gap: 9, marginTop: 12 }}>
+                    {todayPrompts.map((q) => (
+                      <Pressable key={q} style={styles.todayCard} onPress={() => setInput(q)}>
+                        <Text variant="body" style={{ fontSize: 13.5, flex: 1 }}>{q}</Text>
+                        <Text style={{ color: colors.gold, fontSize: 15 }}>↑</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                </View>
+              )}
+
               <Eyebrow color={colors.muted}>Suggested Questions</Eyebrow>
-              {/* Category tabs — mirror the five Today energy rings */}
+              {/* Category tabs — Mind · Love · Career · Money · Destiny */}
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -154,10 +175,10 @@ export default function AskTara() {
                     <Pressable
                       key={c.key}
                       onPress={() => setCategory(c.key)}
-                      style={[styles.catTab, active && { backgroundColor: domainColors[c.key], borderColor: domainColors[c.key] }]}
+                      style={[styles.catTab, active && { backgroundColor: c.color, borderColor: c.color }]}
                     >
                       <Text variant="tiny" color={active ? '#1a1018' : colors.muted} style={{ fontSize: 11.5, fontWeight: active ? '600' : '400' }}>
-                        {c.label}
+                        {c.icon}  {c.label}
                       </Text>
                     </Pressable>
                   );
@@ -230,6 +251,10 @@ export default function AskTara() {
 const styles = StyleSheet.create({
   suggest: {
     padding: 14, backgroundColor: colors.card, borderColor: colors.line, borderWidth: 1, borderRadius: radius.lg,
+  },
+  todayCard: {
+    flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14,
+    backgroundColor: 'rgba(205,163,73,0.06)', borderColor: colors.gold, borderWidth: 1, borderRadius: radius.lg,
   },
   catTab: {
     paddingVertical: 7, paddingHorizontal: 14, borderRadius: radius.pill,

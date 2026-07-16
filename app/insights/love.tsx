@@ -321,7 +321,7 @@ export default function Love() {
 
       <GhostButton
         label="Ask a relationship question →"
-        onPress={() => router.push({ pathname: '/(tabs)/tara', params: { category: 'Relationships' } })}
+        onPress={() => router.push({ pathname: '/(tabs)/tara', params: { category: 'Love' } })}
       />
 
       <PremiumSheet
