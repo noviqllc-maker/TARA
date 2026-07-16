@@ -10,8 +10,16 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import CosmicBackground from '@/components/CosmicBackground';
 import { Text, GoldButton } from '@/components/ui';
 import { useSubscription } from '@/hooks/useSubscription';
-import { PREMIUM_BENEFITS } from '@/lib/premium';
 import { colors, radius, spacing } from '@/theme';
+
+// Paywall-specific benefit copy (the profile banner keeps its own PREMIUM_BENEFITS list).
+const BENEFITS = [
+  'Your day-at-a-glance, decoded — see how it plays out in real life',
+  'Daily recommendations: what to read, watch, and do for your chart',
+  'Timing windows — know exactly when the stars align for love, travel & decisions',
+  'The lessons the stars want you to teach you today',
+  '5 Ask Tara questions every day',
+];
 
 type Tier = 'annual' | 'monthly';
 
@@ -110,7 +118,7 @@ export default function Paywall() {
           </Text>
 
           <View style={{ gap: 14, marginBottom: 28 }}>
-            {PREMIUM_BENEFITS.map((f) => (
+            {BENEFITS.map((f) => (
               <View key={f} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                 <Text style={{ color: colors.gold, fontSize: 16 }}>✓</Text>
                 <Text variant="body" style={{ flex: 1 }}>{f}</Text>
