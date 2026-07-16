@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import CosmicBackground from '@/components/CosmicBackground';
+import { PremiumNudgeBar } from '@/components/PremiumNudge';
 import { Text, Eyebrow, Card, GoldButton } from '@/components/ui';
 import { askTara, ChatMessage } from '@/lib/ai';
 import { taraQuestions, QuestionCategory } from '@/data/taraQuestions';
@@ -138,6 +139,11 @@ export default function TaraAI() {
               <Text variant="tiny" color={colors.gold}>New conversation</Text>
             </Pressable>
           )}
+        </View>
+
+        {/* Premium nudge — free users only, persistent at the top of Tara AI */}
+        <View style={{ paddingHorizontal: spacing.xl, marginBottom: 8 }}>
+          <PremiumNudgeBar />
         </View>
 
         <ScrollView

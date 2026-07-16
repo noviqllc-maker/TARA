@@ -11,6 +11,7 @@ import { View, Pressable, StyleSheet, Modal, ViewStyle } from 'react-native';
 import { router } from 'expo-router';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { Text, Card, Eyebrow, GoldButton } from './ui';
+import { useSubscription } from '@/hooks/useSubscription';
 import { colors, radius, spacing } from '@/theme';
 
 const DEFAULT_BENEFITS = [
@@ -86,6 +87,30 @@ export function PremiumNudge({
   );
 }
 
+// Always-on, self-gating nudge bar: shows for FREE users only, one line + a
+// "Begin Premium" button → paywall. It reads isPremium from the subscription
+// context, so the moment the customerInfo listener flips premium on (purchase/
+// restore), this returns null and disappears instantly — no cooldown, no dismiss.
+// Drop it anywhere; no wiring needed.
+export function PremiumNudgeBar({
+  message = 'Unlock your full Vedic journey with Tara Premium.',
+  style,
+}: { message?: string; style?: ViewStyle }) {
+  const { isPremium } = useSubscription();
+  if (isPremium) return null;
+  return (
+    <Animated.View entering={FadeInUp.duration(300)} style={[styles.bar, style]}>
+      <View style={{ flex: 1, paddingRight: 12 }}>
+        <Text variant="tiny" color={colors.gold} style={{ fontWeight: '600' }}>✦ Tara Premium</Text>
+        <Text variant="tiny" color={colors.muted} style={{ marginTop: 2, lineHeight: 16 }}>{message}</Text>
+      </View>
+      <Pressable onPress={goPaywall} style={styles.beginBtn} hitSlop={6}>
+        <Text variant="tiny" color="#1a1018" style={{ fontWeight: '700' }}>Begin Premium</Text>
+      </Pressable>
+    </Animated.View>
+  );
+}
+
 // Inline "go deeper" line under free content. Free feature stays fully visible above it.
 export function PremiumHint({ message, onPress, style }: { message: string; onPress?: () => void; style?: ViewStyle }) {
   return (
@@ -129,6 +154,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: colors.cardSolid, borderColor: colors.line, borderWidth: 1,
     borderRadius: radius.lg, paddingVertical: 12, paddingHorizontal: 14,
+  },
+  bar: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: 'rgba(205,163,73,0.08)', borderColor: colors.gold, borderWidth: 1,
+    borderRadius: radius.lg, paddingVertical: 12, paddingHorizontal: 14,
+  },
+  beginBtn: {
+    backgroundColor: colors.goldSoft, borderRadius: radius.pill,
+    paddingVertical: 8, paddingHorizontal: 16,
   },
   hint: {
     borderColor: colors.line, borderWidth: 1, borderRadius: radius.md,

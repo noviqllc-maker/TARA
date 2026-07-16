@@ -14,7 +14,7 @@ import { useDailyEnergy } from '@/hooks/useDailyEnergy';
 import { useChart } from '@/hooks/useChart';
 import { useProfile } from '@/hooks/useProfile';
 import { useSubscription } from '@/hooks/useSubscription';
-import { PremiumHint, PremiumSheet } from '@/components/PremiumNudge';
+import { PremiumHint, PremiumSheet, PremiumNudgeBar } from '@/components/PremiumNudge';
 import { computeChart } from '@/lib/vedic';
 import { searchPlaces, geocodePlace, hasPlacesKey, fallbackGeo, Place } from '@/lib/places';
 import { gunaMilan, personMoonFromChart, KOOTA_META, GunaResult } from '@/lib/compatibility';
@@ -133,6 +133,7 @@ export default function Love() {
   return (
     <Screen>
       <SubHeader eyebrow="Love & Relationships" title="Your Connection Energy" />
+      <PremiumNudgeBar style={{ marginBottom: spacing.lg }} />
 
       <Card solid glow style={{ alignItems: 'center', marginBottom: spacing.lg }}>
         <Ring value={loveScore} label="Harmony" color={colors.rose} />

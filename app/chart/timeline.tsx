@@ -5,6 +5,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import Screen from '@/components/Screen';
 import { Text, Card } from '@/components/ui';
 import SubHeader from '@/components/SubHeader';
+import { PremiumNudgeBar } from '@/components/PremiumNudge';
 import Disclaimer from '@/components/Disclaimer';
 import { useChart } from '@/hooks/useChart';
 import { colors } from '@/theme';
@@ -18,6 +19,7 @@ export default function Timeline() {
   return (
     <Screen>
       <SubHeader eyebrow="Life Timeline" title="Your Dasha Cycles" />
+      <PremiumNudgeBar style={{ marginBottom: 18 }} />
       <Text variant="tiny" style={{ marginBottom: 18 }}>
         Your Vimśottarī Mahādasha periods — the major planetary chapters of your life, calculated
         from your Moon's exact position at birth.

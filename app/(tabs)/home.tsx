@@ -1,5 +1,5 @@
 // app/(tabs)/home.tsx
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Pressable, StyleSheet, Alert, Linking } from 'react-native';
 import { router } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -7,8 +7,8 @@ import Screen from '@/components/Screen';
 import { Text, Card, Eyebrow, GoldButton, Chip } from '@/components/ui';
 import EnergyDashboard from '@/components/EnergyDashboard';
 import Disclaimer from '@/components/Disclaimer';
-import { PremiumNudge } from '@/components/PremiumNudge';
-import { usePremiumNudge } from '@/hooks/usePremiumNudge';
+import { PremiumNudgeBar } from '@/components/PremiumNudge';
+import { useSubscription } from '@/hooks/useSubscription';
 import { useProfile } from '@/hooks/useProfile';
 import { useChart } from '@/hooks/useChart';
 import { useTransits } from '@/hooks/useTransits';
@@ -39,11 +39,9 @@ export default function Home() {
   // Body ring is a chart-only estimate until real Health data flows in (✦ marker).
   const bodyChartOnly = metrics.source !== 'apple-health';
 
-  // Premium nudges (hidden entirely for premium users). The persistent upsell card
-  // shows until dismissed (then rests 5 days); the subtle banner is a once-per-session,
-  // 3-day-cooldown reminder that only appears when the card isn't already showing.
-  const upsell = usePremiumNudge('home-upsell', { cooldownDays: 5 });
-  const banner = usePremiumNudge('session-banner', { cooldownDays: 3, oncePerSession: true, markOnShow: true });
+  // Premium nudge shows for free users only (the bar self-hides when premium).
+  const { isPremium } = useSubscription();
+  useEffect(() => { if (__DEV__) console.log('[Premium] Home mount · isPremium =', isPremium); }, [isPremium]);
   // iOS won't re-show the permission sheet once the user has decided, so when Health
   // is connected but sending no data we send them to the Health app to enable it.
   const openHealthApp = () =>
@@ -128,6 +126,9 @@ export default function Home() {
         <GoldButton label="Ask Tara about today" onPress={() => router.push('/(tabs)/tara')} style={{ marginTop: 16 }} />
       </Card>
 
+      {/* Premium nudge — free users only, directly below Tara's Message */}
+      <PremiumNudgeBar style={{ marginBottom: spacing.lg }} />
+
       {/* Quick actions */}
       <Eyebrow>Quick Actions</Eyebrow>
       <View style={styles.quickGrid}>
@@ -154,13 +155,6 @@ export default function Home() {
           ))}
         </View>
       </Card>
-
-      {upsell.visible && (
-        <PremiumNudge variant="card" onDismiss={upsell.dismiss} style={{ marginTop: spacing.lg }} />
-      )}
-      {!upsell.visible && banner.visible && (
-        <PremiumNudge variant="banner" onDismiss={banner.dismiss} style={{ marginTop: spacing.lg }} />
-      )}
 
       <Disclaimer />
     </Screen>
