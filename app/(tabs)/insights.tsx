@@ -1,7 +1,6 @@
 // app/(tabs)/insights.tsx
 import React from 'react';
-import { View, Pressable, StyleSheet } from 'react-native';
-import { router } from 'expo-router';
+import { View, StyleSheet } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import Screen from '@/components/Screen';
 import { Text, Card, Eyebrow } from '@/components/ui';
@@ -16,13 +15,6 @@ const ENERGY_ROWS: [string, string, string][] = [
   ['Career Energy', insights.career, colors.goldSoft],
   ['Body Signal', insights.body, colors.sage],
   ['Spiritual Guidance', insights.spiritual, colors.saffron],
-];
-
-const SECTIONS = [
-  { label: 'Love & Relationships', route: '/insights/love' },
-  { label: 'Career & Money', route: '/insights/career' },
-  { label: 'Health & Wellness', route: '/insights/wellness' },
-  { label: 'Life Purpose', route: '/insights/purpose' },
 ];
 
 export default function Insights() {
@@ -61,24 +53,6 @@ export default function Insights() {
         <Text variant="tiny" style={{ marginTop: 6 }}>{insights.mantraNote}</Text>
       </Card>
 
-      <Card style={{ marginTop: 12 }}>
-        <Eyebrow>Journal Prompt</Eyebrow>
-        <Text variant="serif" style={{ fontSize: 15, marginTop: 8, fontStyle: 'italic' }}>"{insights.journalPrompt}"</Text>
-        <Pressable style={styles.journalBtn} onPress={() => router.push('/insights/journal')}>
-          <Text variant="body" color={colors.gold} style={{ fontSize: 13 }}>Open Mood Journal →</Text>
-        </Pressable>
-      </Card>
-
-      <Eyebrow color={colors.muted} >{'\n'}Explore Life Areas</Eyebrow>
-      <View style={styles.grid}>
-        {SECTIONS.map((s) => (
-          <Pressable key={s.label} style={styles.areaCard} onPress={() => router.push(s.route as any)}>
-            <Text variant="body" style={{ fontSize: 13.5 }}>{s.label}</Text>
-            <Text style={{ color: colors.gold, fontSize: 18 }}>›</Text>
-          </Pressable>
-        ))}
-      </View>
-
       <Disclaimer />
     </Screen>
   );
@@ -86,10 +60,4 @@ export default function Insights() {
 
 const styles = StyleSheet.create({
   dual: { flexDirection: 'row', gap: 12 },
-  journalBtn: { marginTop: 12 },
-  grid: { gap: 10, marginTop: 12 },
-  areaCard: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    padding: 16, backgroundColor: colors.card, borderColor: colors.line, borderWidth: 1, borderRadius: 16,
-  },
 });

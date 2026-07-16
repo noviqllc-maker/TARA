@@ -143,7 +143,7 @@ export default function TaraAI() {
 
         {/* Premium nudge — free users only, persistent at the top of Tara AI */}
         <View style={{ paddingHorizontal: spacing.xl, marginBottom: 8 }}>
-          <PremiumNudgeBar />
+          <PremiumNudgeBar context="tara_ai" />
         </View>
 
         <ScrollView

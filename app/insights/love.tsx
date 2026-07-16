@@ -133,7 +133,7 @@ export default function Love() {
   return (
     <Screen>
       <SubHeader eyebrow="Love & Relationships" title="Your Connection Energy" />
-      <PremiumNudgeBar style={{ marginBottom: spacing.lg }} />
+      <PremiumNudgeBar context="life_love" style={{ marginBottom: spacing.lg }} />
 
       <Card solid glow style={{ alignItems: 'center', marginBottom: spacing.lg }}>
         <Ring value={loveScore} label="Harmony" color={colors.rose} />

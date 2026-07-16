@@ -5,6 +5,7 @@ import { router } from 'expo-router';
 import Screen from '@/components/Screen';
 import { Text, Card, Eyebrow, GhostButton, Chip } from '@/components/ui';
 import SubHeader from '@/components/SubHeader';
+import { PremiumNudgeBar } from '@/components/PremiumNudge';
 import Ring from '@/components/Ring';
 import Disclaimer from '@/components/Disclaimer';
 import { useHealth } from '@/hooks/useHealth';
@@ -34,6 +35,7 @@ export default function Wellness() {
   return (
     <Screen>
       <SubHeader eyebrow="Health & Wellness" title="Your Body Signals" />
+      <PremiumNudgeBar context="life_health" style={{ marginBottom: spacing.lg }} />
 
       {/* Live / connect banner */}
       <Card style={{ marginBottom: spacing.lg, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>

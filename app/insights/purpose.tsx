@@ -5,6 +5,7 @@ import { router } from 'expo-router';
 import Screen from '@/components/Screen';
 import { Text, Card, Eyebrow, GhostButton } from '@/components/ui';
 import SubHeader from '@/components/SubHeader';
+import { PremiumNudgeBar } from '@/components/PremiumNudge';
 import Disclaimer from '@/components/Disclaimer';
 import { purpose } from '@/data/mock';
 import { colors, spacing } from '@/theme';
@@ -24,6 +25,7 @@ export default function Purpose() {
   return (
     <Screen>
       <SubHeader eyebrow="Life Purpose" title="Your Soul Direction" />
+      <PremiumNudgeBar context="life_purpose" style={{ marginBottom: spacing.lg }} />
 
       <Card solid glow style={{ marginBottom: spacing.lg }}>
         <Eyebrow>Life Theme</Eyebrow>

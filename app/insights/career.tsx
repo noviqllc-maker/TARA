@@ -5,6 +5,7 @@ import { router } from 'expo-router';
 import Screen from '@/components/Screen';
 import { Text, Card, Eyebrow, GhostButton } from '@/components/ui';
 import SubHeader from '@/components/SubHeader';
+import { PremiumNudgeBar } from '@/components/PremiumNudge';
 import Ring from '@/components/Ring';
 import Disclaimer from '@/components/Disclaimer';
 import { career } from '@/data/mock';
@@ -28,6 +29,7 @@ export default function Career() {
   return (
     <Screen>
       <SubHeader eyebrow="Career & Money" title="Your Work Energy" />
+      <PremiumNudgeBar context="life_career" style={{ marginBottom: spacing.lg }} />
 
       <Card solid glow style={{ alignItems: 'center', marginBottom: spacing.lg }}>
         <Ring value={careerScore} label="Career" color={colors.goldSoft} />

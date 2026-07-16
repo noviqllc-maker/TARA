@@ -12,6 +12,7 @@ import { router } from 'expo-router';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { Text, Card, Eyebrow, GoldButton } from './ui';
 import { useSubscription } from '@/hooks/useSubscription';
+import { NudgeContext, nudgeForContext } from '@/lib/nudges';
 import { colors, radius, spacing } from '@/theme';
 
 const DEFAULT_BENEFITS = [
@@ -87,25 +88,26 @@ export function PremiumNudge({
   );
 }
 
-// Always-on, self-gating nudge bar: shows for FREE users only, one line + a
-// "Begin Premium" button → paywall. It reads isPremium from the subscription
-// context, so the moment the customerInfo listener flips premium on (purchase/
-// restore), this returns null and disappears instantly — no cooldown, no dismiss.
-// Drop it anywhere; no wiring needed.
+// Always-on, self-gating nudge bar: shows for FREE users only. Renders the day's
+// context-aware line + CTA (see @/lib/nudges) and routes to the paywall. It reads
+// isPremium from the subscription context, so the moment the customerInfo listener
+// flips premium on (purchase/restore), this returns null and disappears instantly —
+// no cooldown, no dismiss. Drop it on a screen with the matching context.
 export function PremiumNudgeBar({
-  message = 'Unlock your full Vedic journey with Tara Premium.',
+  context,
   style,
-}: { message?: string; style?: ViewStyle }) {
+}: { context: NudgeContext; style?: ViewStyle }) {
   const { isPremium } = useSubscription();
   if (isPremium) return null;
+  const { line, cta } = nudgeForContext(context);
   return (
     <Animated.View entering={FadeInUp.duration(300)} style={[styles.bar, style]}>
       <View style={{ flex: 1, paddingRight: 12 }}>
         <Text variant="tiny" color={colors.gold} style={{ fontWeight: '600' }}>✦ Tara Premium</Text>
-        <Text variant="tiny" color={colors.muted} style={{ marginTop: 2, lineHeight: 16 }}>{message}</Text>
+        <Text variant="tiny" color={colors.muted} style={{ marginTop: 2, lineHeight: 16 }}>{line}</Text>
       </View>
       <Pressable onPress={goPaywall} style={styles.beginBtn} hitSlop={6}>
-        <Text variant="tiny" color="#1a1018" style={{ fontWeight: '700' }}>Begin Premium</Text>
+        <Text variant="tiny" color="#1a1018" style={{ fontWeight: '700' }}>{cta}</Text>
       </Pressable>
     </Animated.View>
   );

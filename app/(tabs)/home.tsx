@@ -15,7 +15,7 @@ import { useTransits } from '@/hooks/useTransits';
 import { useDailyEnergy } from '@/hooks/useDailyEnergy';
 import { useHealth } from '@/hooks/useHealth';
 import {
-  greeting, todayLong, tarasMessage, cosmicWeather,
+  greeting, todayLong, tarasMessage, cosmicWeather, insights,
 } from '@/data/mock';
 import { colors, spacing } from '@/theme';
 
@@ -26,6 +26,14 @@ const QUICK = [
   { label: "Today's Remedies", route: '/(tabs)/insights' },
   { label: 'Shop', route: '/(tabs)/profile', params: { scrollTo: 'shop' } },
   { label: 'Life Timeline', route: '/chart/timeline' },
+];
+
+// Life-area detail screens (moved here from the Insights tab).
+const LIFE_AREAS = [
+  { label: 'Love & Relationships', route: '/insights/love' },
+  { label: 'Career & Money', route: '/insights/career' },
+  { label: 'Health & Wellness', route: '/insights/wellness' },
+  { label: 'Life Purpose', route: '/insights/purpose' },
 ];
 
 export default function Home() {
@@ -127,7 +135,27 @@ export default function Home() {
       </Card>
 
       {/* Premium nudge — free users only, directly below Tara's Message */}
-      <PremiumNudgeBar style={{ marginBottom: spacing.lg }} />
+      <PremiumNudgeBar context="home" style={{ marginBottom: spacing.lg }} />
+
+      {/* Journal Prompt (moved from Insights) */}
+      <Card style={{ marginBottom: spacing.lg }}>
+        <Eyebrow>Journal Prompt</Eyebrow>
+        <Text variant="serif" style={styles.journalPrompt}>“{insights.journalPrompt}”</Text>
+        <Pressable onPress={() => router.push('/insights/journal')} hitSlop={6} style={{ marginTop: 14 }}>
+          <Text variant="tiny" color={colors.gold} style={{ fontWeight: '600', fontSize: 13 }}>Open Mood Journal →</Text>
+        </Pressable>
+      </Card>
+
+      {/* Explore Life Areas (moved from Insights) */}
+      <Eyebrow color={colors.muted}>Explore Life Areas</Eyebrow>
+      <View style={styles.lifeGrid}>
+        {LIFE_AREAS.map((s) => (
+          <Pressable key={s.label} style={styles.areaCard} onPress={() => router.push(s.route as any)}>
+            <Text variant="body" style={{ fontSize: 13.5 }}>{s.label}</Text>
+            <Text style={{ color: colors.gold, fontSize: 18 }}>›</Text>
+          </Pressable>
+        ))}
+      </View>
 
       {/* Quick actions */}
       <Eyebrow>Quick Actions</Eyebrow>
@@ -165,6 +193,12 @@ const styles = StyleSheet.create({
   connectRow: {
     marginTop: 12, paddingTop: 10, alignItems: 'center',
     borderTopWidth: 1, borderTopColor: colors.line,
+  },
+  journalPrompt: { fontSize: 16, marginTop: 10, lineHeight: 25, fontStyle: 'italic', color: colors.cream },
+  lifeGrid: { gap: 10, marginTop: 12, marginBottom: spacing.lg },
+  areaCard: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    padding: 16, backgroundColor: colors.card, borderColor: colors.line, borderWidth: 1, borderRadius: 16,
   },
   quickGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 12 },
   quick: {
