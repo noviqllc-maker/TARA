@@ -40,11 +40,14 @@ export default function Journal() {
       <Card style={{ marginBottom: spacing.lg }}>
         <Eyebrow>Mood</Eyebrow>
         <View style={styles.moods}>
-          {MOODS.map(([e, l]) => (
-            <Pressable key={e} onPress={() => setEmoji(e)} style={[styles.mood, emoji === e && styles.moodOn]}>
-              <Text style={{ fontSize: 28 }}>{e}</Text>
-            </Pressable>
-          ))}
+          {MOODS.map(([e]) => {
+            const on = emoji === e;
+            return (
+              <Pressable key={e} onPress={() => setEmoji(e)} hitSlop={4} style={[styles.mood, on && styles.moodOn]}>
+                <Text style={{ fontSize: 26 }}>{e}</Text>
+              </Pressable>
+            );
+          })}
         </View>
       </Card>
 
@@ -68,7 +71,7 @@ export default function Journal() {
         <Eyebrow>Journal Entry</Eyebrow>
         <TextInput
           value={notes} onChangeText={setNotes} multiline placeholder="What's on your mind…"
-          placeholderTextColor={colors.mutedDim} style={styles.notes}
+          placeholderTextColor={colors.muted} style={styles.notes}
         />
       </Card>
 
@@ -94,13 +97,21 @@ export default function Journal() {
 }
 
 const styles = StyleSheet.create({
-  moods: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 12 },
-  mood: { padding: 8, borderRadius: 14, borderWidth: 1, borderColor: 'transparent' },
-  moodOn: { borderColor: colors.gold, backgroundColor: 'rgba(205,163,73,0.12)' },
+  moods: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 14 },
+  // 46x46 tap target (>=44); circular gold ring/pill + scale on select, dim when not.
+  mood: {
+    width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1.5, borderColor: 'transparent', opacity: 0.55,
+  },
+  moodOn: {
+    borderColor: colors.gold, backgroundColor: 'rgba(205,163,73,0.14)',
+    opacity: 1, transform: [{ scale: 1.08 }],
+  },
   sliderHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   notes: {
-    marginTop: 10, minHeight: 90, textAlignVertical: 'top', color: colors.cream, fontFamily: fonts.sans, fontWeight: '400', fontSize: 15,
-    backgroundColor: 'rgba(255,255,255,0.04)', borderColor: colors.line, borderWidth: 1, borderRadius: radius.md, padding: 14,
+    marginTop: 12, minHeight: 120, textAlignVertical: 'top', color: colors.cream,
+    fontFamily: fonts.sans, fontSize: 15, lineHeight: 22,
+    backgroundColor: 'rgba(255,255,255,0.04)', borderColor: colors.line, borderWidth: 1, borderRadius: radius.md, padding: 16,
   },
   replay: { flexDirection: 'row', gap: 8, marginTop: 12 },
   replayBtn: { flex: 1, alignItems: 'center', paddingVertical: 11, borderRadius: radius.md, borderWidth: 1, borderColor: colors.line },

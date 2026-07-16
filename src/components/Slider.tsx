@@ -40,5 +40,6 @@ export default function Slider({
 const styles = StyleSheet.create({
   track: { height: 6, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.12)', marginTop: 16, justifyContent: 'center' },
   fill: { position: 'absolute', height: 6, borderRadius: 6, left: 0 },
-  thumb: { position: 'absolute', width: 20, height: 20, borderRadius: 10, marginLeft: -10, shadowColor: colors.gold, shadowOpacity: 0.6, shadowRadius: 6 },
+  // top:-7 vertically centers the 20px thumb on the 6px track (track center y=3 → 3-10).
+  thumb: { position: 'absolute', top: -7, width: 20, height: 20, borderRadius: 10, marginLeft: -10, shadowColor: colors.gold, shadowOpacity: 0.6, shadowRadius: 6 },
 });
