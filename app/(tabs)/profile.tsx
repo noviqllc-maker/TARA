@@ -10,30 +10,31 @@ import ProfileEditForm from '@/components/ProfileEditForm';
 import { useProfile } from '@/hooks/useProfile';
 import { useChart } from '@/hooks/useChart';
 import { useSubscription } from '@/hooks/useSubscription';
+import { ShopProductId } from '@/lib/products';
 import { PREMIUM_BENEFITS } from '@/lib/premium';
 import { lifePathNumber, chineseZodiac } from '@/lib/numerology';
 import { colors, radius, spacing } from '@/theme';
 
-// Non-consumable shop products. IDs match RevenueCat / the store; the PRICE is never
-// hardcoded — it comes from each product's RevenueCat priceString (correct local
-// currency). Content/desc live here; price + ownership come from RevenueCat.
-const SHOP_ITEMS = [
+// Non-consumable shop products. `id` MUST be a real product ID (typed against the
+// single source of truth). The PRICE is never hardcoded — it comes from each
+// product's RevenueCat priceString. Content lives here; price + ownership come from RC.
+const SHOP_ITEMS: { id: ShopProductId; title: string; description: string; features: string; cta: string }[] = [
   {
-    id: 'shop_year_ahead',
+    id: 'yearaheadtarareport1',
     title: 'Year Ahead',
     description: 'See how your next 12 months unfold — the opportunities, challenges, and milestones written in your stars, month by month.',
     features: 'Monthly forecasts • Career • Love • Key dates • Health',
     cta: 'Unlock Your Year',
   },
   {
-    id: 'shop_birth_blueprint',
+    id: 'birthblueprinttara1',
     title: 'Soul Blueprint',
     description: 'Understand who you are at your core — your strengths, purpose, hidden talents, and the unique energy you were born with.',
     features: 'Personality • Career • Relationships • Growth',
     cta: 'Reveal My Blueprint',
   },
   {
-    id: 'shop_dosha_remedies',
+    id: 'dosharemediestara1',
     title: 'Personal Remedies',
     description: 'Personalized colors, rituals, donation guidance, and spiritual remedies designed for your unique chart.',
     features: 'Lucky colors • Rituals • Donation days • Gemstone guidance',

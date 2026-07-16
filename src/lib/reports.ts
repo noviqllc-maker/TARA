@@ -8,8 +8,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { BirthChart } from '@/lib/vedic';
 import { computeTransits } from '@/lib/transits';
+import { SHOP_PRODUCT_IDS, ShopProductId } from '@/lib/products';
 
-export type ReportKind = 'shop_year_ahead' | 'shop_birth_blueprint' | 'shop_dosha_remedies';
+// A report kind IS a shop product ID — same single source of truth.
+export type ReportKind = ShopProductId;
 export type ReportSection = { heading: string; body: string };
 export type Report = {
   kind: ReportKind;
@@ -20,15 +22,15 @@ export type Report = {
 };
 
 export const REPORT_META: Record<ReportKind, { title: string; loading: string }> = {
-  shop_year_ahead: { title: 'Year Ahead', loading: 'Tara is mapping your year…' },
-  shop_birth_blueprint: { title: 'Soul Blueprint', loading: 'Tara is reading your chart…' },
-  shop_dosha_remedies: { title: 'Personal Remedies', loading: 'Tara is preparing your remedies…' },
+  yearaheadtarareport1: { title: 'Year Ahead', loading: 'Tara is mapping your year…' },
+  birthblueprinttara1: { title: 'Soul Blueprint', loading: 'Tara is reading your chart…' },
+  dosharemediestara1: { title: 'Personal Remedies', loading: 'Tara is preparing your remedies…' },
 };
 
 export const REPORT_FOOTER = 'For reflection and wellness purposes.';
 
 export function isReportKind(x: unknown): x is ReportKind {
-  return x === 'shop_year_ahead' || x === 'shop_birth_blueprint' || x === 'shop_dosha_remedies';
+  return typeof x === 'string' && (SHOP_PRODUCT_IDS as readonly string[]).includes(x);
 }
 
 // ---- birth-data hash (cache key) ----------------------------------------------
@@ -97,7 +99,7 @@ function chartData(kind: ReportKind, chart: BirthChart) {
     rulingPlanet: chart.rulingPlanet,
   };
 
-  if (kind === 'shop_year_ahead') {
+  if (kind === 'yearaheadtarareport1') {
     const now = new Date();
     const t = computeTransits(now, chart);
     return {
@@ -116,7 +118,7 @@ function chartData(kind: ReportKind, chart: BirthChart) {
     };
   }
 
-  if (kind === 'shop_birth_blueprint') {
+  if (kind === 'birthblueprinttara1') {
     return {
       ...core,
       ascendantDegree: chart.ascendant.degree,
@@ -128,7 +130,7 @@ function chartData(kind: ReportKind, chart: BirthChart) {
     };
   }
 
-  // shop_dosha_remedies
+  // dosharemediestara1
   return {
     ...core,
     mars: planet(chart, 'Mars'),       // Mangal dosha indicator
@@ -141,7 +143,7 @@ function chartData(kind: ReportKind, chart: BirthChart) {
 
 // ---- fixed section spec per report (keeps output format consistent) ------------
 function sectionSpec(kind: ReportKind, chart: BirthChart): string {
-  if (kind === 'shop_year_ahead') {
+  if (kind === 'yearaheadtarareport1') {
     const months = nextMonthLabels(12, new Date());
     return [
       'Produce sections IN THIS ORDER:',
@@ -151,7 +153,7 @@ function sectionSpec(kind: ReportKind, chart: BirthChart): string {
       '3) heading "Three to Prioritise This Year" — three concise priorities as a short paragraph.',
     ].join('\n');
   }
-  if (kind === 'shop_birth_blueprint') {
+  if (kind === 'birthblueprinttara1') {
     return [
       'Produce sections IN THIS ORDER, each heading EXACTLY as written:',
       '1) "Core Nature" — personality drawn from lagna + Moon sign + nakshatra.',
@@ -192,9 +194,9 @@ function endpoint(): string | undefined {
 // the longest; the edge function clamps this to <= 8000. These MUST be generous —
 // too small and the JSON is truncated mid-object and parsing fails.
 const MAX_TOKENS: Record<ReportKind, number> = {
-  shop_year_ahead: 6000,
-  shop_birth_blueprint: 3000,
-  shop_dosha_remedies: 3500,
+  yearaheadtarareport1: 6000,
+  birthblueprinttara1: 3000,
+  dosharemediestara1: 3500,
 };
 
 function buildPrompt(kind: ReportKind, chart: BirthChart): { system: string; prompt: string; maxTokens: number } {

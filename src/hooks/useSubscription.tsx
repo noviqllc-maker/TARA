@@ -13,13 +13,10 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { Platform } from 'react-native';
 
-// Non-consumable, one-time, restorable shop products.
-export const SHOP_PRODUCT_IDS = [
-  'shop_year_ahead',
-  'shop_birth_blueprint',
-  'shop_dosha_remedies',
-] as const;
-export type ShopProductId = (typeof SHOP_PRODUCT_IDS)[number];
+// Non-consumable, one-time, restorable shop products. IDs live in one place.
+import { SHOP_PRODUCT_IDS } from '@/lib/products';
+export { SHOP_PRODUCT_IDS } from '@/lib/products';
+export type { ShopProductId } from '@/lib/products';
 
 // Shop-catalog fetch state, so the UI can show prices / a loading state / a single
 // manual "retry" — and never spin in an auto-refetch loop on an empty result.
