@@ -43,6 +43,7 @@ const SHOP_ITEMS: { id: ShopProductId; title: string; description: string; featu
 ];
 
 const SETTINGS_ROWS = [
+  { label: 'Account', route: '/settings/account' },
   { label: 'Notifications', route: '/settings/notifications' },
   { label: 'Privacy', route: '/settings/privacy' },
   { label: 'Language', route: '/settings/language' },

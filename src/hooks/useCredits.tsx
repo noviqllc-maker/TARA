@@ -1,18 +1,17 @@
 // src/hooks/useCredits.tsx
-// Ask Tara question credits (consumable). Fully SERVER-AUTHORITATIVE: this context
-// only mirrors the server balance and routes actions through it. Independent of the
-// premium subscription and the shop — no coupling.
+// Ask Tara question credits (consumable), SERVER-AUTHORITATIVE and auth-scoped.
+// Balance + decrement are RLS-protected Supabase RPCs that key on auth.uid(); the
+// device cannot touch another user's balance. Redeem runs in an edge function (needs
+// the RevenueCat secret). Independent of the premium subscription and the shop.
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
-import {
-  CREDIT_PRODUCT_IDS, CREDIT_AMOUNTS, CreditProductId,
-  getAppUserId, fetchBalance, decrementCredit, redeemPurchases,
-} from '@/lib/credits';
+import { supabase } from '@/lib/supabase';
+import { CREDIT_PRODUCT_IDS, CREDIT_AMOUNTS, CreditProductId } from '@/lib/credits';
 
 type CreditsState = {
-  balance: number | null;                    // server balance; null until first load / when unavailable
+  balance: number | null;                    // server balance; null when signed out / unknown
   loading: boolean;
   products: Record<string, any>;             // productId -> StoreProduct (priceString)
-  refresh: () => Promise<void>;              // re-read the server balance
+  refresh: () => Promise<void>;
   authorize: () => Promise<boolean>;         // atomic server decrement; true = question allowed
   buy: (productId: CreditProductId) => Promise<boolean>; // purchase → server verify → credit
   amountFor: (productId: string) => number;
@@ -21,22 +20,15 @@ type CreditsState = {
 const Ctx = createContext<CreditsState>({} as CreditsState);
 
 function getPurchases(): any | null {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    return require('react-native-purchases').default;
-  } catch {
-    return null;
-  }
+  try { return require('react-native-purchases').default; } catch { return null; }
 }
 
 export function CreditsProvider({ children }: { children: React.ReactNode }) {
   const [balance, setBalance] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState<Record<string, any>>({});
-  const appUserIdRef = useRef<string | null>(null);
   const productsFetchedRef = useRef(false);
 
-  // Fetch consumable credit products once (priceString for the paywall).
   const loadProducts = useCallback(async () => {
     if (productsFetchedRef.current) return;
     const Purchases = getPurchases();
@@ -49,55 +41,51 @@ export function CreditsProvider({ children }: { children: React.ReactNode }) {
         for (const p of list) map[p.identifier] = p;
         setProducts(map);
         productsFetchedRef.current = true;
-        if (__DEV__) console.log('[Credits] products:', list.map((p: any) => p.identifier));
       }
     } catch (e: any) {
       if (__DEV__) console.warn('[Credits] getProducts failed:', e?.message ?? e);
     }
   }, []);
 
+  // Load (and grant the signup bonus for) the signed-in user's balance.
+  const loadBalance = useCallback(async () => {
+    const { data: sess } = await supabase.auth.getSession();
+    if (!sess.session) { setBalance(null); return; }
+    const { data, error } = await supabase.rpc('ensure_user_credits'); // grants 5 once, returns balance
+    if (!error && typeof data === 'number') setBalance(data);
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const id = await getAppUserId();
-      if (cancelled) return;
-      appUserIdRef.current = id;
-      if (id) {
-        const b = await fetchBalance(id); // grants the 5-credit bonus once, server-side
-        if (!cancelled && typeof b === 'number') setBalance(b);
-      }
+      await loadBalance();
       await loadProducts();
       if (!cancelled) setLoading(false);
     })();
-    return () => { cancelled = true; };
-  }, [loadProducts]);
+    // React to sign-in / sign-out so the balance always reflects the current user.
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
+      if (s) loadBalance();
+      else setBalance(null);
+    });
+    return () => { cancelled = true; sub.subscription.unsubscribe(); };
+  }, [loadBalance, loadProducts]);
 
-  const refresh = useCallback(async () => {
-    const id = appUserIdRef.current ?? (await getAppUserId());
-    appUserIdRef.current = id;
-    if (!id) return;
-    const b = await fetchBalance(id);
-    if (typeof b === 'number') setBalance(b);
-  }, []);
+  const refresh = useCallback(async () => { await loadBalance(); }, [loadBalance]);
 
-  // Atomic server decrement. Returns true only if the server authorized the question.
+  // Atomic, RLS-scoped server decrement. Returns true only if the server authorized.
   const authorize = useCallback(async () => {
-    const id = appUserIdRef.current ?? (await getAppUserId());
-    appUserIdRef.current = id;
-    if (!id) return false;
-    const r = await decrementCredit(id);
-    if (!r) return false;              // server/network error → not authorized
-    setBalance(r.balance);
-    return r.ok;
+    const { data, error } = await supabase.rpc('decrement_credit');
+    if (error || typeof data !== 'number') return false; // server/network error → not authorized
+    if (data === -1) { setBalance(0); return false; }      // out of credits
+    setBalance(data);
+    return true;
   }, []);
 
-  // Buy a pack: RevenueCat/StoreKit finishes the consumable, THEN the server verifies
-  // with RevenueCat and credits it. We never grant from client purchase state alone.
+  // Buy a pack: StoreKit finishes the consumable, THEN the server verifies with
+  // RevenueCat and credits it (idempotent). Never grants from client state alone.
   const buy = useCallback(async (productId: CreditProductId) => {
     const Purchases = getPurchases();
-    const id = appUserIdRef.current ?? (await getAppUserId());
-    appUserIdRef.current = id;
-    if (!Purchases || !id) return false;
+    if (!Purchases) return false;
     const product = products[productId];
     if (!product) return false;
     try {
@@ -106,10 +94,16 @@ export function CreditsProvider({ children }: { children: React.ReactNode }) {
       if (e?.userCancelled) return false;
       throw e;
     }
-    const newBal = await redeemPurchases(id); // server-side verify + credit (idempotent)
-    if (typeof newBal === 'number') setBalance(newBal);
+    // Redeem edge function (Supabase attaches the user's JWT); server verifies + credits.
+    try {
+      const { data } = await supabase.functions.invoke('credits', { body: {} });
+      if (data && typeof data.balance === 'number') setBalance(data.balance);
+      else await loadBalance();
+    } catch {
+      await loadBalance();
+    }
     return true;
-  }, [products]);
+  }, [products, loadBalance]);
 
   const amountFor = useCallback((productId: string) => CREDIT_AMOUNTS[productId as CreditProductId] ?? 0, []);
 

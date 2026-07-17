@@ -40,7 +40,8 @@ export default function WellnessScreen() {
 
   const finish = () => {
     update({ wellnessConnected: connected ? ['apple'] : [] });
-    router.replace('/loading');
+    // Account step (Sign in with Apple) is the final onboarding step, before home.
+    router.replace('/auth' as any);
   };
 
   return (

@@ -15,6 +15,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import * as Notifications from 'expo-notifications';
 import { View, Platform } from 'react-native';
 import { ProfileProvider } from '@/hooks/useProfile';
+import { AuthProvider } from '@/hooks/useAuth';
 import { SubscriptionProvider } from '@/hooks/useSubscription';
 import { CreditsProvider } from '@/hooks/useCredits';
 import { HealthProvider } from '@/hooks/useHealth';
@@ -90,14 +91,16 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.black }}>
       <SafeAreaProvider>
         <ProfileProvider>
-          <SubscriptionProvider>
-            <CreditsProvider>
-              <HealthProvider>
-                <StatusBar style="light" />
-                <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.black }, animation: 'fade' }} />
-              </HealthProvider>
-            </CreditsProvider>
-          </SubscriptionProvider>
+          <AuthProvider>
+            <SubscriptionProvider>
+              <CreditsProvider>
+                <HealthProvider>
+                  <StatusBar style="light" />
+                  <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.black }, animation: 'fade' }} />
+                </HealthProvider>
+              </CreditsProvider>
+            </SubscriptionProvider>
+          </AuthProvider>
         </ProfileProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
