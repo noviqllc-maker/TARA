@@ -1,6 +1,6 @@
 // app/settings/privacy.tsx
 import React, { useEffect, useState } from 'react';
-import { View, Switch, Pressable, Alert } from 'react-native';
+import { View, Switch, Pressable, Alert, Linking } from 'react-native';
 import { router } from 'expo-router';
 import Screen from '@/components/Screen';
 import SubHeader from '@/components/SubHeader';
@@ -9,6 +9,8 @@ import { useProfile } from '@/hooks/useProfile';
 import { getRememberChat, setRememberChat, clearChatHistory, wipeLocalData } from '@/lib/privacy';
 import { cancelDailyNotifications } from '@/lib/notifications';
 import { colors } from '@/theme';
+
+const PRIVACY_URL = 'https://tarawellness.org/privacy';
 
 export default function PrivacySettings() {
   const { reset } = useProfile();
@@ -42,9 +44,36 @@ export default function PrivacySettings() {
       <SubHeader eyebrow="Settings" title="Privacy" />
 
       <Card style={{ marginBottom: 16 }}>
-        <Text variant="tiny" color={colors.muted}>
-          Your birth chart is computed on this device, and your data is stored locally on your phone — not on our servers. Ask Tara questions are sent to our service to generate a reply.
+        <Text variant="eyebrow" color={colors.gold}>In your account · synced</Text>
+        <Text variant="tiny" color={colors.muted} style={{ marginTop: 8, lineHeight: 18 }}>
+          Your Apple sign-in details (name, email, and user ID), birth details, chart, journal
+          entries, mood check-ins, purchased reports, and question credits are stored securely in
+          your account on our servers (Supabase). This keeps everything in sync across your devices
+          and safe if you reinstall.
         </Text>
+
+        <Text variant="eyebrow" color={colors.gold} style={{ marginTop: 18 }}>On this device only</Text>
+        <Text variant="tiny" color={colors.muted} style={{ marginTop: 8, lineHeight: 18 }}>
+          Your Ask Tara conversations stay on this device (per the setting below). Each question is
+          sent to our AI service to generate a reply, but isn’t retained on our servers beyond
+          producing that answer.
+        </Text>
+
+        <Text variant="eyebrow" color={colors.gold} style={{ marginTop: 18 }}>Apple Health</Text>
+        <Text variant="tiny" color={colors.muted} style={{ marginTop: 8, lineHeight: 18 }}>
+          Any Apple Health data is read on your device, only with your permission, and used solely
+          for personalized insights. It’s never sold or used for advertising.
+        </Text>
+
+        <Text variant="eyebrow" color={colors.gold} style={{ marginTop: 18 }}>Deleting your data</Text>
+        <Text variant="tiny" color={colors.muted} style={{ marginTop: 8, lineHeight: 18 }}>
+          You can permanently delete your account and everything stored on our servers anytime in
+          Settings → Delete Account.
+        </Text>
+
+        <Pressable onPress={() => Linking.openURL(PRIVACY_URL)} hitSlop={6} style={{ marginTop: 18 }}>
+          <Text variant="tiny" color={colors.gold} style={{ fontWeight: '600' }}>Read our full Privacy Policy →</Text>
+        </Pressable>
       </Card>
 
       <Card style={{ marginBottom: 16 }}>
