@@ -62,7 +62,6 @@
       "googlePlacesApiKey": "AIzaSyAxZ9MbfCPZR0tCM3BKtxs25us_pUVJ6JQ",
       "taraAiUrl": "https://daiqcbbegstszrwypkac.supabase.co/functions/v1/tara-ai",
       "supabaseUrl": "https://daiqcbbegstszrwypkac.supabase.co",
-      "supabaseAnonKey": "REPLACE_WITH_SUPABASE_ANON_KEY",
       "eas": {
         "projectId": ""
       }
