@@ -31,11 +31,25 @@ export default function AskTara() {
   const todayPrompts = useMemo(() => (chart ? chartTodayPrompts(chart) : []), [chart]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
-  const [category, setCategory] = useState<QuestionCategory['key']>('Mind');
+  // 'ForYou' = the per-day chart prompts, surfaced as the first suggestion chip.
+  const [category, setCategory] = useState<'ForYou' | QuestionCategory['key']>('ForYou');
   const [rememberChat, setRememberChat] = useState(true);
   const scrollRef = useRef<ScrollView>(null);
 
   const outOfCredits = balance !== null && balance <= 0;
+
+  // Suggestion chips: "✦ For You" (chart-today prompts) first when a chart exists, then
+  // the five life themes. Selecting a chip swaps the question list below — all rendered
+  // the same way. Falls back to the first available chip if the selection isn't present
+  // (e.g. 'ForYou' before the chart has loaded).
+  const chips = useMemo(
+    () =>
+      todayPrompts.length > 0
+        ? [{ key: 'ForYou' as const, label: 'For You', icon: '✦', color: colors.gold, questions: todayPrompts }, ...taraQuestions]
+        : taraQuestions,
+    [todayPrompts],
+  );
+  const activeChip = chips.find((c) => c.key === category) ?? chips[0];
 
   // Load memory — only if the privacy "remember conversations" setting is on.
   useEffect(() => {
@@ -80,7 +94,10 @@ export default function AskTara() {
   useEffect(() => {
     if (rememberChat) AsyncStorage.setItem(MEM_KEY, JSON.stringify(messages.slice(-STORE_CAP))).catch(() => {});
     else AsyncStorage.removeItem(MEM_KEY).catch(() => {});
-    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 80);
+    // Only auto-scroll to the latest message in an ACTIVE chat. In the empty
+    // suggestions view this would scroll the tab to the bottom of the list on mount,
+    // landing mid-page — the tab must open at the very top.
+    if (messages.length > 0) setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 80);
   }, [messages, rememberChat]);
 
   // A question opens the full-screen answer view, which performs the AUTHORITATIVE
@@ -114,28 +131,27 @@ export default function AskTara() {
             <Eyebrow>Ask Tara · Your 24/7 Guide</Eyebrow>
             <Text variant="h2" style={{ marginTop: 4 }}>Ask Tara anything</Text>
           </View>
-          <View style={{ alignItems: 'flex-end', gap: 8, paddingBottom: 4 }}>
-            <Pressable onPress={() => router.push('/ask/history' as any)} hitSlop={8}>
-              <Text variant="tiny" color={colors.gold}>◔ Past questions</Text>
-            </Pressable>
-            {!empty && (
-              <Pressable onPress={clearChat} hitSlop={8}>
-                <Text variant="tiny" color={colors.muted}>New conversation</Text>
+          <View style={{ alignItems: 'flex-end', gap: 7, paddingBottom: 4 }}>
+            {/* Remaining count (server-authoritative, live-updates) + compact Get more. */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Text variant="tiny" color={outOfCredits ? colors.terra : colors.gold} style={{ fontWeight: '600' }}>
+                ✦ {balance === null ? '—' : balance}
+              </Text>
+              <Pressable onPress={() => router.push('/credits')} hitSlop={6} style={styles.getMorePill}>
+                <Text variant="tiny" color={colors.gold} style={{ fontSize: 10.5, fontWeight: '700', letterSpacing: 0.3 }}>Get more</Text>
               </Pressable>
-            )}
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <Pressable onPress={() => router.push('/ask/history' as any)} hitSlop={6}>
+                <Text variant="tiny" color={colors.gold}>◔ Past questions</Text>
+              </Pressable>
+              {!empty && (
+                <Pressable onPress={clearChat} hitSlop={6}>
+                  <Text variant="tiny" color={colors.muted}>New</Text>
+                </Pressable>
+              )}
+            </View>
           </View>
-        </View>
-
-        {/* Server-authoritative credit balance. Tap to buy more. */}
-        <View style={{ paddingHorizontal: spacing.xl, marginBottom: 8 }}>
-          <Pressable onPress={() => router.push('/credits')} hitSlop={6} style={styles.balanceRow}>
-            <Text variant="tiny" color={outOfCredits ? colors.terra : colors.gold} style={{ fontWeight: '600' }}>
-              ✦ {balance === null ? '—' : balance} {balance === 1 ? 'question' : 'questions'} left
-            </Text>
-            <Text variant="tiny" color={colors.gold} style={{ fontWeight: '600' }}>
-              {outOfCredits ? 'Get more →' : 'Get more'}
-            </Text>
-          </Pressable>
         </View>
 
         <ScrollView
@@ -150,31 +166,15 @@ export default function AskTara() {
                 I know your chart, your dashas, today's transits and your wellness signals. Ask me about love, career, timing, or what to focus on.
               </Text>
 
-              {/* Based on your chart today — personalized, per-day prompts. Tapping
-                  prefills the input; sending routes through the same gated answer flow. */}
-              {todayPrompts.length > 0 && (
-                <View style={{ marginBottom: 22 }}>
-                  <Eyebrow color={colors.gold}>✦ Based on your chart today</Eyebrow>
-                  <View style={{ gap: 9, marginTop: 12 }}>
-                    {todayPrompts.map((q) => (
-                      <Pressable key={q} style={styles.todayCard} onPress={() => setInput(q)}>
-                        <Text variant="body" style={{ fontSize: 13.5, flex: 1 }}>{q}</Text>
-                        <Text style={{ color: colors.gold, fontSize: 15 }}>↑</Text>
-                      </Pressable>
-                    ))}
-                  </View>
-                </View>
-              )}
-
               <Eyebrow color={colors.muted}>Suggested Questions</Eyebrow>
-              {/* Category tabs — Mind · Love · Career · Money · Destiny */}
+              {/* Suggestion chips — ✦ For You (chart-today) · Mind · Love · Career · Money · Destiny */}
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={{ gap: 8, paddingVertical: 12 }}
               >
-                {taraQuestions.map((c) => {
-                  const active = c.key === category;
+                {chips.map((c) => {
+                  const active = c.key === activeChip?.key;
                   return (
                     <Pressable
                       key={c.key}
@@ -188,9 +188,9 @@ export default function AskTara() {
                   );
                 })}
               </ScrollView>
-              {/* Questions for the selected category */}
+              {/* Questions for the selected chip (For You = per-day chart prompts) */}
               <View style={{ gap: 9 }}>
-                {(taraQuestions.find((c) => c.key === category)?.questions ?? []).map((q) => (
+                {(activeChip?.questions ?? []).map((q) => (
                   <Pressable key={q} style={styles.suggest} onPress={() => send(q)}>
                     <Text variant="body" style={{ fontSize: 13.5 }}>{q}</Text>
                   </Pressable>
@@ -249,17 +249,12 @@ export default function AskTara() {
 }
 
 const styles = StyleSheet.create({
-  balanceRow: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingVertical: 9, paddingHorizontal: 14,
-    backgroundColor: 'rgba(205,163,73,0.06)', borderColor: colors.line, borderWidth: 1, borderRadius: radius.pill,
+  getMorePill: {
+    paddingVertical: 3, paddingHorizontal: 10, borderRadius: radius.pill,
+    borderWidth: 1, borderColor: colors.gold, backgroundColor: 'rgba(205,163,73,0.10)',
   },
   suggest: {
     padding: 14, backgroundColor: colors.card, borderColor: colors.line, borderWidth: 1, borderRadius: radius.lg,
-  },
-  todayCard: {
-    flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14,
-    backgroundColor: 'rgba(205,163,73,0.06)', borderColor: colors.gold, borderWidth: 1, borderRadius: radius.lg,
   },
   catTab: {
     paddingVertical: 7, paddingHorizontal: 14, borderRadius: radius.pill,

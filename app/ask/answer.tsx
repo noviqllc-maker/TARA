@@ -207,10 +207,10 @@ export default function AnswerView() {
           ) : (
             <View style={styles.thumbs}>
               <Pressable onPress={() => rate('up')} style={styles.thumb} hitSlop={8}>
-                <Text style={{ fontSize: 20 }}>👍</Text>
+                <Text style={styles.thumbGlyph}>👍</Text>
               </Pressable>
               <Pressable onPress={() => rate('down')} style={styles.thumb} hitSlop={8}>
-                <Text style={{ fontSize: 20 }}>👎</Text>
+                <Text style={styles.thumbGlyph}>👎</Text>
               </Pressable>
             </View>
           )}
@@ -228,9 +228,12 @@ const styles = StyleSheet.create({
   factor: { fontFamily: fonts.sansSemi, color: colors.gold, fontSize: 12.5, letterSpacing: 0.8, lineHeight: 18, marginTop: 8 },
   answerLoading: { alignItems: 'flex-start', paddingVertical: 20 },
   answer: { fontSize: 17, lineHeight: 27, marginTop: 10, color: colors.cream },
-  thumbs: { flexDirection: 'row', gap: 14, marginTop: 12 },
+  thumbs: { flexDirection: 'row', gap: 14, marginTop: 12, marginBottom: 8 },
   thumb: {
-    width: 52, height: 46, borderRadius: 14, alignItems: 'center', justifyContent: 'center',
+    width: 56, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center',
     borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card,
   },
+  // Emoji glyphs clip without an explicit lineHeight (the box is shorter than the glyph);
+  // includeFontPadding:false + centered text keeps 👍/👎 fully visible in the tap target.
+  thumbGlyph: { fontSize: 22, lineHeight: 30, includeFontPadding: false, textAlign: 'center' },
 });
