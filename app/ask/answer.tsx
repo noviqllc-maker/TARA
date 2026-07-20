@@ -17,18 +17,52 @@ import { useHealth } from '@/hooks/useHealth';
 import { useCredits } from '@/hooks/useCredits';
 import { computeTransitFactor, TransitFactor } from '@/lib/vedic';
 import { classifyTopic } from '@/lib/topic';
-import { askTaraAnswer, ChatMessage } from '@/lib/ai';
+import { askTaraAnswer, ChatMessage, TaraAnswer } from '@/lib/ai';
 import { getLanguage } from '@/lib/language';
 import { getRememberChat } from '@/lib/privacy';
 import { setAskDraft } from '@/lib/askDraft';
 import { saveHistory } from '@/lib/history';
-import { colors, fonts, spacing } from '@/theme';
+import { colors, fonts, radius, spacing } from '@/theme';
 
 const MEM_KEY = 'tara.chat.v1';       // shared with the Ask Tara screen
 const STORE_CAP = 200;                // keep in sync with the Ask Tara screen
 const FEEDBACK_KEY = 'tara.answer.feedback.v1';
 
 type UIState = 'loading' | 'ready' | 'nochart' | 'nocredits' | 'fairuse';
+
+// The known template lead-in labels (templates A–D). Matching against this whitelist —
+// rather than any "Label — …" pattern — avoids styling the em dashes the translation rule
+// puts INSIDE content ("Mercury retrograde in your 3rd — you'll rewrite that text thrice").
+const LEAD_INS = new Set([
+  'short answer', 'why', 'best timing', 'watch out', "tara's advice",
+  'the pattern', 'why your chart says this', 'what helps now',
+  'big picture', "what's changing", 'what to do',
+  'your challenge', 'your strength', 'the opportunity',
+]);
+
+// Renders the answer body. A line that begins with a known template label followed by
+// " — " gets a distinct gold lead-in; everything else is a serif paragraph. Template E
+// (plain prose) has no lead-ins, so it renders as paragraphs.
+function AnswerBody({ text }: { text: string }) {
+  const lines = text.split(/\n+/).map((l) => l.trim()).filter(Boolean);
+  return (
+    <View style={{ gap: 10, marginTop: 10 }}>
+      {lines.map((line, i) => {
+        const emIdx = line.indexOf(' — ');
+        const sep = emIdx !== -1 ? emIdx : line.indexOf(' - '); // tolerate hyphen
+        const label = sep > 0 ? line.slice(0, sep).trim() : '';
+        if (label && LEAD_INS.has(label.toLowerCase())) {
+          return (
+            <Text key={i} variant="serif" style={styles.answer}>
+              <Text style={styles.leadIn}>{label} — </Text>{line.slice(sep + 3).trim()}
+            </Text>
+          );
+        }
+        return <Text key={i} variant="serif" style={styles.answer}>{line}</Text>;
+      })}
+    </View>
+  );
+}
 
 export default function AnswerView() {
   const { q } = useLocalSearchParams<{ q?: string }>();
@@ -46,7 +80,7 @@ export default function AnswerView() {
     [chart, topic],
   );
   const [state, setState] = useState<UIState>('loading');
-  const [answer, setAnswer] = useState('');
+  const [ans, setAns] = useState<TaraAnswer | null>(null);
   const [rating, setRating] = useState<'up' | 'down' | null>(null);
   const [refetching, setRefetching] = useState(false); // "Try again" balance refetch in progress
   const [refreshNote, setRefreshNote] = useState('');   // brief feedback after a refetch
@@ -79,8 +113,8 @@ export default function AnswerView() {
     }
 
     const language = await getLanguage();
-    const res = await askTaraAnswer(question, factor.label, profile.name || 'friend', chart, metrics, language);
-    setAnswer(res.answer);
+    const res = await askTaraAnswer(question, factor.label, profile.name || 'friend', chart, metrics, language, topic);
+    setAns(res);
     setAskDraft(''); // answered → don't restore the question to the input
     setState('ready');
     // Persist to server-side history (survives reinstall; queues if signed out).
@@ -94,7 +128,14 @@ export default function AnswerView() {
         await AsyncStorage.setItem(MEM_KEY, JSON.stringify(next.slice(-STORE_CAP)));
       } catch {}
     }
-  }, [question, chart, factor, profile.name, metrics, authorize]);
+  }, [question, chart, factor, profile.name, metrics, authorize, topic]);
+
+  // Follow-up chip → PREFILL the Ask Tara input (never auto-send/spend). Mirrors the
+  // Home/Insights bridge: stash the draft, then return to the tab which restores it.
+  const askFollowup = useCallback((qn: string) => {
+    setAskDraft(qn);
+    router.dismissTo('/(tabs)/tara' as any);
+  }, []);
 
   useEffect(() => {
     if (startedRef.current) return;
@@ -214,12 +255,15 @@ export default function AnswerView() {
       <Eyebrow>You Asked</Eyebrow>
       <Text variant="serif" style={styles.question}>“{question}”</Text>
 
-      {/* b) CELESTIAL CALCULATION CARD */}
+      {/* b) CELESTIAL CALCULATION CARD — attribution reflects the factors the answer
+             actually leaned on (from the model), falling back to the engine factor. */}
       <Card style={styles.calcCard}>
         {factor && <AspectDiagram factor={factor} size={116} />}
         <View style={{ flex: 1, paddingLeft: 14 }}>
           <Eyebrow color={colors.gold}>Celestial Calculation</Eyebrow>
-          <Text style={styles.factor}>{factor?.label}</Text>
+          <Text style={styles.factor}>
+            {ans?.factors?.length ? ans.factors.join('  ·  ') : factor?.label}
+          </Text>
         </View>
       </Card>
 
@@ -228,10 +272,35 @@ export default function AnswerView() {
       {state === 'loading' ? (
         <View style={styles.answerLoading}>
           <ActivityIndicator color={colors.gold} />
-          <Text variant="tiny" color={colors.muted} style={{ marginTop: 10 }}>Tara is reading the sky…</Text>
+          <Text variant="tiny" color={colors.muted} style={{ marginTop: 10 }}>Tara is reading your chart…</Text>
         </View>
       ) : (
-        <Text variant="serif" style={styles.answer}>{answer}</Text>
+        <>
+          <AnswerBody text={ans?.answer ?? ''} />
+
+          {/* Takeaway — one memorable standalone line, styled distinctly. */}
+          {ans?.takeaway ? (
+            <View style={styles.takeawayBox}>
+              <Text variant="eyebrow" color={colors.gold} style={{ marginBottom: 6 }}>Today's Takeaway</Text>
+              <Text style={styles.takeawayLine}>{ans.takeaway}</Text>
+            </View>
+          ) : null}
+
+          {/* Follow-up suggestions — tap prefills the Ask Tara input (no auto-send). */}
+          {ans?.followups?.length ? (
+            <View style={{ marginTop: spacing.xl }}>
+              <Eyebrow color={colors.muted}>You may also want to ask</Eyebrow>
+              <View style={{ gap: 8, marginTop: 10 }}>
+                {ans.followups.map((f) => (
+                  <Pressable key={f} onPress={() => askFollowup(f)} style={styles.followChip}>
+                    <Text variant="body" style={{ fontSize: 13.5, flex: 1 }}>{f}</Text>
+                    <Text style={{ color: colors.gold, fontSize: 15 }}>↑</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          ) : null}
+        </>
       )}
 
       {/* d) FEEDBACK */}
@@ -265,7 +334,17 @@ const styles = StyleSheet.create({
   calcCard: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xl },
   factor: { fontFamily: fonts.sansSemi, color: colors.gold, fontSize: 12.5, letterSpacing: 0.8, lineHeight: 18, marginTop: 8 },
   answerLoading: { alignItems: 'flex-start', paddingVertical: 20 },
-  answer: { fontSize: 17, lineHeight: 27, marginTop: 10, color: colors.cream },
+  answer: { fontSize: 17, lineHeight: 27, color: colors.cream },
+  leadIn: { fontFamily: fonts.sansSemi, color: colors.gold, fontSize: 13, letterSpacing: 0.3 },
+  takeawayBox: {
+    marginTop: spacing.xl, paddingTop: 16, paddingHorizontal: 16, paddingBottom: 18,
+    borderRadius: 16, borderWidth: 1, borderColor: 'rgba(205,163,73,0.35)', backgroundColor: 'rgba(205,163,73,0.07)',
+  },
+  takeawayLine: { fontFamily: fonts.serif, fontStyle: 'italic', fontSize: 18, lineHeight: 26, color: colors.goldSoft },
+  followChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 10, padding: 13,
+    backgroundColor: colors.card, borderColor: colors.line, borderWidth: 1, borderRadius: radius.lg,
+  },
   thumbs: { flexDirection: 'row', gap: 14, marginTop: 12, marginBottom: 8 },
   thumb: {
     width: 56, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center',

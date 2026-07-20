@@ -84,12 +84,44 @@ export async function askTara(
 }
 
 // ---- Ask Tara answer view -------------------------------------------------------
-// A single, short, factor-grounded answer for the new answer experience. Sends the
-// engine-derived transit factor and asks the model to (a) stay under 110 words and
-// (b) echo the factor it used, returned as JSON {factor, answer}. Degrades to plain
-// text if the backend returns prose (older deploy) — the card still shows the real,
-// app-computed factor either way.
-export type TaraAnswer = { answer: string; factorEcho?: string };
+// The answer experience: a warm, human-first answer that happens to use Vedic astrology.
+// The model returns structured JSON so the client can render distinct parts: the answer
+// body (with template lead-ins), the 1–3 factors actually leaned on (attribution header),
+// a standalone takeaway line, and 3 tailored follow-up questions.
+export type TaraAnswer = {
+  answer: string;
+  factors?: string[];    // 1–3 short factor labels the answer actually used (attribution)
+  takeaway?: string;     // one memorable standalone line, rendered distinctly
+  followups?: string[];  // 3 tailored next questions (rendered as prefill chips)
+};
+
+// Five answer structures. The client detects "Label — content" lead-ins on their own
+// lines and styles them; template E is plain conversational prose (no lead-ins).
+const TEMPLATES: Record<'A' | 'B' | 'C' | 'D' | 'E', string> = {
+  A: "TEMPLATE A — five lead-ins, each on its own line: 'Short answer — …', 'Why — …', 'Best timing — …', 'Watch out — …', 'Tara's advice — …'.",
+  B: "TEMPLATE B — three lead-ins, each on its own line: 'The pattern — …', 'Why your chart says this — …', 'What helps now — …'.",
+  C: "TEMPLATE C — three lead-ins, each on its own line: 'Big picture — …', 'What's changing — …', 'What to do — …'.",
+  D: "TEMPLATE D — three lead-ins, each on its own line: 'Your challenge — …', 'Your strength — …', 'The opportunity — …'.",
+  E: "TEMPLATE E — a single flowing conversational answer with NO section lead-ins (best for short/simple questions). May be shorter (60–120 words).",
+};
+
+const strHash = (s: string): number => {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
+  return Math.abs(h);
+};
+
+// Choose a template by (question shape + topic + seeded rotation) so consecutive answers
+// vary. Short questions → E; timing questions → A/C (they carry 'best timing' / 'what's
+// changing'); otherwise rotate A–D by a hash of the question.
+function pickTemplate(question: string, topic: string): 'A' | 'B' | 'C' | 'D' | 'E' {
+  const words = question.trim().split(/\s+/).filter(Boolean).length;
+  if (words <= 6) return 'E';
+  const timing = /\b(when|timing|time|year|month|soon|window|period|right time|good time)\b/i.test(question);
+  const h = strHash(question.toLowerCase() + ':' + topic);
+  if (timing) return (['A', 'C'] as const)[h % 2];
+  return (['A', 'B', 'C', 'D'] as const)[h % 4];
+}
 
 export async function askTaraAnswer(
   question: string,
@@ -98,40 +130,50 @@ export async function askTaraAnswer(
   chart: BirthChart | null = null,
   health: HealthMetrics | null = null,
   language = 'English',
+  topic = 'general',
 ): Promise<TaraAnswer> {
   const url = endpoint();
   const q = question.trim();
-  if (!url) return { answer: fallbackReply([{ role: 'user', content: q }]), factorEcho: factorLabel };
+  const offline = (): TaraAnswer => ({ answer: fallbackReply([{ role: 'user', content: q }]), factors: [factorLabel] });
+  if (!url) return offline();
 
   const context = buildContext(name, chart, health);
-  const system =
-    'You are Tara, a warm, grounded Vedic astrology guide. Answer in under 110 words. ' +
-    'Lead with the observation, land on one insight. No lists, no headers, no hedging filler. ' +
-    'Second person, honest and specific; never doom or fear; no medical, legal, or financial directives. ' +
-    `Ground the answer in this astrological factor, which was chosen as the strongest driver for THIS question: "${factorLabel}". ` +
-    'Lead with the factor most relevant to what was asked (career → 10th house / Saturn / Sun; love → Venus / 7th; money → Jupiter / 2nd / 11th; and so on) — never default to the Moon unless it is genuinely the strongest factor here. ' +
-    'Include one short "because" clause that names the actual mechanism (the graha, house, aspect, or dasha) driving your read — e.g. "because Saturn is transiting your 10th". ' +
-    'You may reference the running Mahadasha/Antardasha, a current transit, or a retrograde from the context when it sharpens the answer. ' +
-    'Return ONLY JSON: {"factor":"<echo the exact factor you used>","answer":"<your answer>"}' +
-    (language && language !== 'English' ? ` Write the answer in ${language}; keep Sanskrit terms as-is.` : '');
-  const userMsg = `Astrological factor: ${factorLabel}\n\nQuestion: ${q}`;
+  const tpl = pickTemplate(q, topic);
+  const system = [
+    "You are Tara — a warm, grounded guide who happens to use Vedic astrology. You speak like a trusted friend who reads charts, not an astrologer lecturing about one.",
+    // 1. Opener
+    "OPENING: never open with an astrological factor, planet, house, or transit. Open with a direct human response to the question — the short answer, the pattern you notice, or a conversational hook (e.g. \"Here's what stands out.\" / \"You're asking at an interesting moment.\"). Vary your openers across answers. Never start with the user's name. Do NOT mention the transiting Moon unless the question is specifically about today's mood or energy.",
+    // 2. Structure
+    `STRUCTURE: ${TEMPLATES[tpl]} Put each lead-in on its own line in the exact form 'Label — content' (space, em dash, space). No markdown, no '#', no bullet points.`,
+    // Timing
+    "For yearly, life-direction, or timing questions, lead with the running Mahadasha/Antardasha or slow planets (Saturn, Jupiter, Rahu, Ketu) — never today's Moon. Timing claims must derive ONLY from the provided dasha/transit data.",
+    // 3. Translation rule
+    "TRANSLATION RULE: every astrological mechanism you cite MUST be immediately paired with a lived-experience translation of how it feels in daily life — e.g. \"Mercury retrograde in your 3rd — you'll catch yourself rewriting the same message three times before sending.\" The astrology explains; the human sentence lands it.",
+    // 8. Guardrails
+    "Only use chart factors present in the provided context — never invent planets, houses, dashas, aspects, or transits. Warm, specific, never doom or fear; no medical, legal, or financial directives.",
+    `LENGTH: ${tpl === 'E' ? '60–120' : '120–200'} words for the answer body (excluding the takeaway).`,
+    // 4/5/6. Structured output
+    'Return ONLY minified JSON with exactly these fields: {"factors":[1–3 SHORT UPPERCASE labels naming the factors you actually leaned on, e.g. "JUPITER–MERCURY ANTARDASHA","MERCURY RETROGRADE","SATURN IN 10TH"],"answer":"the templated answer text — no takeaway, no follow-ups inside it","takeaway":"one memorable standalone sentence that sums it up","followups":["three short, specific questions the user might naturally ask next"]}.',
+    language && language !== 'English' ? `Write answer, takeaway, and followups in ${language}; keep Sanskrit terms as-is. Keep factors in English uppercase.` : '',
+  ].filter(Boolean).join(' ');
+  const userMsg = `Question: ${q}\n\n(Engine-detected strongest transit — cite ONLY if genuinely relevant to this question: ${factorLabel})`;
 
   try {
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages: [{ role: 'user', content: userMsg }], context, system, maxTokens: 400 }),
+      body: JSON.stringify({ messages: [{ role: 'user', content: userMsg }], context, system, maxTokens: 900 }),
     });
-    if (!res.ok) return { answer: fallbackReply([{ role: 'user', content: q }]), factorEcho: factorLabel };
+    if (!res.ok) return offline();
     const data = await res.json();
     const text = String(data?.text ?? '').trim();
-    return parseAnswer(text) ?? { answer: text || fallbackReply([{ role: 'user', content: q }]), factorEcho: factorLabel };
+    return parseAnswer(text) ?? { answer: text || offline().answer, factors: [factorLabel] };
   } catch {
-    return { answer: fallbackReply([{ role: 'user', content: q }]), factorEcho: factorLabel };
+    return offline();
   }
 }
 
-// Pull {"factor","answer"} from the model text; tolerant of ```json fences/preamble.
+// Pull the structured answer from the model text; tolerant of ```json fences/preamble.
 function parseAnswer(text: string): TaraAnswer | null {
   if (!text) return null;
   const s = text.replace(/^```(?:json)?/i, '').replace(/```$/i, '').trim();
@@ -141,7 +183,14 @@ function parseAnswer(text: string): TaraAnswer | null {
     const o = JSON.parse(s.slice(a, b + 1));
     const answer = typeof o.answer === 'string' ? o.answer.trim() : '';
     if (!answer) return null;
-    return { answer, factorEcho: typeof o.factor === 'string' ? o.factor : undefined };
+    const strArr = (v: any): string[] | undefined =>
+      Array.isArray(v) ? v.filter((x) => typeof x === 'string' && x.trim()).map((x) => x.trim()).slice(0, 3) : undefined;
+    return {
+      answer,
+      factors: strArr(o.factors),
+      takeaway: typeof o.takeaway === 'string' && o.takeaway.trim() ? o.takeaway.trim() : undefined,
+      followups: strArr(o.followups),
+    };
   } catch { return null; }
 }
 

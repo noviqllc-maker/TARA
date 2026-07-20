@@ -21,7 +21,7 @@ export default function History() {
 
   return (
     <Screen>
-      <SubHeader eyebrow="Ask Tara" title="Past questions" />
+      <SubHeader eyebrow="Ask Tara" title="My Cosmic Journal" />
 
       {items === null ? (
         <View style={{ paddingTop: 48, alignItems: 'center' }}>
@@ -30,7 +30,7 @@ export default function History() {
       ) : items.length === 0 ? (
         <Card>
           <Text variant="tiny" color={colors.muted} style={{ lineHeight: 18 }}>
-            Your past questions will appear here once you ask Tara — and they follow your account across devices.
+            Your Cosmic Journal fills as you ask Tara — every question and answer, kept here and carried with your account across devices.
           </Text>
         </Card>
       ) : (

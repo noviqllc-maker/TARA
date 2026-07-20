@@ -171,7 +171,7 @@ export default function AskTara() {
             )}
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               <Pressable onPress={() => router.push('/ask/history' as any)} hitSlop={6}>
-                <Text variant="tiny" color={colors.gold}>◔ Past questions</Text>
+                <Text variant="tiny" color={colors.gold}>◔ My Cosmic Journal</Text>
               </Pressable>
               {!empty && (
                 <Pressable onPress={clearChat} hitSlop={6}>
