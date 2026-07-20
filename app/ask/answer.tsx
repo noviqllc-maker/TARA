@@ -28,7 +28,7 @@ const MEM_KEY = 'tara.chat.v1';       // shared with the Ask Tara screen
 const STORE_CAP = 200;                // keep in sync with the Ask Tara screen
 const FEEDBACK_KEY = 'tara.answer.feedback.v1';
 
-type UIState = 'loading' | 'ready' | 'nochart' | 'nocredits';
+type UIState = 'loading' | 'ready' | 'nochart' | 'nocredits' | 'fairuse';
 
 export default function AnswerView() {
   const { q } = useLocalSearchParams<{ q?: string }>();
@@ -56,6 +56,12 @@ export default function AnswerView() {
   // Return to Ask Tara; the pending question is restored there (draft set in run()).
   const close = useCallback(() => router.back(), []);
 
+  // First day of next calendar month — when the premium fair-use allowance refreshes.
+  const resetDate = useMemo(() => {
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth() + 1, 1).toLocaleDateString(undefined, { month: 'long', day: 'numeric' });
+  }, []);
+
   // The AUTHORITATIVE gate: a question is generated ONLY if the server decrement
   // succeeds. authorizedRef ensures we never double-spend on a retry.
   const run = useCallback(async () => {
@@ -66,8 +72,9 @@ export default function AnswerView() {
     setState('loading');
 
     if (!authorizedRef.current) {
-      const ok = await authorize(); // server-side atomic decrement
-      if (!ok) { setState('nocredits'); return; }
+      const res = await authorize(); // server-side gate (free: credit; premium: monthly counter)
+      if (res === 'fair-use') { setState('fairuse'); return; } // premium monthly cap reached
+      if (res !== 'ok') { setState('nocredits'); return; }     // free: out of credits / error
       authorizedRef.current = true;
     }
 
@@ -168,6 +175,30 @@ export default function AnswerView() {
           {refreshNote ? (
             <Text variant="tiny" color={colors.muted} style={{ marginTop: 12 }}>{refreshNote}</Text>
           ) : null}
+        </View>
+      </Screen>
+    );
+  }
+
+  if (state === 'fairuse') {
+    return (
+      <Screen scroll={false} contentStyle={{ flex: 1 }}>
+        <Pressable onPress={close} hitSlop={8} style={styles.closeX}>
+          <Text variant="body" color={colors.muted}>✕ Close</Text>
+        </Pressable>
+        <View style={styles.center}>
+          <Text variant="eyebrow" color={colors.gold} style={{ marginBottom: 10 }}>✦ Fair-use limit</Text>
+          <Text variant="serif" style={{ fontSize: 22, textAlign: 'center' }}>You've reached this month's limit</Text>
+          <Text variant="tiny" color={colors.muted} style={{ marginTop: 8, marginBottom: 22, textAlign: 'center', lineHeight: 19 }}>
+            You've asked 100 questions this month — the fair-use limit for Premium. Your questions refresh on {resetDate}.
+          </Text>
+          <View style={{ alignSelf: 'stretch', paddingHorizontal: spacing.xl }}>
+            <GoldButton label="Done" onPress={close} />
+          </View>
+          {/* Overflow option — a credit pack works past the monthly cap (no trapped state). */}
+          <Pressable onPress={() => router.push('/credits')} hitSlop={8} style={{ marginTop: 16 }}>
+            <Text variant="tiny" color={colors.gold} style={{ fontWeight: '600' }}>Need more now? Get a credit pack →</Text>
+          </Pressable>
         </View>
       </Screen>
     );

@@ -18,3 +18,11 @@ export const CREDIT_AMOUNTS: Record<CreditProductId, number> = {
 //  'error'     – StoreKit / purchase error (nothing charged)
 //  'pending'   – charged but the async grant (webhook) hadn't landed in time
 export type BuyResult = 'success' | 'cancelled' | 'error' | 'pending';
+
+// Outcome of authorizing one Ask Tara question:
+//  'ok'         – authorized (free: a credit was spent; premium: monthly counter incremented,
+//                 or a credit spent as overflow past the monthly cap)
+//  'no-credits' – free user with a 0 balance → show the buy-credits screen
+//  'fair-use'   – premium user who hit the 100/month cap AND has no credits → fair-use screen
+//  'error'      – server/network error (not authorized; nothing spent)
+export type AuthResult = 'ok' | 'no-credits' | 'fair-use' | 'error';

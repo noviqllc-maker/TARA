@@ -25,7 +25,8 @@ export default function AskTara() {
   const insets = useSafeAreaInsets();
   const chart = useChart();
   // Question credits are server-authoritative; the balance here just mirrors the server.
-  const { balance, refresh } = useCredits();
+  // Premium users see monthly fair-use remaining instead of a credit count.
+  const { balance, premiumRemaining, isPremium, refresh } = useCredits();
   const params = useLocalSearchParams<{ category?: string }>();
   // Per-day prompts from the user's active transits/dasha (deterministic within a day).
   const todayPrompts = useMemo(() => (chart ? chartTodayPrompts(chart) : []), [chart]);
@@ -40,7 +41,10 @@ export default function AskTara() {
   // (set back to undefined) a tick later so the user can move the caret freely.
   const [sel, setSel] = useState<{ start: number; end: number } | undefined>(undefined);
 
-  const outOfCredits = balance !== null && balance <= 0;
+  // Free users out of credits get the buy-credits fast-path. Premium users are never
+  // blocked here — the monthly fair-use cap is handled (with a friendly screen) in the
+  // answer view, so a capped premium user still gets there (and the credit-pack overflow).
+  const outOfCredits = !isPremium && balance !== null && balance <= 0;
 
   // Every question suggestion routes through here: it PREFILLS the input (focused, caret
   // at end) and never sends. Spending a credit requires the explicit send press.
@@ -150,15 +154,21 @@ export default function AskTara() {
             <Text variant="h2" style={{ marginTop: 4 }}>Ask Tara anything</Text>
           </View>
           <View style={{ alignItems: 'flex-end', gap: 7, paddingBottom: 4 }}>
-            {/* Remaining count (server-authoritative, live-updates) + compact Get more. */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Text variant="tiny" color={outOfCredits ? colors.terra : colors.gold} style={{ fontWeight: '600' }}>
-                ✦ {balance === null ? '—' : balance}
+            {/* Premium: subtle monthly fair-use remaining. Free: credit count + Get more. */}
+            {isPremium ? (
+              <Text variant="tiny" color={colors.gold} style={{ fontWeight: '600' }}>
+                ✦ {premiumRemaining === null ? '—' : premiumRemaining} left this month
               </Text>
-              <Pressable onPress={() => router.push('/credits')} hitSlop={6} style={styles.getMorePill}>
-                <Text variant="tiny" color={colors.gold} style={{ fontSize: 10.5, fontWeight: '700', letterSpacing: 0.3 }}>Get more</Text>
-              </Pressable>
-            </View>
+            ) : (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Text variant="tiny" color={outOfCredits ? colors.terra : colors.gold} style={{ fontWeight: '600' }}>
+                  ✦ {balance === null ? '—' : balance}
+                </Text>
+                <Pressable onPress={() => router.push('/credits')} hitSlop={6} style={styles.getMorePill}>
+                  <Text variant="tiny" color={colors.gold} style={{ fontSize: 10.5, fontWeight: '700', letterSpacing: 0.3 }}>Get more</Text>
+                </Pressable>
+              </View>
+            )}
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               <Pressable onPress={() => router.push('/ask/history' as any)} hitSlop={6}>
                 <Text variant="tiny" color={colors.gold}>◔ Past questions</Text>

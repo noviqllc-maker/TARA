@@ -18,7 +18,7 @@ const BENEFITS = [
   'Daily recommendations: what to read, watch, and do for your chart',
   'Timing windows — know exactly when the stars align for love, travel & decisions',
   'The lessons the stars want you to teach you today',
-  '5 Ask Tara questions every day',
+  '100 Ask Tara questions every month',
 ];
 
 type Tier = 'annual' | 'monthly';

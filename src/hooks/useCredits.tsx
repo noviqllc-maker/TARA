@@ -6,14 +6,17 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { AppState } from 'react-native';
 import { supabase } from '@/lib/supabase';
-import { CREDIT_PRODUCT_IDS, CREDIT_AMOUNTS, CreditProductId, BuyResult } from '@/lib/credits';
+import { useSubscription } from '@/hooks/useSubscription';
+import { CREDIT_PRODUCT_IDS, CREDIT_AMOUNTS, CreditProductId, BuyResult, AuthResult } from '@/lib/credits';
 
 type CreditsState = {
-  balance: number | null;                    // server balance; null when signed out / unknown
+  balance: number | null;                    // free-user credit balance; null when premium / signed out / unknown
+  premiumRemaining: number | null;           // premium fair-use questions left this month; null when not premium
+  isPremium: boolean;
   loading: boolean;
   products: Record<string, any>;             // productId -> StoreProduct (priceString)
-  refresh: () => Promise<number | null>;     // re-read the server balance; returns it
-  authorize: () => Promise<boolean>;         // atomic server decrement; true = question allowed
+  refresh: () => Promise<number | null>;     // re-read the server balance / monthly remaining
+  authorize: () => Promise<AuthResult>;      // atomic server gate (credit decrement OR premium increment)
   buy: (productId: CreditProductId) => Promise<BuyResult>; // purchase → wait for server grant
   amountFor: (productId: string) => number;
 };
@@ -26,9 +29,14 @@ function getPurchases(): any | null {
 
 export function CreditsProvider({ children }: { children: React.ReactNode }) {
   const [balance, setBalance] = useState<number | null>(null);
+  const [premiumRemaining, setPremiumRemaining] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState<Record<string, any>>({});
   const productsFetchedRef = useRef(false);
+  // Premium bypasses the credit decrement and uses a monthly fair-use counter instead.
+  // Read via a ref so the loadBalance/authorize callbacks stay stable.
+  const { isPremium } = useSubscription();
+  const isPremiumRef = useRef(isPremium);
 
   const loadProducts = useCallback(async () => {
     if (productsFetchedRef.current) return;
@@ -48,28 +56,25 @@ export function CreditsProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Load the signed-in user's balance (server-authoritative). Returns it too.
+  // Load the signed-in user's balance (free) or monthly fair-use remaining (premium).
   const loadBalance = useCallback(async (): Promise<number | null> => {
     const { data: sess } = await supabase.auth.getSession();
     if (!sess.session) {
-      if (__DEV__) console.log('[Credits] loadBalance: no session → balance null');
-      setBalance(null);
+      setBalance(null); setPremiumRemaining(null);
       return null;
     }
-    const uid = sess.session.user.id;
-    const { data, error } = await supabase.rpc('ensure_user_credits'); // grants 5 once, returns balance
-    // TEMP DIAGNOSTIC: log the app's auth uid alongside the raw RPC result. If this uid
-    // does NOT match the user_id that holds the credits on the server (3a4d8e93-…), the
-    // credits are on a different auth user (identity mismatch, not RLS). If `error` is
-    // non-null, auth.uid() likely resolved to null server-side (JWT not attached).
-    if (__DEV__) console.log('[Credits] ensure_user_credits', { uid, data, error });
-    if (!error && typeof data === 'number') {
-      setBalance(data);
-      return data;
+    if (isPremiumRef.current) {
+      // Premium: show questions remaining this month (does not touch credits).
+      const { data, error } = await supabase.rpc('premium_ask_status');
+      if (__DEV__) console.log('[Credits] premium_ask_status', { data, error });
+      if (!error && typeof data === 'number') { setPremiumRemaining(data); setBalance(null); return data; }
+      return null;
     }
-    // Do NOT silently coalesce an error to 0 — surface it, keep balance null (shows "—",
-    // not a false "out of credits"), and let the log above explain why.
-    if (__DEV__) console.warn('[Credits] ensure_user_credits FAILED — reading balance as unknown, not 0:', error?.message ?? error);
+    const { data, error } = await supabase.rpc('ensure_user_credits'); // grants 5 once, returns balance
+    if (!error && typeof data === 'number') { setBalance(data); setPremiumRemaining(null); return data; }
+    // Do NOT silently coalesce an error to 0 — keep balance null (shows "—", not a false
+    // "out of credits").
+    if (__DEV__) console.warn('[Credits] ensure_user_credits failed — balance unknown, not 0:', error?.message ?? error);
     return null;
   }, []);
 
@@ -83,7 +88,7 @@ export function CreditsProvider({ children }: { children: React.ReactNode }) {
     // React to sign-in / sign-out so the balance always reflects the current user.
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
       if (s) loadBalance();
-      else setBalance(null);
+      else { setBalance(null); setPremiumRemaining(null); }
     });
     // Refetch on foreground: an async webhook grant may have landed while the app was
     // backgrounded (e.g. after a purchase's ~10s poll window returned 'pending'), so the
@@ -92,18 +97,34 @@ export function CreditsProvider({ children }: { children: React.ReactNode }) {
     return () => { cancelled = true; sub.subscription.unsubscribe(); appSub.remove(); };
   }, [loadBalance, loadProducts]);
 
+  // Keep the premium ref current and re-read the right counter when the tier flips
+  // (RevenueCat resolves premium asynchronously after mount).
+  useEffect(() => { isPremiumRef.current = isPremium; loadBalance(); }, [isPremium, loadBalance]);
+
   const refresh = useCallback(async (): Promise<number | null> => loadBalance(), [loadBalance]);
 
-  // Atomic, RLS-scoped server decrement. Returns true only if the server authorized.
-  const authorize = useCallback(async () => {
+  // Atomic server gate for one question.
+  //  - Premium: increment the monthly fair-use counter; if capped, fall back to a credit
+  //    decrement so purchased packs work as overflow, else 'fair-use'.
+  //  - Free: atomic credit decrement; -1 → 'no-credits'.
+  const authorize = useCallback(async (): Promise<AuthResult> => {
+    if (isPremiumRef.current) {
+      const { data, error } = await supabase.rpc('increment_premium_ask');
+      if (__DEV__) console.log('[Credits] increment_premium_ask', { data, error });
+      if (error || typeof data !== 'number') return 'error';
+      if (data !== -1) { setPremiumRemaining(data); return 'ok'; }
+      setPremiumRemaining(0);
+      // Monthly cap reached — allow a credit pack (if any) as overflow.
+      const { data: dec, error: decErr } = await supabase.rpc('decrement_credit');
+      if (!decErr && typeof dec === 'number' && dec !== -1) { setBalance(dec); return 'ok'; }
+      return 'fair-use';
+    }
     const { data, error } = await supabase.rpc('decrement_credit');
-    // TEMP DIAGNOSTIC: distinguish a true 0-balance (data === -1) from a swallowed error
-    // (auth.uid() null / network) that currently ALSO shows "out of credits".
     if (__DEV__) console.log('[Credits] decrement_credit', { data, error });
-    if (error || typeof data !== 'number') return false; // server/network error → not authorized
-    if (data === -1) { setBalance(0); return false; }      // out of credits
+    if (error || typeof data !== 'number') return 'error'; // server/network error → not authorized
+    if (data === -1) { setBalance(0); return 'no-credits'; } // out of credits
     setBalance(data);
-    return true;
+    return 'ok';
   }, []);
 
   // Buy a pack: StoreKit finishes the consumable, then we wait for the SERVER to grant
@@ -136,7 +157,7 @@ export function CreditsProvider({ children }: { children: React.ReactNode }) {
   const amountFor = useCallback((productId: string) => CREDIT_AMOUNTS[productId as CreditProductId] ?? 0, []);
 
   return (
-    <Ctx.Provider value={{ balance, loading, products, refresh, authorize, buy, amountFor }}>
+    <Ctx.Provider value={{ balance, premiumRemaining, isPremium, loading, products, refresh, authorize, buy, amountFor }}>
       {children}
     </Ctx.Provider>
   );
