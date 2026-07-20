@@ -25,7 +25,7 @@ export default function AskTara() {
   const insets = useSafeAreaInsets();
   const chart = useChart();
   // Question credits are server-authoritative; the balance here just mirrors the server.
-  const { balance } = useCredits();
+  const { balance, refresh } = useCredits();
   const params = useLocalSearchParams<{ category?: string }>();
   // Per-day prompts from the user's active transits/dasha (deterministic within a day).
   const todayPrompts = useMemo(() => (chart ? chartTodayPrompts(chart) : []), [chart]);
@@ -54,6 +54,9 @@ export default function AskTara() {
   useFocusEffect(React.useCallback(() => {
     const restored = takeAskDraft();
     if (restored) setInput(restored);
+    // Re-read the server balance on entry: credits bought on the paywall (or granted by a
+    // late webhook) must unlock questions here without waiting for an app restart.
+    refresh();
     (async () => {
       const remember = await getRememberChat();
       setRememberChat(remember);
@@ -62,7 +65,7 @@ export default function AskTara() {
         if (v) setMessages(JSON.parse(v));
       }
     })();
-  }, []));
+  }, [refresh]));
 
   // Pre-select a category when navigated here with a `category` param (e.g. from the
   // Love screen → "Relationships"). Case-insensitive; falls back to the current default.

@@ -4,6 +4,7 @@
 // device cannot touch another user's balance. Redeem runs in an edge function (needs
 // the RevenueCat secret). Independent of the premium subscription and the shop.
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
+import { AppState } from 'react-native';
 import { supabase } from '@/lib/supabase';
 import { CREDIT_PRODUCT_IDS, CREDIT_AMOUNTS, CreditProductId, BuyResult } from '@/lib/credits';
 
@@ -52,7 +53,11 @@ export function CreditsProvider({ children }: { children: React.ReactNode }) {
     const { data: sess } = await supabase.auth.getSession();
     if (!sess.session) { setBalance(null); return null; }
     const { data, error } = await supabase.rpc('ensure_user_credits'); // grants 5 once, returns balance
-    if (!error && typeof data === 'number') { setBalance(data); return data; }
+    if (!error && typeof data === 'number') {
+      if (__DEV__) console.log('[Credits] server balance =', data); // TEMP: trace refreshes in Metro
+      setBalance(data);
+      return data;
+    }
     return null;
   }, []);
 
@@ -68,7 +73,11 @@ export function CreditsProvider({ children }: { children: React.ReactNode }) {
       if (s) loadBalance();
       else setBalance(null);
     });
-    return () => { cancelled = true; sub.subscription.unsubscribe(); };
+    // Refetch on foreground: an async webhook grant may have landed while the app was
+    // backgrounded (e.g. after a purchase's ~10s poll window returned 'pending'), so the
+    // stale in-memory balance would otherwise keep questions locked until a full restart.
+    const appSub = AppState.addEventListener('change', (s) => { if (s === 'active') loadBalance(); });
+    return () => { cancelled = true; sub.subscription.unsubscribe(); appSub.remove(); };
   }, [loadBalance, loadProducts]);
 
   const refresh = useCallback(async (): Promise<number | null> => loadBalance(), [loadBalance]);
