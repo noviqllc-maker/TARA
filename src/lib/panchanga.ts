@@ -43,6 +43,10 @@ function fmtHour(h: number): string {
 // The day lord's own auspicious horā window in the afternoon. Approximates sunrise at
 // 6:00 local; the day lord rules horā 0 (6–7 AM) and recurs 7 hours later (1–2 PM),
 // giving a workable midday "power hour". The graha shown rotates with the weekday.
+// The "Power hours" label doesn't overclaim precision, so the fixed-sunrise approximation
+// is fine for launch.
+// TODO(post-launch): upgrade to location-accurate horā / Abhijit muhūrta windows once the
+// engine computes real sunrise/sunset for the user's coordinates (needs lat/lon + date).
 export function powerHours(date: Date): { lord: DayLord; window: string } {
   const lord = VARA[date.getDay()].lord;
   const start = 6 + 7; // horā index 7 after a 6 AM sunrise → 1 PM

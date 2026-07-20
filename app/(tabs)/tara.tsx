@@ -1,5 +1,5 @@
 // app/(tabs)/tara.tsx
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View, ScrollView, Pressable, StyleSheet, KeyboardAvoidingView, Platform, TextInput,
 } from 'react-native';
@@ -35,8 +35,24 @@ export default function AskTara() {
   const [category, setCategory] = useState<'ForYou' | QuestionCategory['key']>('ForYou');
   const [rememberChat, setRememberChat] = useState(true);
   const scrollRef = useRef<ScrollView>(null);
+  const inputRef = useRef<TextInput>(null);
+  // Temporary controlled selection so a prefill lands the caret at the END; released
+  // (set back to undefined) a tick later so the user can move the caret freely.
+  const [sel, setSel] = useState<{ start: number; end: number } | undefined>(undefined);
 
   const outOfCredits = balance !== null && balance <= 0;
+
+  // Every question suggestion routes through here: it PREFILLS the input (focused, caret
+  // at end) and never sends. Spending a credit requires the explicit send press.
+  const prefill = useCallback((q: string) => {
+    const t = q.trim();
+    if (!t) return;
+    setInput(t);
+    const end = t.length;
+    setSel({ start: end, end });
+    requestAnimationFrame(() => inputRef.current?.focus());
+    setTimeout(() => setSel(undefined), 80);
+  }, []);
 
   // Suggestion chips: "✦ For You" (chart-today prompts) first when a chart exists, then
   // the five life themes. Selecting a chip swaps the question list below — all rendered
@@ -66,8 +82,10 @@ export default function AskTara() {
   // interrupted), re-check the privacy toggle, AND reload history so a Q&A just added
   // by the answer view appears here (persistence is unchanged — same MEM_KEY).
   useFocusEffect(React.useCallback(() => {
+    // A question prefilled from Home / Insights (or preserved from an interrupted answer)
+    // lands in the input focused with the caret at the end — never auto-sent.
     const restored = takeAskDraft();
-    if (restored) setInput(restored);
+    if (restored) prefill(restored);
     // Re-read the server balance on entry: credits bought on the paywall (or granted by a
     // late webhook) must unlock questions here without waiting for an app restart.
     refresh();
@@ -79,7 +97,7 @@ export default function AskTara() {
         if (v) setMessages(JSON.parse(v));
       }
     })();
-  }, [refresh]));
+  }, [refresh, prefill]));
 
   // Pre-select a category when navigated here with a `category` param (e.g. from the
   // Love screen → "Relationships"). Case-insensitive; falls back to the current default.
@@ -191,7 +209,7 @@ export default function AskTara() {
               {/* Questions for the selected chip (For You = per-day chart prompts) */}
               <View style={{ gap: 9 }}>
                 {(activeChip?.questions ?? []).map((q) => (
-                  <Pressable key={q} style={styles.suggest} onPress={() => send(q)}>
+                  <Pressable key={q} style={styles.suggest} onPress={() => prefill(q)}>
                     <Text variant="body" style={{ fontSize: 13.5 }}>{q}</Text>
                   </Pressable>
                 ))}
@@ -230,8 +248,10 @@ export default function AskTara() {
         ) : (
           <View style={[styles.inputBar, { paddingBottom: insets.bottom + 70 }]}>
             <TextInput
+              ref={inputRef}
               value={input}
               onChangeText={setInput}
+              selection={sel}
               placeholder="Ask Tara…"
               placeholderTextColor={colors.mutedDim}
               style={styles.input}

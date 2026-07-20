@@ -10,11 +10,13 @@ import Screen from '@/components/Screen';
 import { Text, Card, Eyebrow } from '@/components/ui';
 import Disclaimer from '@/components/Disclaimer';
 import { useDailyContent } from '@/hooks/useDailyContent';
+import { setAskDraft } from '@/lib/askDraft';
 import { todayLong } from '@/data/mock';
 import { colors, spacing } from '@/theme';
 
-// Route into the normal gated answer flow (spends a credit like any other question).
-const askWhy = (q: string) => router.push({ pathname: '/ask/answer', params: { q } } as any);
+// PREFILL the question in Ask Tara (focused, not sent) — the explicit send press is the
+// only action that spends a credit, so no stray tap can trigger a charge.
+const askWhy = (q: string) => { setAskDraft(q); router.push('/(tabs)/tara'); };
 
 export default function Insights() {
   const daily = useDailyContent();

@@ -15,6 +15,7 @@ import { useTransits } from '@/hooks/useTransits';
 import { useDailyEnergy } from '@/hooks/useDailyEnergy';
 import { useHealth } from '@/hooks/useHealth';
 import { useDailyContent } from '@/hooks/useDailyContent';
+import { setAskDraft } from '@/lib/askDraft';
 import { computeCosmicEvents } from '@/lib/panchanga';
 import { greeting, todayLong } from '@/data/mock';
 import { colors, spacing } from '@/theme';
@@ -165,9 +166,13 @@ export default function Home() {
         <Text variant="serif" style={{ fontSize: 18, marginTop: 10, lineHeight: 25 }}>{daily.message.headline}</Text>
         <Text variant="tiny" style={{ marginTop: 8 }}>{daily.message.body}</Text>
         <GoldButton label="Ask Tara about today" onPress={() => router.push('/(tabs)/tara')} style={{ marginTop: 16 }} />
-        {/* Bridge: spends a credit through the normal gated answer flow. */}
+        {/* Bridge: PREFILLS the question in Ask Tara (focused, not sent). The user's
+            explicit send press is the only thing that ever spends a credit. */}
         <Pressable
-          onPress={() => router.push({ pathname: '/ask/answer', params: { q: `About today's guidance — "${daily.message.headline}" — why is this the theme for me today?` } } as any)}
+          onPress={() => {
+            setAskDraft(`About today's guidance — "${daily.message.headline}" — why is this the theme for me today?`);
+            router.push('/(tabs)/tara');
+          }}
           hitSlop={6}
           style={{ marginTop: 14, alignSelf: 'center' }}
         >
