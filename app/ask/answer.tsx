@@ -16,6 +16,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { useHealth } from '@/hooks/useHealth';
 import { useCredits } from '@/hooks/useCredits';
 import { computeTransitFactor, TransitFactor } from '@/lib/vedic';
+import { classifyTopic } from '@/lib/topic';
 import { askTaraAnswer, ChatMessage } from '@/lib/ai';
 import { getLanguage } from '@/lib/language';
 import { getRememberChat } from '@/lib/privacy';
@@ -37,7 +38,13 @@ export default function AnswerView() {
   const { metrics } = useHealth();
   const { authorize, refresh } = useCredits();
 
-  const factor: TransitFactor | null = useMemo(() => (chart ? computeTransitFactor(chart) : null), [chart]);
+  // Classify the question's theme so the factor leads with the relevant graha/house
+  // (career → 10th/Saturn/Sun, love → Venus/7th, …) instead of always the Moon.
+  const topic = useMemo(() => classifyTopic(question), [question]);
+  const factor: TransitFactor | null = useMemo(
+    () => (chart ? computeTransitFactor(chart, new Date(), topic) : null),
+    [chart, topic],
+  );
   const [state, setState] = useState<UIState>('loading');
   const [answer, setAnswer] = useState('');
   const [rating, setRating] = useState<'up' | 'down' | null>(null);

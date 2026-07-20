@@ -15,6 +15,7 @@
 //   • Antardasha (dasha sub-periods) within the running Mahadasha.
 
 import * as Astronomy from 'astronomy-engine';
+import { Topic, TOPIC_FOCUS } from '@/lib/topic';
 
 const norm = (x: number) => ((x % 360) + 360) % 360;
 const DEG = Math.PI / 180;
@@ -400,12 +401,20 @@ function ordinal(n: number): string {
   return n + (s[(v - 20) % 10] || s[v] || s[0]);
 }
 
-export function computeTransitFactor(chart: BirthChart, date: Date = new Date()): TransitFactor {
+export function computeTransitFactor(chart: BirthChart, date: Date = new Date(), topic: Topic = 'general'): TransitFactor {
   const ayan = lahiriAyanamsa(date);
   const ascSignIdx = chart.ascendant.signIndex;
   const houseOf = (signIdx: number) => ((signIdx - ascSignIdx + 12) % 12) + 1;
   const glyphOf = (name: string) => PLANET_GLYPHS[name] || (name === 'Rahu' ? '☊' : name === 'Ketu' ? '☋' : '✦');
   const signOf = (lon: number) => SIGNS[Math.floor(lon / 30)];
+
+  // Topic bias: nudge the factor toward the grahas/houses that carry the question's
+  // theme (career → Saturn/Sun/10th, love → Venus/7th, …). It only re-weights among
+  // real, in-orb aspects — a genuinely dominant transit still wins. This is what keeps
+  // the answer from always leading with the Moon.
+  const focus = TOPIC_FOCUS[topic] ?? TOPIC_FOCUS.general;
+  const themeBoost = (name: string, house: number) =>
+    1 + (focus.grahas.includes(name) ? 0.5 : 0) + (focus.houses.includes(house) ? 0.3 : 0);
 
   // Transiting sidereal longitudes for "now" (same ephemeris as the natal chart).
   const transiting: { name: string; lon: number }[] =
@@ -414,21 +423,23 @@ export function computeTransitFactor(chart: BirthChart, date: Date = new Date())
   const rahuLon = computeRahu(date, ayan);
   transiting.push({ name: 'Rahu', lon: rahuLon }, { name: 'Ketu', lon: norm(rahuLon + 180) });
 
-  // Tightest, most significant transiting→natal aspect wins.
+  // Tightest, most significant (theme-weighted) transiting→natal aspect wins.
   let best: { score: number; f: TransitFactor } | null = null;
   for (const t of transiting) {
+    const tHouse = houseOf(Math.floor(t.lon / 30));
     for (const n of chart.planets) {
       let sep = Math.abs(norm(t.lon) - norm(n.longitude)) % 360;
       if (sep > 180) sep = 360 - sep;
       for (const asp of TRANSIT_ASPECTS) {
         const delta = Math.abs(sep - asp.angle);
         if (delta > asp.orb) continue;
-        const score = asp.weight * (1 - delta / asp.orb) * (GRAHA_WEIGHT[t.name] ?? 0.6) * (GRAHA_WEIGHT[n.name] ?? 0.6);
+        const base = asp.weight * (1 - delta / asp.orb) * (GRAHA_WEIGHT[t.name] ?? 0.6) * (GRAHA_WEIGHT[n.name] ?? 0.6);
+        const score = base * Math.max(themeBoost(t.name, tHouse), themeBoost(n.name, n.house));
         if (!best || score > best.score) {
           best = { score, f: {
             label: `TRANSITING ${t.name.toUpperCase()} ${asp.name.toUpperCase()} NATAL ${n.name.toUpperCase()}`,
             transiting: t.name, aspectName: asp.name, natalPlanet: n.name,
-            house: houseOf(Math.floor(t.lon / 30)), transitSign: signOf(t.lon),
+            house: tHouse, transitSign: signOf(t.lon),
             orbDeg: Math.round(delta * 10) / 10, angle: asp.angle,
             bodyA: { name: t.name, glyph: glyphOf(t.name) },
             bodyB: { name: n.name, glyph: glyphOf(n.name) },
@@ -439,15 +450,41 @@ export function computeTransitFactor(chart: BirthChart, date: Date = new Date())
   }
   if (best) return best.f;
 
-  // Fallback: a notable house transit by the most significant slow-moving graha.
+  // Fallback: a notable house transit. Prefer a graha now transiting one of the theme's
+  // houses; otherwise the most significant slow-moving graha.
   const priority = ['Saturn', 'Jupiter', 'Rahu', 'Ketu', 'Mars', 'Moon', 'Sun', 'Venus', 'Mercury'];
-  const pick = (priority.map((p) => transiting.find((t) => t.name === p)).find(Boolean)) ?? transiting[0];
+  const themed = transiting.find((t) => focus.houses.includes(houseOf(Math.floor(t.lon / 30))) && focus.grahas.includes(t.name))
+    ?? transiting.find((t) => focus.houses.includes(houseOf(Math.floor(t.lon / 30))));
+  const pick = themed ?? (priority.map((p) => transiting.find((t) => t.name === p)).find(Boolean)) ?? transiting[0];
   const house = houseOf(Math.floor(pick.lon / 30));
   return {
     label: `TRANSITING ${pick.name.toUpperCase()} IN YOUR ${ordinal(house).toUpperCase()} HOUSE`,
     transiting: pick.name, house, transitSign: signOf(pick.lon), angle: 0,
     bodyA: { name: pick.name, glyph: glyphOf(pick.name) }, bodyB: null,
   };
+}
+
+// Full current-transit table for the user's chart: every graha's live sidereal sign,
+// the natal house it's transiting, and whether it's retrograde. Feeds the richer Ask
+// Tara prompt context (so the model sees ALL current transits, not just the Moon).
+export type PlanetTransit = { name: string; glyph: string; sign: string; house: number; retrograde: boolean };
+export function computeAllTransits(chart: BirthChart, date: Date = new Date()): PlanetTransit[] {
+  const ayan = lahiriAyanamsa(date);
+  const ascSignIdx = chart.ascendant.signIndex;
+  const houseOf = (signIdx: number) => ((signIdx - ascSignIdx + 12) % 12) + 1;
+  const glyphOf = (name: string) => PLANET_GLYPHS[name] || '✦';
+  const out: PlanetTransit[] = [];
+  for (const b of ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn']) {
+    const { lon, retro } = siderealLongitude(b, date, ayan);
+    const signIdx = Math.floor(lon / 30);
+    out.push({ name: b, glyph: glyphOf(b), sign: SIGNS[signIdx], house: houseOf(signIdx), retrograde: retro });
+  }
+  const rahuLon = computeRahu(date, ayan);
+  const rIdx = Math.floor(rahuLon / 30);
+  out.push({ name: 'Rahu', glyph: '☊', sign: SIGNS[rIdx], house: houseOf(rIdx), retrograde: true });
+  const kLon = norm(rahuLon + 180); const kIdx = Math.floor(kLon / 30);
+  out.push({ name: 'Ketu', glyph: '☋', sign: SIGNS[kIdx], house: houseOf(kIdx), retrograde: true });
+  return out;
 }
 
 // Houses a graha casts its drishti onto, given the house it occupies.

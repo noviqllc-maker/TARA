@@ -4,9 +4,10 @@
 // app.json -> expo.extra.taraAiUrl.
 
 import Constants from 'expo-constants';
-import { BirthChart } from '@/lib/vedic';
+import { BirthChart, computeAllTransits } from '@/lib/vedic';
 import { HealthMetrics } from '@/lib/health';
 import { computeTransits } from '@/lib/transits';
+import { varaLord } from '@/lib/panchanga';
 
 export type ChatMessage = { role: 'user' | 'assistant'; content: string };
 
@@ -24,15 +25,27 @@ function buildContext(name: string, chart: BirthChart | null, health?: HealthMet
 
   // Live sky for today (real panchanga + Moon transit relative to the user's chart)
   const t = computeTransits(today, chart);
-  const sky = `Today's sky: ${t.moonPhase}, Moon in ${t.moonSign} (${t.moonNakshatra}), ${t.panchanga}. ${t.transitText}.`;
+  const vl = varaLord(today);
+  const sky = `Today's sky: ${t.moonPhase}, Moon in ${t.moonSign} (${t.moonNakshatra}), ${t.panchanga}, ${vl.vara} (day of ${vl.lord}). ${t.transitText}.`;
 
   const w = health
     ? `Wellness today (${health.source === 'apple-health' ? 'from Apple Health' : 'estimated'}): recovery ${health.recovery}/100, sleep ${health.sleep}/100${health.sleepHours ? ` (${health.sleepHours}h)` : ''}, HRV ${health.hrv}ms, resting HR ${health.rhr}, steps ${health.steps}.`
     : '';
 
   if (chart) {
-    const p = chart.planets.map((pl) => `${pl.name} in ${pl.sign} (house ${pl.house})`).join(', ');
-    return `Today's date: ${dateStr}. User: ${name}. Lagna ${chart.ascendant.sign}, Moon ${chart.moonSign}, Sun ${chart.sunSign}, Nakshatra ${chart.nakshatra} pada ${chart.nakshatraPada}, ${chart.currentDasha}. Planets: ${p}. ${sky} ${w}`;
+    // Natal snapshot (sign + house of every graha).
+    const natal = chart.planets.map((pl) => `${pl.name} in ${pl.sign} (house ${pl.house})`).join(', ');
+    // FULL current transit table for THIS user — every graha's live sign, the natal
+    // house it's transiting, and retrograde (not just the Moon).
+    const tr = computeAllTransits(chart, today);
+    const transitTable = tr.map((x) => `${x.name} ${x.sign} h${x.house}${x.retrograde ? ' (R)' : ''}`).join(', ');
+    const retro = tr.filter((x) => x.retrograde && x.name !== 'Rahu' && x.name !== 'Ketu').map((x) => x.name);
+    const retroLine = retro.length ? ` Retrograde now: ${retro.join(', ')}.` : '';
+    // Dasha depth: running Mahadasha + Antardasha.
+    const dashaLine = `Dasha: ${chart.currentDasha}; Antardasha: ${chart.currentAntardasha}.`;
+    // A few significant natal aspects (already human-readable from the engine).
+    const aspLine = chart.aspects?.length ? ` Natal aspects: ${chart.aspects.slice(0, 4).join('; ')}.` : '';
+    return `Today's date: ${dateStr}. User: ${name}. Lagna ${chart.ascendant.sign}, Moon ${chart.moonSign}, Sun ${chart.sunSign}, Nakshatra ${chart.nakshatra} pada ${chart.nakshatraPada}. ${dashaLine} Natal planets: ${natal}. Current transits: ${transitTable}.${retroLine}${aspLine} ${sky} ${w}`;
   }
   return `Today's date: ${dateStr}. User: ${name}. (Birth chart not yet available.) ${sky} ${w}`;
 }
@@ -95,7 +108,10 @@ export async function askTaraAnswer(
     'You are Tara, a warm, grounded Vedic astrology guide. Answer in under 110 words. ' +
     'Lead with the observation, land on one insight. No lists, no headers, no hedging filler. ' +
     'Second person, honest and specific; never doom or fear; no medical, legal, or financial directives. ' +
-    `Ground the answer in this astrological factor: "${factorLabel}". ` +
+    `Ground the answer in this astrological factor, which was chosen as the strongest driver for THIS question: "${factorLabel}". ` +
+    'Lead with the factor most relevant to what was asked (career → 10th house / Saturn / Sun; love → Venus / 7th; money → Jupiter / 2nd / 11th; and so on) — never default to the Moon unless it is genuinely the strongest factor here. ' +
+    'Include one short "because" clause that names the actual mechanism (the graha, house, aspect, or dasha) driving your read — e.g. "because Saturn is transiting your 10th". ' +
+    'You may reference the running Mahadasha/Antardasha, a current transit, or a retrograde from the context when it sharpens the answer. ' +
     'Return ONLY JSON: {"factor":"<echo the exact factor you used>","answer":"<your answer>"}' +
     (language && language !== 'English' ? ` Write the answer in ${language}; keep Sanskrit terms as-is.` : '');
   const userMsg = `Astrological factor: ${factorLabel}\n\nQuestion: ${q}`;

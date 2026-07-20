@@ -1,5 +1,5 @@
 // app/(tabs)/home.tsx
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { View, Pressable, StyleSheet, Alert, Linking } from 'react-native';
 import { router } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -14,6 +14,7 @@ import { useChart } from '@/hooks/useChart';
 import { useTransits } from '@/hooks/useTransits';
 import { useDailyEnergy } from '@/hooks/useDailyEnergy';
 import { useHealth } from '@/hooks/useHealth';
+import { computeCosmicEvents } from '@/lib/panchanga';
 import {
   greeting, todayLong, tarasMessage, cosmicWeather, insights,
 } from '@/data/mock';
@@ -74,6 +75,11 @@ export default function Home() {
     const res = await connectAppleHealth(); // shows the sheet; on grant, metrics → Body real data
     if (res === 'no-data') openHealthApp();
   };
+  // Today's Cosmic Events — deterministic, engine-computed, changes day to day (recompute
+  // per calendar day + chart, matching the useTransits/useDailyEnergy pattern; no AI call).
+  const dayKey = new Date().toDateString();
+  const cosmic = useMemo(() => computeCosmicEvents(chart, new Date()), [chart, dayKey]);
+
   // Now fully live: nakshatra + dasha from the user's chart, and today's real sky.
   const weather: [string, string][] = [
     ['Nakshatra', chart?.nakshatra ?? cosmicWeather.nakshatra],
@@ -126,12 +132,46 @@ export default function Home() {
         ) : null}
       </Card>
 
+      {/* Today's Cosmic Events — deterministic panchanga + day-lord almanac */}
+      <Card style={{ marginBottom: spacing.lg }}>
+        <Eyebrow>Today's Cosmic Events</Eyebrow>
+        <View style={styles.eventsGrid}>
+          {[
+            { glyph: '☾', label: 'Moon', value: `${cosmic.moonSign} · ${cosmic.moonNakshatra}` },
+            { glyph: '◐', label: 'Tithi', value: cosmic.tithi },
+            { glyph: cosmic.dayLordGlyph, label: 'Planet of the day', value: cosmic.dayLord },
+            { glyph: '⏱', label: 'Power hours', value: cosmic.power.window },
+            { glyph: '●', label: 'Lucky color', value: cosmic.luckyColor, swatch: cosmic.luckyColorHex },
+            { glyph: '✦', label: 'Lucky number', value: String(cosmic.luckyNumber) },
+          ].map((c) => (
+            <View key={c.label} style={styles.eventCell}>
+              <Text style={{ fontSize: 16, color: colors.goldSoft, lineHeight: 22 }}>{c.glyph}</Text>
+              <View style={{ flex: 1 }}>
+                <Text variant="tiny" color={colors.muted} style={{ fontSize: 10.5, letterSpacing: 0.3 }}>{c.label}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                  {c.swatch ? <View style={[styles.swatch, { backgroundColor: c.swatch }]} /> : null}
+                  <Text variant="body" color={colors.cream} style={{ fontSize: 12.5 }} numberOfLines={1}>{c.value}</Text>
+                </View>
+              </View>
+            </View>
+          ))}
+        </View>
+      </Card>
+
       {/* Tara's message */}
       <Card solid glow style={{ marginBottom: spacing.lg }}>
         <Eyebrow>Tara's Message</Eyebrow>
         <Text variant="serif" style={{ fontSize: 18, marginTop: 10, lineHeight: 25 }}>{tarasMessage.headline}</Text>
         <Text variant="tiny" style={{ marginTop: 8 }}>{tarasMessage.body}</Text>
         <GoldButton label="Ask Tara about today" onPress={() => router.push('/(tabs)/tara')} style={{ marginTop: 16 }} />
+        {/* Bridge: spends a credit through the normal gated answer flow. */}
+        <Pressable
+          onPress={() => router.push({ pathname: '/ask/answer', params: { q: `About today's guidance — "${tarasMessage.headline}" — why is this the theme for me today?` } } as any)}
+          hitSlop={6}
+          style={{ marginTop: 14, alignSelf: 'center' }}
+        >
+          <Text variant="tiny" color={colors.gold} style={{ fontWeight: '600', fontSize: 13 }}>Ask Tara why →</Text>
+        </Pressable>
       </Card>
 
       {/* Premium nudge — free users only, directly below Tara's Message */}
@@ -206,4 +246,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card, borderColor: colors.line, borderWidth: 1, borderRadius: 16,
   },
   cwRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  eventsGrid: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 12, rowGap: 14 },
+  eventCell: { width: '50%', flexDirection: 'row', gap: 8, paddingRight: 8 },
+  swatch: { width: 10, height: 10, borderRadius: 5, borderWidth: 1, borderColor: colors.line },
 });
