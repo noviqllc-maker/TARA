@@ -28,9 +28,12 @@ export default function CreditsPaywall() {
   const priceOf = (id: string): string | undefined => products[id]?.priceString;
   const busy = phase === 'buying';
 
-  // Return to the question page (Ask Tara). The pending question is preserved there
-  // (draft from the answer view, or the still-typed input on the tab).
-  const backToQuestion = () => router.dismissAll();
+  // Return to the question page (Ask Tara). dismissTo pops the paywall (and the answer
+  // view, if we came through it) back to the Ask Tara tab. NOT dismissAll(): that unwinds
+  // the root Stack past (tabs) to its `index` anchor, which re-runs index.tsx's redirect
+  // and remounts the whole tree at root (the "Begin Journey" flash + [Premium] Home mount).
+  // The pending question is preserved on the tab (draft from the answer view / typed input).
+  const backToQuestion = () => router.dismissTo('/(tabs)/tara' as any);
 
   const onBuy = async () => {
     setPhase('buying');
