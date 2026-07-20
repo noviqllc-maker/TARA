@@ -20,6 +20,7 @@ import { SubscriptionProvider } from '@/hooks/useSubscription';
 import { CreditsProvider } from '@/hooks/useCredits';
 import { HealthProvider } from '@/hooks/useHealth';
 import { routeFromResponse } from '@/lib/notifications';
+import NotificationRefresher from '@/components/NotificationRefresher';
 import { colors } from '@/theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -96,6 +97,7 @@ export default function RootLayout() {
               <CreditsProvider>
                 <HealthProvider>
                   <StatusBar style="light" />
+                  <NotificationRefresher />
                   <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.black }, animation: 'fade' }} />
                 </HealthProvider>
               </CreditsProvider>

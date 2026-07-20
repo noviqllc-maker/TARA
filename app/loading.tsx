@@ -9,6 +9,7 @@ import Animated, {
 import CosmicBackground from '@/components/CosmicBackground';
 import { Text } from '@/components/ui';
 import { useProfile } from '@/hooks/useProfile';
+import { shouldShowNotificationPrimer } from '@/lib/notifications';
 import { loadingMessages } from '@/data/mock';
 import { colors, fonts } from '@/theme';
 
@@ -20,9 +21,11 @@ export default function LoadingScreen() {
   useEffect(() => {
     rot.value = withRepeat(withTiming(360, { duration: 8000, easing: Easing.linear }), -1);
     const iv = setInterval(() => setIdx((i) => (i + 1) % loadingMessages.length), 1500);
-    const done = setTimeout(() => {
+    const done = setTimeout(async () => {
       update({ onboarded: true });
-      router.replace('/(tabs)/home');
+      // Show the notification primer once (only while OS permission is undetermined).
+      const primer = await shouldShowNotificationPrimer();
+      router.replace((primer ? '/(onboarding)/notifications' : '/(tabs)/home') as any);
     }, loadingMessages.length * 1500 + 600);
     return () => { clearInterval(iv); clearTimeout(done); };
   }, []);

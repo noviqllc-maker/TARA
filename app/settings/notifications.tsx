@@ -1,48 +1,52 @@
 // app/settings/notifications.tsx
 import React, { useEffect, useState } from 'react';
-import { View, Switch, Alert, ActivityIndicator } from 'react-native';
+import { View, Switch, Alert, ActivityIndicator, Linking } from 'react-native';
 import Screen from '@/components/Screen';
 import SubHeader from '@/components/SubHeader';
 import { Text, Card } from '@/components/ui';
+import { useChart } from '@/hooks/useChart';
+import { useProfile } from '@/hooks/useProfile';
 import {
-  scheduleDailyNotifications, cancelDailyNotifications, hasScheduledNotifications,
+  enableDailyNotifications, cancelDailyNotifications, hasScheduledNotifications, getNotificationStatus,
 } from '@/lib/notifications';
 import { colors } from '@/theme';
 
-const ROWS = [
-  { title: 'Brahma Muhurta', time: '5:00 AM', desc: 'The sacred dawn hour — set your intention.' },
-  { title: 'Abhijit Muhurta', time: '12:00 PM', desc: 'The victory hour — a midday nudge to ask Tara.' },
-  { title: 'Sandhya', time: '6:00 PM', desc: 'Dusk reflection on how your day settled.' },
-];
-
 export default function NotificationsSettings() {
+  const chart = useChart();
+  const { profile } = useProfile();
   const [enabled, setEnabled] = useState(false);
   const [busy, setBusy] = useState(false);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    hasScheduledNotifications()
-      .then(setEnabled)
-      .catch(() => {})
-      .finally(() => setReady(true));
+    hasScheduledNotifications().then(setEnabled).catch(() => {}).finally(() => setReady(true));
   }, []);
+
+  const promptOpenSettings = () =>
+    Alert.alert(
+      'Notifications are off',
+      'Turn on notifications for Tara in iOS Settings to receive your daily message.',
+      [{ text: 'Cancel', style: 'cancel' }, { text: 'Open Settings', onPress: () => Linking.openSettings() }],
+    );
 
   const onToggle = async (next: boolean) => {
     setBusy(true);
     if (next) {
-      const ok = await scheduleDailyNotifications();
-      setEnabled(ok);
-      if (!ok) {
-        Alert.alert(
-          'Notifications are off',
-          'Enable notifications for Tara in iOS Settings to receive your daily muhurta reminders.',
-        );
+      // If the OS already denied us, we can't re-prompt — deep-link to Settings.
+      if ((await getNotificationStatus()) === 'denied') {
+        setBusy(false);
+        promptOpenSettings();
+        return;
       }
+      const ok = await enableDailyNotifications(chart, profile.birthDate);
+      setEnabled(ok);
+      setBusy(false);
+      if (!ok) promptOpenSettings();
     } else {
       await cancelDailyNotifications();
       setEnabled(false);
+      setBusy(false);
     }
-    setBusy(false);
   };
 
   return (
@@ -52,18 +56,13 @@ export default function NotificationsSettings() {
       <Card style={{ marginBottom: 16 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <View style={{ flex: 1, paddingRight: 12 }}>
-            <Text variant="serif" style={{ fontSize: 16 }}>Daily reminders</Text>
-            <Text variant="tiny" color={colors.muted} style={{ marginTop: 4 }}>
-              Three gentle nudges a day, timed to the Vedic muhurtas.
+            <Text variant="serif" style={{ fontSize: 16 }}>Daily notifications</Text>
+            <Text variant="tiny" color={colors.muted} style={{ marginTop: 4, lineHeight: 17 }}>
+              One thoughtful message each morning at 8:00 AM, written from your chart.
             </Text>
           </View>
           {ready ? (
-            <Switch
-              value={enabled}
-              onValueChange={onToggle}
-              disabled={busy}
-              trackColor={{ true: colors.gold }}
-            />
+            <Switch value={enabled} onValueChange={onToggle} disabled={busy} trackColor={{ true: colors.gold }} />
           ) : (
             <ActivityIndicator color={colors.gold} size="small" />
           )}
@@ -71,17 +70,10 @@ export default function NotificationsSettings() {
       </Card>
 
       <Card>
-        <View style={{ gap: 14 }}>
-          {ROWS.map((r) => (
-            <View key={r.title} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
-              <View style={{ flex: 1 }}>
-                <Text variant="body" style={{ fontSize: 14 }}>{r.title}</Text>
-                <Text variant="tiny" color={colors.muted} style={{ marginTop: 3 }}>{r.desc}</Text>
-              </View>
-              <Text variant="body" color={colors.goldSoft} style={{ fontSize: 13 }}>{r.time}</Text>
-            </View>
-          ))}
-        </View>
+        <Text variant="tiny" color={colors.muted} style={{ lineHeight: 17 }}>
+          Titled “Your day at a glance,” it reflects your dasha, the Moon’s nakshatra, and the day’s
+          strongest graha. Scheduled on this device only — no push servers involved.
+        </Text>
       </Card>
     </Screen>
   );
