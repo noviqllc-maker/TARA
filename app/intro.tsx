@@ -80,12 +80,6 @@ export default function Intro() {
             </LinearGradient>
           </Pressable>
         </Animated.View>
-        {/* Returning users restore their chart, credits & purchases by signing in. */}
-        <Pressable onPress={() => router.push('/auth' as any)} hitSlop={8} style={{ marginTop: 18 }}>
-          <Text variant="tiny" color={colors.muted} style={{ textAlign: 'center' }}>
-            Already have an account? <Text variant="tiny" color={colors.gold}>Sign in</Text>
-          </Text>
-        </Pressable>
       </AView>
     </View>
   );

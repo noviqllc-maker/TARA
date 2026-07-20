@@ -59,7 +59,7 @@ export default function Reveal() {
           <Text variant="eyebrow" color={colors.mutedDim} style={styles.footer}>
             We use precise astronomical calculations for guidance unique to your chart.
           </Text>
-          <GoldButton label="Continue" onPress={() => router.replace('/(onboarding)/credibility' as any)} />
+          <GoldButton label="Continue" onPress={() => router.replace('/(onboarding)/notifications' as any)} />
         </View>
       </View>
     </View>
