@@ -11,3 +11,10 @@ export const CREDIT_AMOUNTS: Record<CreditProductId, number> = {
   ask_credits_10: 10,
   ask_credits_25: 25,
 };
+
+// Outcome of a credit-pack purchase:
+//  'success'   – charged AND the server balance increased within the wait window
+//  'cancelled' – user backed out of the StoreKit sheet (silent)
+//  'error'     – StoreKit / purchase error (nothing charged)
+//  'pending'   – charged but the async grant (webhook) hadn't landed in time
+export type BuyResult = 'success' | 'cancelled' | 'error' | 'pending';

@@ -111,11 +111,16 @@ export default function AskTara() {
             <Eyebrow>Ask Tara · Your 24/7 Guide</Eyebrow>
             <Text variant="h2" style={{ marginTop: 4 }}>Ask Tara anything</Text>
           </View>
-          {!empty && (
-            <Pressable onPress={clearChat} hitSlop={8} style={{ paddingBottom: 4 }}>
-              <Text variant="tiny" color={colors.gold}>New conversation</Text>
+          <View style={{ alignItems: 'flex-end', gap: 8, paddingBottom: 4 }}>
+            <Pressable onPress={() => router.push('/ask/history' as any)} hitSlop={8}>
+              <Text variant="tiny" color={colors.gold}>◔ Past questions</Text>
             </Pressable>
-          )}
+            {!empty && (
+              <Pressable onPress={clearChat} hitSlop={8}>
+                <Text variant="tiny" color={colors.muted}>New conversation</Text>
+              </Pressable>
+            )}
+          </View>
         </View>
 
         {/* Server-authoritative credit balance. Tap to buy more. */}

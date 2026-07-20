@@ -20,6 +20,7 @@ import { askTaraAnswer, ChatMessage } from '@/lib/ai';
 import { getLanguage } from '@/lib/language';
 import { getRememberChat } from '@/lib/privacy';
 import { setAskDraft } from '@/lib/askDraft';
+import { saveHistory } from '@/lib/history';
 import { colors, fonts, spacing } from '@/theme';
 
 const MEM_KEY = 'tara.chat.v1';       // shared with the Ask Tara screen
@@ -68,7 +69,9 @@ export default function AnswerView() {
     setAnswer(res.answer);
     setAskDraft(''); // answered → don't restore the question to the input
     setState('ready');
-    // Append Q&A to history (persistence unchanged) unless privacy opted out.
+    // Persist to server-side history (survives reinstall; queues if signed out).
+    saveHistory(question, res.answer, factor.label);
+    // Append Q&A to local chat history (persistence unchanged) unless privacy opted out.
     if (await getRememberChat()) {
       try {
         const raw = await AsyncStorage.getItem(MEM_KEY);

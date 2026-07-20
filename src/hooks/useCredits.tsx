@@ -5,7 +5,7 @@
 // the RevenueCat secret). Independent of the premium subscription and the shop.
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
-import { CREDIT_PRODUCT_IDS, CREDIT_AMOUNTS, CreditProductId } from '@/lib/credits';
+import { CREDIT_PRODUCT_IDS, CREDIT_AMOUNTS, CreditProductId, BuyResult } from '@/lib/credits';
 
 type CreditsState = {
   balance: number | null;                    // server balance; null when signed out / unknown
@@ -13,7 +13,7 @@ type CreditsState = {
   products: Record<string, any>;             // productId -> StoreProduct (priceString)
   refresh: () => Promise<number | null>;     // re-read the server balance; returns it
   authorize: () => Promise<boolean>;         // atomic server decrement; true = question allowed
-  buy: (productId: CreditProductId) => Promise<boolean>; // purchase → server verify → credit
+  buy: (productId: CreditProductId) => Promise<BuyResult>; // purchase → wait for server grant
   amountFor: (productId: string) => number;
 };
 
@@ -82,28 +82,31 @@ export function CreditsProvider({ children }: { children: React.ReactNode }) {
     return true;
   }, []);
 
-  // Buy a pack: StoreKit finishes the consumable, THEN the server verifies with
-  // RevenueCat and credits it (idempotent). Never grants from client state alone.
-  const buy = useCallback(async (productId: CreditProductId) => {
+  // Buy a pack: StoreKit finishes the consumable, then we wait for the SERVER to grant
+  // the credits (RevenueCat webhook is async; the credits edge function is also invoked
+  // as an idempotent fast-path). Poll the balance up to ~10s and report the outcome.
+  const buy = useCallback(async (productId: CreditProductId): Promise<BuyResult> => {
     const Purchases = getPurchases();
-    if (!Purchases) return false;
     const product = products[productId];
-    if (!product) return false;
+    if (!Purchases || !product) return 'error';
+
+    const before = (await loadBalance()) ?? 0; // balance before the purchase
     try {
       await Purchases.purchaseStoreProduct(product); // consumable; StoreKit finishes the txn
     } catch (e: any) {
-      if (e?.userCancelled) return false;
-      throw e;
+      if (e?.userCancelled) return 'cancelled';
+      if (__DEV__) console.warn('[Credits] purchase failed:', e?.message ?? e);
+      return 'error';
     }
-    // Redeem edge function (Supabase attaches the user's JWT); server verifies + credits.
-    try {
-      const { data } = await supabase.functions.invoke('credits', { body: {} });
-      if (data && typeof data.balance === 'number') setBalance(data.balance);
-      else await loadBalance();
-    } catch {
-      await loadBalance();
+
+    // Charged. Wait for the server-side grant to land (webhook async + fast-path redeem).
+    for (let i = 0; i < 5; i++) {
+      try { await supabase.functions.invoke('credits', { body: {} }); } catch {}
+      const now = await loadBalance();
+      if (typeof now === 'number' && now > before) return 'success';
+      await new Promise((r) => setTimeout(r, 2000));
     }
-    return true;
+    return 'pending'; // charged, credits arriving shortly — do NOT treat as an error
   }, [products, loadBalance]);
 
   const amountFor = useCallback((productId: string) => CREDIT_AMOUNTS[productId as CreditProductId] ?? 0, []);

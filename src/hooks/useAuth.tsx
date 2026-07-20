@@ -9,6 +9,7 @@ import * as AppleAuthentication from 'expo-apple-authentication';
 import type { Session } from '@supabase/supabase-js';
 import { supabase, supabaseConfigured } from '@/lib/supabase';
 import { reconcileOnSignIn, SYNC_KEYS } from '@/lib/sync';
+import { flushHistoryQueue } from '@/lib/history';
 
 const APPLE_USER_KEY = 'tara.apple.user'; // Apple's stable user id, for revocation checks
 const LOCAL_CLEAR_ON_SIGNOUT = [...SYNC_KEYS, 'tara.chat.v1', 'tara.answer.feedback.v1'];
@@ -27,6 +28,13 @@ function Purchases(): any | null {
   try { return require('react-native-purchases').default; } catch { return null; }
 }
 
+// Alias RevenueCat to the Supabase user so purchases attribute to the real account
+// (not the anonymous RC id). MUST run whenever we have a session — including session
+// RESTORE on relaunch — so any purchase is linked before it can be initiated.
+async function linkRevenueCat(uid: string) {
+  try { await Purchases()?.logIn(uid); } catch {}
+}
+
 async function clearLocalAccountData() {
   try { await AsyncStorage.multiRemove(LOCAL_CLEAR_ON_SIGNOUT); } catch {}
 }
@@ -40,9 +48,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
       setReady(true);
-      if (data.session) checkAppleRevocation();
+      if (data.session) {
+        linkRevenueCat(data.session.user.id); // fix: alias RC on restore, not only fresh sign-in
+        flushHistoryQueue();
+        checkAppleRevocation();
+      }
     });
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => setSession(s));
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
+      setSession(s);
+      if (s) { linkRevenueCat(s.user.id); flushHistoryQueue(); }
+    });
     return () => sub.subscription.unsubscribe();
   }, []);
 

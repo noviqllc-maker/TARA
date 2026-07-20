@@ -10,7 +10,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import CosmicBackground from '@/components/CosmicBackground';
 import { Text, GoldButton } from '@/components/ui';
 import { useCredits } from '@/hooks/useCredits';
-import { CreditProductId } from '@/lib/credits';
+import { CreditProductId, BuyResult } from '@/lib/credits';
 import { colors, radius, spacing } from '@/theme';
 
 const PACKS: { id: CreditProductId; amount: number; tag?: string }[] = [
@@ -23,23 +23,32 @@ export default function CreditsPaywall() {
   const insets = useSafeAreaInsets();
   const { balance, products, buy } = useCredits();
   const [selected, setSelected] = useState<CreditProductId>('ask_credits_10');
-  const [busy, setBusy] = useState(false);
+  const [phase, setPhase] = useState<'idle' | 'buying' | 'success' | 'pending'>('idle');
 
   const priceOf = (id: string): string | undefined => products[id]?.priceString;
+  const busy = phase === 'buying';
+
+  // Return to the question page (Ask Tara). The pending question is preserved there
+  // (draft from the answer view, or the still-typed input on the tab).
+  const backToQuestion = () => router.dismissAll();
 
   const onBuy = async () => {
-    setBusy(true);
-    try {
-      const ok = await buy(selected);
-      if (ok) {
-        Alert.alert('Credits added ✦', 'Your questions are ready — ask away.');
-        router.back();
-      }
-      // ok === false → user cancelled → stay silent
-    } catch {
+    setPhase('buying');
+    let result: BuyResult;
+    try { result = await buy(selected); }
+    catch { result = 'error'; }
+
+    if (result === 'success') {
+      setPhase('success');                         // balance increased
+      setTimeout(backToQuestion, 1300);
+    } else if (result === 'pending') {
+      setPhase('pending');                         // charged; webhook not landed yet
+      setTimeout(backToQuestion, 2000);
+    } else if (result === 'error') {
+      setPhase('idle');
       Alert.alert('Purchase failed', 'Something went wrong and no charge was made. Please try again.');
-    } finally {
-      setBusy(false);
+    } else {
+      setPhase('idle');                            // cancelled → silent
     }
   };
 
@@ -51,6 +60,26 @@ export default function CreditsPaywall() {
           <Text variant="body" color={colors.muted}>✕ Close</Text>
         </Pressable>
 
+        {(phase === 'success' || phase === 'pending') ? (
+          <Animated.View entering={FadeInDown.duration(400)} style={{ alignItems: 'center', paddingTop: 60, paddingHorizontal: 8 }}>
+            <Text style={{ fontSize: 34, lineHeight: 46, color: colors.gold, textAlign: 'center' }}>✦</Text>
+            {phase === 'success' ? (
+              <>
+                <Text variant="h1" style={{ textAlign: 'center', marginTop: 16 }}>Credits added</Text>
+                <Text variant="tiny" color={colors.muted} style={{ textAlign: 'center', marginTop: 10, lineHeight: 20 }}>
+                  You now have {typeof balance === 'number' ? balance : ''} {balance === 1 ? 'question' : 'questions'} ready. Taking you back…
+                </Text>
+              </>
+            ) : (
+              <>
+                <Text variant="h1" style={{ textAlign: 'center', marginTop: 16 }}>Purchase received</Text>
+                <Text variant="tiny" color={colors.muted} style={{ textAlign: 'center', marginTop: 10, lineHeight: 20 }}>
+                  Your credits are arriving shortly — they’ll appear on your next visit. You were not charged twice.
+                </Text>
+              </>
+            )}
+          </Animated.View>
+        ) : (
         <Animated.View entering={FadeInDown.duration(500)}>
           <Text style={{ fontSize: 30, lineHeight: 40, textAlign: 'center', color: colors.gold }}>✦</Text>
           <Text variant="h1" style={{ textAlign: 'center', marginTop: 12 }}>Ask Tara Credits</Text>
@@ -103,6 +132,7 @@ export default function CreditsPaywall() {
             One-time purchase, charged to your Apple account. Credits are added after purchase and never expire.
           </Text>
         </Animated.View>
+        )}
       </ScrollView>
     </View>
   );
