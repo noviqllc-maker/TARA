@@ -1,16 +1,18 @@
-// app/(onboarding)/notifications.tsx
-// Notification primer — shown once after sign-in, before Home (gated by
-// shouldShowNotificationPrimer). Co-Star-style layout, restyled in Tara's brand.
-import React, { useState } from 'react';
+// app/(onboarding)/notifications.tsx — Screen 3: notification primer + terminal
+// onboarding step. Self-skips (straight to Home) if permission was already decided.
+// Reuses the notification scheduling from @/lib/notifications (no duplication).
+import React, { useEffect, useState } from 'react';
 import { View, Pressable, StyleSheet } from 'react-native';
-import { router } from 'expo-router';
+import { router, useNavigation } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import CosmicBackground from '@/components/CosmicBackground';
 import { Text, GoldButton } from '@/components/ui';
 import { useChart } from '@/hooks/useChart';
 import { useProfile } from '@/hooks/useProfile';
-import { enableDailyNotifications, markNotificationPrimerSeen } from '@/lib/notifications';
+import {
+  enableDailyNotifications, markNotificationPrimerSeen, shouldShowNotificationPrimer,
+} from '@/lib/notifications';
 import { colors, radius, spacing } from '@/theme';
 
 const CARDS = [
@@ -22,28 +24,49 @@ const CARDS = [
 export default function NotificationsPrimer() {
   const insets = useSafeAreaInsets();
   const chart = useChart();
-  const { profile } = useProfile();
+  const { profile, update } = useProfile();
+  const nav = useNavigation();
+  const [ready, setReady] = useState(false); // primer gate resolved → show it
   const [busy, setBusy] = useState(false);
 
-  const finish = () => router.replace('/(tabs)/home');
+  useEffect(() => { nav.setOptions?.({ gestureEnabled: false }); }, [nav]);
+
+  // Onboarding is complete once we leave this (final) screen for Home.
+  const finishOnboarding = () => { update({ onboarded: true }); router.replace('/(tabs)/home'); };
+
+  // Gate: never re-show once permission is granted/denied (or already primed) — skip
+  // straight to Home in that case.
+  useEffect(() => {
+    (async () => { (await shouldShowNotificationPrimer()) ? setReady(true) : finishOnboarding(); })();
+  }, []);
 
   const onTurnOn = async () => {
     setBusy(true);
     await markNotificationPrimerSeen();
     await enableDailyNotifications(chart, profile.birthDate); // requests permission + schedules if granted
     setBusy(false);
-    finish();
+    finishOnboarding();
   };
-  const onSkip = async () => { await markNotificationPrimerSeen(); finish(); };
+  const onSkip = async () => { await markNotificationPrimerSeen(); finishOnboarding(); };
+
+  if (!ready) {
+    return (
+      <View style={{ flex: 1 }}>
+        <CosmicBackground intense />
+      </View>
+    );
+  }
 
   return (
     <View style={{ flex: 1 }}>
       <CosmicBackground intense />
       <View style={[styles.root, { paddingTop: insets.top + 44, paddingBottom: insets.bottom + 24 }]}>
         <Animated.View entering={FadeInDown.duration(500)} style={{ alignItems: 'center' }}>
-          <Text variant="h1" style={{ textAlign: 'center', fontSize: 30 }}>Let the stars find you.</Text>
-          <Text variant="tiny" color={colors.muted} style={{ textAlign: 'center', marginTop: 12, lineHeight: 20, paddingHorizontal: 16 }}>
-            One thoughtful message each morning, written from your chart.
+          <Text variant="h1" style={{ textAlign: 'center', fontSize: 28, lineHeight: 36 }}>
+            Never miss an important planetary shift.
+          </Text>
+          <Text variant="tiny" color={colors.muted} style={{ textAlign: 'center', marginTop: 12, lineHeight: 20, paddingHorizontal: 12 }}>
+            Tara will notify you when your chart reveals opportunities, challenges, or important timing for decisions.
           </Text>
         </Animated.View>
 

@@ -35,8 +35,11 @@ export default function Auth() {
     if (proceededRef.current) return;
     proceededRef.current = true;
     const p = await reload();
-    if (p.birthDate && p.birthTime) router.replace('/loading');
-    else router.replace('/(onboarding)/name');
+    if (!p.birthDate || !p.birthTime) { router.replace('/(onboarding)/name'); return; }
+    // Returning user (already completed onboarding on any device) → straight to Home.
+    if (p.onboarded) { router.replace('/(tabs)/home'); return; }
+    // New user → the placements-reveal sequence (Screen 1 → 2 → 3 → Home).
+    router.replace('/(onboarding)/reveal' as any);
   }, [reload]);
 
   // Already authenticated → skip the auth step entirely (fixes the double auth screen).
