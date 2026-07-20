@@ -1,0 +1,301 @@
+// src/lib/dailyContent.ts
+// Deterministic, engine-driven daily content — NO AI. Tara's Message and the Cosmic
+// Weather insight cards are composed from template pools keyed to the day's real
+// astrological factors (Moon nakshatra, day lord, strongest transit, Mahadasha /
+// Antardasha lords, retrogrades), each card carrying a "because {mechanism}" clause.
+//
+// All randomness is seeded with (user id + calendar date) so content is stable across
+// app opens within a day, but rotates across days and differs per user. Warm, non-doom
+// tone throughout; reuses the dashaMeaning + house-theme vocabularies.
+
+import { BirthChart, computeTransitFactor, computeAllTransits, NAKSHATRAS } from '@/lib/vedic';
+import { computeTransits, houseTheme } from '@/lib/transits';
+import { computeCosmicEvents } from '@/lib/panchanga';
+import { MAHA_MEANING } from '@/data/dashaMeaning';
+import { colors } from '@/theme';
+
+// ---- seeded RNG (xmur3 hash → mulberry32) --------------------------------------
+function xmur3(str: string): () => number {
+  let h = 1779033703 ^ str.length;
+  for (let i = 0; i < str.length; i++) {
+    h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+    h = (h << 13) | (h >>> 19);
+  }
+  return () => {
+    h = Math.imul(h ^ (h >>> 16), 2246822507);
+    h = Math.imul(h ^ (h >>> 13), 3266489909);
+    h ^= h >>> 16;
+    return h >>> 0;
+  };
+}
+class Rng {
+  private a: number;
+  constructor(seed: string) { this.a = xmur3(seed)(); }
+  next(): number {
+    let t = (this.a += 0x6d2b79f5);
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  }
+  pick<T>(arr: T[]): T { return arr[Math.floor(this.next() * arr.length)] ?? arr[0]; }
+  shuffle<T>(arr: T[]): T[] {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(this.next() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+}
+
+// ---- vocabulary (reuses house themes + dashaMeaning; warm, non-doom) -----------
+const ORD = ['', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th', '11th', '12th'];
+const ord = (n: number | null) => (n && ORD[n]) || 'current';
+const cap = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s);
+const lower = (s: string) => (s ? s[0].toLowerCase() + s.slice(1) : s);
+
+// A short "energy" lead for each graha (3 phrasings for day-to-day rotation).
+const GRAHA_LEADS: Record<string, string[]> = {
+  Sun: ['Your sense of purpose runs clear today.', 'There’s a quiet pull toward being seen and standing tall.', 'Confidence and clarity are within reach.'],
+  Moon: ['Feelings run close to the surface.', 'A tender, intuitive current moves through the day.', 'Your inner weather asks to be honored.'],
+  Mars: ['Energy runs high and ready to move.', 'There’s courage and drive to spend well.', 'A day with real momentum in it.'],
+  Mercury: ['The mind is quick and curious.', 'Ideas and conversations want to flow.', 'A sharp, connective mental current.'],
+  Jupiter: ['A spacious, hopeful current opens up.', 'Growth and meaning feel close today.', 'Doors feel a little more open than usual.'],
+  Venus: ['Warmth and ease soften the day.', 'Connection and beauty come more naturally now.', 'A gentle, magnetic current runs through today.'],
+  Saturn: ['Steady effort compounds now.', 'A grounded, patient current holds the day.', 'Slow and solid beats fast and loud today.'],
+  Rahu: ['A restless pull toward something new.', 'Ambition hums under the surface.', 'The unfamiliar looks unusually appealing.'],
+  Ketu: ['A quiet, inward tide moves today.', 'Something wants to be released, not chased.', 'Depth matters more than motion right now.'],
+};
+
+// Short headlines for Tara's Message, keyed to the day's driving graha.
+const GRAHA_HEADLINES: Record<string, string[]> = {
+  Sun: ['Today rewards showing up as yourself.', 'Lead with clarity, not volume.', 'Let your intention be the light.'],
+  Moon: ['Today rewards feeling over fixing.', 'Let the heart set the pace.', 'Softness is the strategy today.'],
+  Mars: ['Today rewards aimed effort over noise.', 'Move — but choose your direction.', 'Channel the fire, don’t scatter it.'],
+  Mercury: ['Today rewards clear words over clever ones.', 'Let the mind organize, not spiral.', 'One clear thought moves everything.'],
+  Jupiter: ['Today rewards thinking a little bigger.', 'Say yes to the wider horizon.', 'Growth favors the generous today.'],
+  Venus: ['Today rewards warmth over winning.', 'Lead with connection, not correction.', 'Let ease do some of the work.'],
+  Saturn: ['Today rewards patience over pressure.', 'Build slow, build once.', 'The long game is the winning one.'],
+  Rahu: ['Today rewards bold moves with a grounded heart.', 'Reach — but keep your feet on the earth.', 'Ambition works best when it’s anchored.'],
+  Ketu: ['Today rewards release over reaching.', 'Let go, and let clarity arrive.', 'Less is genuinely more today.'],
+};
+
+const MANTRAS: Record<string, { mantra: string; note: string }> = {
+  Sun: { mantra: 'Oṃ Sūryāya Namaḥ', note: 'Chant to strengthen confidence and vitality.' },
+  Moon: { mantra: 'Oṃ Chandrāya Namaḥ', note: 'Chant 11 times to soothe and steady the emotions.' },
+  Mars: { mantra: 'Oṃ Maṅgalāya Namaḥ', note: 'Chant to focus courage and calm the temper.' },
+  Mercury: { mantra: 'Oṃ Budhāya Namaḥ', note: 'Chant to steady the mind and clear communication.' },
+  Jupiter: { mantra: 'Oṃ Gurave Namaḥ', note: 'Chant to invite wisdom and expansion.' },
+  Venus: { mantra: 'Oṃ Śukrāya Namaḥ', note: 'Chant to open the heart and soften the day.' },
+  Saturn: { mantra: 'Oṃ Śanaye Namaḥ', note: 'Chant to steady patience and ease pressure.' },
+  Rahu: { mantra: 'Oṃ Rāhave Namaḥ', note: 'Chant to ground ambition and clear confusion.' },
+  Ketu: { mantra: 'Oṃ Ketave Namaḥ', note: 'Chant to support release and inner clarity.' },
+};
+
+const JOURNAL_PROMPTS = [
+  'What am I being asked to release rather than achieve today?',
+  'Where is my energy genuinely wanting to go right now?',
+  'What would softness change about today?',
+  'What am I ready to stop carrying?',
+  'Where can I trust my own mind today?',
+  'What small, honest step is mine to take?',
+  'What am I learning to truly value?',
+  'What would it feel like to move a little slower today?',
+];
+
+// A one-line quality for each of the 27 nakshatras (Moon-in-nakshatra flavor).
+const NAKSHATRA_QUALITY: Record<string, string> = {
+  Ashwini: 'A swift, fresh-start energy hums today.', Bharani: 'A day of intensity and honest transformation.',
+  Krittika: 'A sharp, purifying clarity cuts through.', Rohini: 'A lush, sensual, growth-loving current.',
+  Mrigashira: 'A curious, searching, gentle restlessness.', Ardra: 'An emotionally charged, clearing sky.',
+  Punarvasu: 'A return to safety and renewal.', Pushya: 'A nourishing, steadying, caretaking warmth.',
+  Ashlesha: 'A deep, intuitive, inward pull.', Magha: 'A dignified, ancestral, honoring tone.',
+  'Purva Phalguni': 'A playful, pleasure-loving ease.', 'Uttara Phalguni': 'A generous, reliable, service-minded warmth.',
+  Hasta: 'A skillful, hands-on, capable current.', Chitra: 'A bright, creative, design-loving spark.',
+  Swati: 'An independent, breezy, balancing air.', Vishakha: 'A determined, goal-focused drive.',
+  Anuradha: 'A devoted, friendship-building warmth.', Jyeshtha: 'A protective, seniority-holding intensity.',
+  Mula: 'A root-seeking, get-to-the-truth energy.', 'Purva Ashadha': 'An optimistic, invincible momentum.',
+  'Uttara Ashadha': 'A steady, principled, enduring strength.', Shravana: 'A listening, learning, connective quiet.',
+  Dhanishta: 'A rhythmic, abundant, capable beat.', Shatabhisha: 'A healing, private, unconventional current.',
+  'Purva Bhadrapada': 'A visionary, intense, purpose-driven charge.', 'Uttara Bhadrapada': 'A deep, calming, wise stillness.',
+  Revati: 'A soft, compassionate, journey’s-end tenderness.',
+};
+
+// ---- factor extraction ---------------------------------------------------------
+const firstWord = (s: string) => (s || '').trim().split(/\s+/)[0] || '';
+function antarLordOf(s: string): string {
+  // "Jupiter–Saturn (Antardasha)" → "Saturn"
+  const core = (s || '').split('(')[0];
+  const parts = core.split('–');
+  return (parts[1] || parts[0] || '').trim();
+}
+// Vimshottari lord of a nakshatra (Ashwini = Ketu, cycling every 9).
+const NAK_LORDS = ['Ketu', 'Venus', 'Sun', 'Moon', 'Mars', 'Rahu', 'Jupiter', 'Saturn', 'Mercury'];
+function nakshatraLord(nak: string): string {
+  const i = NAKSHATRAS.indexOf(nak);
+  return i >= 0 ? NAK_LORDS[i % 9] : 'Moon';
+}
+
+// ---- composition helpers -------------------------------------------------------
+type CardInput = { graha: string; house: number | null; mechanism: string; leadPool: string[] };
+
+function composeBody(rng: Rng, { house, mechanism, leadPool }: CardInput): string {
+  const lead = rng.pick(leadPool);
+  const lean = house ? lower(houseTheme(house).lean) : 'steady, mindful action';
+  const advice = rng.pick([`Lean into ${lean}`, `Give your energy to ${lean}`, `Let today favor ${lean}`]);
+  return `${lead} ${advice}, because ${mechanism}.`;
+}
+
+// ---- public types --------------------------------------------------------------
+export type DailyMessage = { headline: string; body: string };
+export type DailyInsight = { key: string; label: string; color: string; text: string; question: string };
+export type DailyContent = {
+  message: DailyMessage;
+  weatherSummary: string;
+  insights: DailyInsight[];
+  avoid: string;
+  leanInto: string;
+  mantra: string;
+  mantraNote: string;
+  journalPrompt: string;
+};
+
+// Anchor every engine read to local noon of the given day, so the astrological factors
+// (Moon position, transits) are identical no matter what time the app is opened — the
+// content only changes when the calendar day does.
+const noonOf = (date: Date) => new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0);
+
+// Fallback when no chart yet (onboarding incomplete) — still deterministic per day.
+function noChartContent(rng: Rng, date: Date): DailyContent {
+  const t = computeTransits(noonOf(date), null);
+  const graha = 'Moon';
+  const body = `${rng.pick(GRAHA_LEADS.Moon)} ${rng.pick(['Lean into rest and reflection', 'Give your energy to quiet care'])}, because the Moon sits in ${t.moonNakshatra}.`;
+  return {
+    message: { headline: rng.pick(GRAHA_HEADLINES.Moon), body },
+    weatherSummary: `The Moon moves through ${t.moonSign} in ${t.moonNakshatra}, ${t.panchanga}. Add your birth details to personalize today’s reading to your chart.`,
+    insights: [
+      { key: 'emotional', label: 'Emotional Energy', color: colors.rose, question: 'Why does my emotional energy feel this way today?', text: `${NAKSHATRA_QUALITY[t.moonNakshatra] ?? 'A gentle lunar current moves today.'} Honor it without acting on every wave, because the Moon sits in ${t.moonNakshatra}.` },
+      { key: 'nakshatra', label: 'Moon’s Nakshatra', color: colors.saffron, question: 'What does my Moon’s nakshatra mean today?', text: `${NAKSHATRA_QUALITY[t.moonNakshatra] ?? 'A quiet, reflective tone.'} because the Moon sits in ${t.moonNakshatra}.` },
+    ],
+    avoid: 'Major decisions, overcommitting, harsh self-judgment.',
+    leanInto: 'Rest, hydration, journaling, gentle routine.',
+    mantra: MANTRAS[graha].mantra,
+    mantraNote: MANTRAS[graha].note,
+    journalPrompt: rng.pick(JOURNAL_PROMPTS),
+  };
+}
+
+// ---- main composer -------------------------------------------------------------
+export function composeDailyContent(chart: BirthChart | null, date: Date, seed: string): DailyContent {
+  const rng = new Rng(seed);
+  if (!chart) return noChartContent(rng, date);
+
+  const day = noonOf(date);
+  const t = computeTransits(day, chart);
+  const events = computeCosmicEvents(chart, day);
+  const factor = computeTransitFactor(chart, day, 'general');
+  const allT = computeAllTransits(chart, day);
+  const houseOf = (name: string) => allT.find((x) => x.name === name)?.house ?? null;
+  const retros = allT.filter((x) => x.retrograde && x.name !== 'Rahu' && x.name !== 'Ketu').map((x) => x.name);
+  const mahaLord = firstWord(chart.currentDasha);
+  const antarLord = antarLordOf(chart.currentAntardasha);
+  const moonNak = t.moonNakshatra;
+  const moonHouse = t.moonHouse;
+
+  // Mechanism string for the strongest transit factor.
+  const transitMechanism = factor.aspectName && factor.natalPlanet
+    ? `transiting ${factor.transiting} ${lower(factor.aspectName)}s your natal ${factor.natalPlanet}`
+    : `${factor.transiting} is moving through your ${ord(factor.house ?? null)} house`;
+
+  // ---- candidate insight sections (a larger pool; 5-6 are chosen per day) -------
+  type Cand = { key: string; label: string; color: string; question: string; graha: string; text: string };
+  const cands: Cand[] = [];
+  const add = (c: Omit<Cand, 'text'>, input: CardInput) => cands.push({ ...c, text: composeBody(rng, input) });
+
+  add({ key: 'emotional', label: 'Emotional Energy', color: colors.rose, question: 'Why does my emotional energy feel this way today?', graha: 'Moon' },
+    { graha: 'Moon', house: moonHouse, mechanism: `the Moon is transiting your ${ord(moonHouse)} house`, leadPool: GRAHA_LEADS.Moon });
+
+  add({ key: 'mental', label: 'Mental Energy', color: colors.lav, question: 'Why is my mind moving like this today?', graha: 'Mercury' },
+    { graha: 'Mercury', house: houseOf('Mercury'), mechanism: `Mercury is ${retros.includes('Mercury') ? 'retrograde in' : 'moving through'} your ${ord(houseOf('Mercury'))} house`, leadPool: GRAHA_LEADS.Mercury });
+
+  add({ key: 'relationship', label: 'Relationship Energy', color: colors.rose, question: "What's shaping my relationships today?", graha: 'Venus' },
+    { graha: 'Venus', house: houseOf('Venus'), mechanism: `Venus is moving through your ${ord(houseOf('Venus'))} house`, leadPool: GRAHA_LEADS.Venus });
+
+  {
+    const g = ['Saturn', 'Sun', 'Mercury'].find((n) => [10, 6, 11].includes(houseOf(n) ?? -1)) ?? 'Saturn';
+    add({ key: 'career', label: 'Career Energy', color: colors.goldSoft, question: 'Why is my career energy where it is today?', graha: g },
+      { graha: g, house: houseOf(g), mechanism: `${g} is moving through your ${ord(houseOf(g))} house`, leadPool: GRAHA_LEADS[g] });
+  }
+  {
+    const g = ['Mars', 'Sun'].find((n) => [1, 6, 8].includes(houseOf(n) ?? -1)) ?? 'Mars';
+    add({ key: 'body', label: 'Body Signal', color: colors.sage, question: 'What is my body signalling today?', graha: g },
+      { graha: g, house: houseOf(g), mechanism: `${g} is moving through your ${ord(houseOf(g))} house`, leadPool: GRAHA_LEADS[g] });
+  }
+
+  add({ key: 'spiritual', label: 'Spiritual Guidance', color: colors.saffron, question: 'What spiritual guidance is here for me today?', graha: 'Jupiter' },
+    { graha: 'Jupiter', house: houseOf('Jupiter'), mechanism: `Jupiter is moving through your ${ord(houseOf('Jupiter'))} house`, leadPool: GRAHA_LEADS.Jupiter });
+
+  // Dasha focus (Mahadasha lord).
+  cands.push({
+    key: 'dasha', label: 'Your Chapter', color: colors.gold, question: 'What is my current life chapter asking of me?', graha: mahaLord,
+    text: `${rng.pick(GRAHA_LEADS[mahaLord] ?? GRAHA_LEADS.Jupiter)} This is your ${lower(MAHA_MEANING[mahaLord]?.chapter ?? 'current chapter')}, because your ${mahaLord} Mahādasha is running.`,
+  });
+
+  // Transit spotlight (strongest factor).
+  add({ key: 'transit', label: 'Transit Spotlight', color: colors.lav, question: "What's the biggest cosmic influence on me today?", graha: factor.transiting },
+    { graha: factor.transiting, house: factor.house ?? null, mechanism: transitMechanism, leadPool: GRAHA_LEADS[factor.transiting] ?? GRAHA_LEADS.Sun });
+
+  // Nakshatra note.
+  cands.push({
+    key: 'nakshatra', label: 'Moon’s Nakshatra', color: colors.saffron, question: 'What does my Moon’s nakshatra mean today?', graha: nakshatraLord(moonNak),
+    text: `${NAKSHATRA_QUALITY[moonNak] ?? 'A quiet lunar tone colors the day.'} ${rng.pick(['Let it guide your pace', 'Work with it, not against it'])}, because the Moon sits in ${moonNak}.`,
+  });
+
+  // Retrograde watch (only if something is retrograde).
+  if (retros.length) {
+    const g = retros[0];
+    cands.push({
+      key: 'retrograde', label: 'Retrograde Watch', color: colors.terra, question: 'How is the retrograde affecting me right now?', graha: g,
+      text: `${rng.pick(GRAHA_LEADS[g] ?? GRAHA_LEADS.Saturn)} A day to revisit and refine rather than launch, because ${g} is retrograde.`,
+    });
+  }
+
+  // ---- choose 5-6, rotating by day and varying the graha cited -----------------
+  const shuffled = rng.shuffle(cands);
+  const chosen: Cand[] = [];
+  const usedGrahas = new Set<string>();
+  for (const c of shuffled) {
+    if (chosen.length >= 6) break;
+    if (usedGrahas.has(c.graha)) continue; // don't repeat one planet across the day
+    chosen.push(c);
+    usedGrahas.add(c.graha);
+  }
+  // If graha-variety left us short of 5, backfill from the rest.
+  for (const c of shuffled) {
+    if (chosen.length >= 5) break;
+    if (!chosen.includes(c)) chosen.push(c);
+  }
+
+  // ---- Tara's Message (headline + 2-sentence body from the strongest factor) ---
+  const driver = factor.transiting;
+  const message: DailyMessage = {
+    headline: rng.pick(GRAHA_HEADLINES[driver] ?? GRAHA_HEADLINES.Moon),
+    body: composeBody(rng, { graha: driver, house: factor.house ?? null, mechanism: transitMechanism, leadPool: GRAHA_LEADS[driver] ?? GRAHA_LEADS.Sun }),
+  };
+
+  // ---- overview + avoid/lean/mantra/journal ------------------------------------
+  const weatherSummary = `The Moon moves through ${t.moonSign} in ${moonNak}, ${t.panchanga}, on ${events.vara} (day of ${events.dayLord}). You’re in your ${lower(MAHA_MEANING[mahaLord]?.chapter ?? 'current chapter')}${antarLord ? `, with the ${antarLord} sub-period active` : ''}.`;
+  const mh = houseTheme(moonHouse);
+  const dayMantra = MANTRAS[events.dayLord] ?? MANTRAS.Moon;
+
+  return {
+    message,
+    weatherSummary,
+    insights: chosen.map(({ key, label, color, text, question }) => ({ key, label, color, text, question })),
+    avoid: cap(mh.avoid) + '.',
+    leanInto: cap(mh.lean) + '.',
+    mantra: dayMantra.mantra,
+    mantraNote: dayMantra.note,
+    journalPrompt: rng.pick(JOURNAL_PROMPTS),
+  };
+}

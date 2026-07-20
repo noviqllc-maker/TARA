@@ -14,10 +14,9 @@ import { useChart } from '@/hooks/useChart';
 import { useTransits } from '@/hooks/useTransits';
 import { useDailyEnergy } from '@/hooks/useDailyEnergy';
 import { useHealth } from '@/hooks/useHealth';
+import { useDailyContent } from '@/hooks/useDailyContent';
 import { computeCosmicEvents } from '@/lib/panchanga';
-import {
-  greeting, todayLong, tarasMessage, cosmicWeather, insights,
-} from '@/data/mock';
+import { greeting, todayLong } from '@/data/mock';
 import { colors, spacing } from '@/theme';
 
 const QUICK = [
@@ -79,11 +78,13 @@ export default function Home() {
   // per calendar day + chart, matching the useTransits/useDailyEnergy pattern; no AI call).
   const dayKey = new Date().toDateString();
   const cosmic = useMemo(() => computeCosmicEvents(chart, new Date()), [chart, dayKey]);
+  // Tara's Message — engine-composed, seeded per user + day (no AI, no mock).
+  const daily = useDailyContent();
 
   // Now fully live: nakshatra + dasha from the user's chart, and today's real sky.
   const weather: [string, string][] = [
-    ['Nakshatra', chart?.nakshatra ?? cosmicWeather.nakshatra],
-    ['Dasha', chart?.currentDasha ?? cosmicWeather.dasha],
+    ['Nakshatra', chart?.nakshatra ?? transits.moonNakshatra],
+    ['Dasha', chart?.currentDasha ?? '—'],
     ['Transit', transits.transitText],
     ['Panchanga', transits.panchanga],
     ['Moon Phase', transits.moonPhase],
@@ -161,12 +162,12 @@ export default function Home() {
       {/* Tara's message */}
       <Card solid glow style={{ marginBottom: spacing.lg }}>
         <Eyebrow>Tara's Message</Eyebrow>
-        <Text variant="serif" style={{ fontSize: 18, marginTop: 10, lineHeight: 25 }}>{tarasMessage.headline}</Text>
-        <Text variant="tiny" style={{ marginTop: 8 }}>{tarasMessage.body}</Text>
+        <Text variant="serif" style={{ fontSize: 18, marginTop: 10, lineHeight: 25 }}>{daily.message.headline}</Text>
+        <Text variant="tiny" style={{ marginTop: 8 }}>{daily.message.body}</Text>
         <GoldButton label="Ask Tara about today" onPress={() => router.push('/(tabs)/tara')} style={{ marginTop: 16 }} />
         {/* Bridge: spends a credit through the normal gated answer flow. */}
         <Pressable
-          onPress={() => router.push({ pathname: '/ask/answer', params: { q: `About today's guidance — "${tarasMessage.headline}" — why is this the theme for me today?` } } as any)}
+          onPress={() => router.push({ pathname: '/ask/answer', params: { q: `About today's guidance — "${daily.message.headline}" — why is this the theme for me today?` } } as any)}
           hitSlop={6}
           style={{ marginTop: 14, alignSelf: 'center' }}
         >
@@ -180,7 +181,7 @@ export default function Home() {
       {/* Journal Prompt (moved from Insights) */}
       <Card style={{ marginBottom: spacing.lg }}>
         <Eyebrow>Journal Prompt</Eyebrow>
-        <Text variant="serif" style={styles.journalPrompt}>“{insights.journalPrompt}”</Text>
+        <Text variant="serif" style={styles.journalPrompt}>“{daily.journalPrompt}”</Text>
         <Pressable onPress={() => router.push('/insights/journal')} hitSlop={6} style={{ marginTop: 14 }}>
           <Text variant="tiny" color={colors.gold} style={{ fontWeight: '600', fontSize: 13 }}>Open Mood Journal →</Text>
         </Pressable>

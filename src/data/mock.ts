@@ -57,18 +57,8 @@ export const snapshot: SnapshotStat[] = [
   { label: 'Mood', value: 58 },
 ];
 
-export const tarasMessage = {
-  headline: 'Today rewards silence more than speed.',
-  body: 'Moon energy suggests reflection over reaction. The transit through your 8th house turns attention inward — let plans stay soft and decisions wait for clearer skies.',
-};
-
-export const cosmicWeather = {
-  nakshatra: 'Hasta',
-  dasha: 'Jupiter Mahādasha',
-  transit: 'Moon transiting 8th house',
-  panchanga: 'Shukla Pakṣa · Dvitīyā',
-  moonPhase: 'Waning Gibbous',
-};
+// Tara's Message and Cosmic Weather are no longer static — they are composed
+// deterministically from the engine (see src/lib/dailyContent.ts + useDailyContent).
 
 export const planets: Planet[] = [
   { name: 'Sun', glyph: '☉', sign: 'Virgo', house: 5, degree: '6°14′', explanation: 'Your core identity expresses through service, precision, and analytical care. Leadership comes quietly through competence.' },
@@ -94,21 +84,6 @@ export const dashaTimeline: DashaPeriod[] = [
   { planet: 'Jupiter', start: '2026', end: '2042', theme: 'Wisdom, expansion, abundance', phase: 'present' },
   { planet: 'Saturn', start: '2042', end: '2061', theme: 'Mastery, legacy, structure', phase: 'future' },
 ];
-
-export const insights = {
-  cosmicWeather: 'A reflective, inward-turning current. The Moon in your 8th house favors depth over momentum.',
-  emotional: 'Tender and intuitive. Emotions run close to the surface — honor them without acting on every wave.',
-  mental: 'Slightly scattered. Single-task and protect your focus; clarity returns by evening.',
-  relationship: 'Warm but sensitive. A good day to listen rather than resolve.',
-  career: 'Quietly strong. Behind-the-scenes work pays off — avoid launching anything new.',
-  body: 'Recovery is low. Your nervous system is conserving energy; choose gentle movement.',
-  spiritual: 'Highly aligned. A rare open window for meditation and inner work.',
-  avoid: 'Major decisions, confrontations, overcommitting, caffeine after noon.',
-  leanInto: 'Journaling, hydration, early rest, grounding practices, quiet creativity.',
-  mantra: 'Oṃ Som Somāya Namaḥ',
-  mantraNote: 'Chant 11 times to soothe and steady lunar energy.',
-  journalPrompt: 'What am I being asked to release rather than achieve today?',
-};
 
 export const wellness = {
   energyBalance: 54,
