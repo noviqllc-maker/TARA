@@ -51,13 +51,25 @@ export function CreditsProvider({ children }: { children: React.ReactNode }) {
   // Load the signed-in user's balance (server-authoritative). Returns it too.
   const loadBalance = useCallback(async (): Promise<number | null> => {
     const { data: sess } = await supabase.auth.getSession();
-    if (!sess.session) { setBalance(null); return null; }
+    if (!sess.session) {
+      if (__DEV__) console.log('[Credits] loadBalance: no session → balance null');
+      setBalance(null);
+      return null;
+    }
+    const uid = sess.session.user.id;
     const { data, error } = await supabase.rpc('ensure_user_credits'); // grants 5 once, returns balance
+    // TEMP DIAGNOSTIC: log the app's auth uid alongside the raw RPC result. If this uid
+    // does NOT match the user_id that holds the credits on the server (3a4d8e93-…), the
+    // credits are on a different auth user (identity mismatch, not RLS). If `error` is
+    // non-null, auth.uid() likely resolved to null server-side (JWT not attached).
+    if (__DEV__) console.log('[Credits] ensure_user_credits', { uid, data, error });
     if (!error && typeof data === 'number') {
-      if (__DEV__) console.log('[Credits] server balance =', data); // TEMP: trace refreshes in Metro
       setBalance(data);
       return data;
     }
+    // Do NOT silently coalesce an error to 0 — surface it, keep balance null (shows "—",
+    // not a false "out of credits"), and let the log above explain why.
+    if (__DEV__) console.warn('[Credits] ensure_user_credits FAILED — reading balance as unknown, not 0:', error?.message ?? error);
     return null;
   }, []);
 
@@ -85,6 +97,9 @@ export function CreditsProvider({ children }: { children: React.ReactNode }) {
   // Atomic, RLS-scoped server decrement. Returns true only if the server authorized.
   const authorize = useCallback(async () => {
     const { data, error } = await supabase.rpc('decrement_credit');
+    // TEMP DIAGNOSTIC: distinguish a true 0-balance (data === -1) from a swallowed error
+    // (auth.uid() null / network) that currently ALSO shows "out of credits".
+    if (__DEV__) console.log('[Credits] decrement_credit', { data, error });
     if (error || typeof data !== 'number') return false; // server/network error → not authorized
     if (data === -1) { setBalance(0); return false; }      // out of credits
     setBalance(data);
