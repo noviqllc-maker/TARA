@@ -66,6 +66,9 @@ export default function ReportScreen() {
   if (state === 'loading') {
     return (
       <Screen scroll={false} contentStyle={{ flex: 1 }}>
+        <Pressable onPress={() => router.back()} hitSlop={8} style={{ alignSelf: 'flex-start' }}>
+          <Text variant="body" color={colors.muted}>✕ Close</Text>
+        </Pressable>
         <View style={styles.center}>
           <ActivityIndicator color={colors.gold} />
           <Text variant="serif" style={styles.loadingText}>

@@ -19,6 +19,7 @@ import { computeTransitFactor, TransitFactor } from '@/lib/vedic';
 import { askTaraAnswer, ChatMessage } from '@/lib/ai';
 import { getLanguage } from '@/lib/language';
 import { getRememberChat } from '@/lib/privacy';
+import { setAskDraft } from '@/lib/askDraft';
 import { colors, fonts, spacing } from '@/theme';
 
 const MEM_KEY = 'tara.chat.v1';       // shared with the Ask Tara screen
@@ -33,19 +34,26 @@ export default function AnswerView() {
   const chart = useChart();
   const { profile } = useProfile();
   const { metrics } = useHealth();
-  const { authorize } = useCredits();
+  const { authorize, refresh } = useCredits();
 
   const factor: TransitFactor | null = useMemo(() => (chart ? computeTransitFactor(chart) : null), [chart]);
   const [state, setState] = useState<UIState>('loading');
   const [answer, setAnswer] = useState('');
   const [rating, setRating] = useState<'up' | 'down' | null>(null);
+  const [refetching, setRefetching] = useState(false); // "Try again" balance refetch in progress
+  const [refreshNote, setRefreshNote] = useState('');   // brief feedback after a refetch
   const startedRef = useRef(false);   // effect runs run() once
   const authorizedRef = useRef(false); // a credit was already spent for this question
+
+  // Return to Ask Tara; the pending question is restored there (draft set in run()).
+  const close = useCallback(() => router.back(), []);
 
   // The AUTHORITATIVE gate: a question is generated ONLY if the server decrement
   // succeeds. authorizedRef ensures we never double-spend on a retry.
   const run = useCallback(async () => {
     if (!question) { router.back(); return; }
+    // Hold the question so any non-success exit (X, back-swipe, buy flow) restores it.
+    setAskDraft(question);
     if (!chart || !factor) { setState('nochart'); return; }
     setState('loading');
 
@@ -58,6 +66,7 @@ export default function AnswerView() {
     const language = await getLanguage();
     const res = await askTaraAnswer(question, factor.label, profile.name || 'friend', chart, metrics, language);
     setAnswer(res.answer);
+    setAskDraft(''); // answered → don't restore the question to the input
     setState('ready');
     // Append Q&A to history (persistence unchanged) unless privacy opted out.
     if (await getRememberChat()) {
@@ -76,6 +85,22 @@ export default function AnswerView() {
     run();
   }, [run]);
 
+  // "Try again": refetch the server balance (with a spinner). If credits are now
+  // available, submit the pending question; otherwise stay with brief feedback —
+  // never a silent re-render of the same 0-credit screen.
+  const onTryAgain = useCallback(async () => {
+    setRefreshNote('');
+    setRefetching(true);
+    const bal = await refresh();
+    setRefetching(false);
+    if (typeof bal === 'number' && bal > 0) {
+      authorizedRef.current = false; // allow the atomic decrement to run for the pending question
+      run();
+    } else {
+      setRefreshNote('Balance refreshed — still 0 credits');
+    }
+  }, [refresh, run]);
+
   const rate = useCallback(async (r: 'up' | 'down') => {
     setRating(r);
     try {
@@ -89,13 +114,16 @@ export default function AnswerView() {
   if (state === 'nochart') {
     return (
       <Screen scroll={false} contentStyle={{ flex: 1 }}>
+        <Pressable onPress={close} hitSlop={8} style={styles.closeX}>
+          <Text variant="body" color={colors.muted}>✕ Close</Text>
+        </Pressable>
         <View style={styles.center}>
           <Text variant="serif" style={{ fontSize: 22, textAlign: 'center' }}>Add your birth details</Text>
           <Text variant="tiny" color={colors.muted} style={{ marginTop: 8, marginBottom: 22, textAlign: 'center' }}>
             Ask Tara reads the live sky against your birth chart. Add your date, time, and place of birth first.
           </Text>
           <View style={{ alignSelf: 'stretch', paddingHorizontal: spacing.xl }}>
-            <GoldButton label="Go back" onPress={() => router.back()} />
+            <GoldButton label="Go back" onPress={close} />
           </View>
         </View>
       </Screen>
@@ -105,6 +133,9 @@ export default function AnswerView() {
   if (state === 'nocredits') {
     return (
       <Screen scroll={false} contentStyle={{ flex: 1 }}>
+        <Pressable onPress={close} hitSlop={8} style={styles.closeX}>
+          <Text variant="body" color={colors.muted}>✕ Close</Text>
+        </Pressable>
         <View style={styles.center}>
           <Text variant="eyebrow" color={colors.gold} style={{ marginBottom: 10 }}>✦ Out of Questions</Text>
           <Text variant="serif" style={{ fontSize: 22, textAlign: 'center' }}>You're out of credits</Text>
@@ -114,9 +145,19 @@ export default function AnswerView() {
           <View style={{ alignSelf: 'stretch', paddingHorizontal: spacing.xl }}>
             <GoldButton label="Get Credits" onPress={() => router.push('/credits')} />
           </View>
-          <Pressable onPress={() => run()} style={{ marginTop: 14 }}>
-            <Text variant="tiny" color={colors.muted}>Try again</Text>
-          </Pressable>
+          {refetching ? (
+            <View style={{ marginTop: 16, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <ActivityIndicator color={colors.gold} size="small" />
+              <Text variant="tiny" color={colors.muted}>Checking your balance…</Text>
+            </View>
+          ) : (
+            <Pressable onPress={onTryAgain} hitSlop={8} style={{ marginTop: 16 }}>
+              <Text variant="tiny" color={colors.gold} style={{ fontWeight: '600' }}>Try again</Text>
+            </Pressable>
+          )}
+          {refreshNote ? (
+            <Text variant="tiny" color={colors.muted} style={{ marginTop: 12 }}>{refreshNote}</Text>
+          ) : null}
         </View>
       </Screen>
     );
@@ -177,6 +218,7 @@ export default function AnswerView() {
 }
 
 const styles = StyleSheet.create({
+  closeX: { alignSelf: 'flex-start', marginBottom: 4 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xl },
   question: { fontSize: 22, lineHeight: 30, marginTop: 8, marginBottom: spacing.xl, color: colors.cream },
   calcCard: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xl },

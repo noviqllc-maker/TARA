@@ -14,6 +14,7 @@ import { useChart } from '@/hooks/useChart';
 import { useCredits } from '@/hooks/useCredits';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { getRememberChat } from '@/lib/privacy';
+import { takeAskDraft } from '@/lib/askDraft';
 import { colors, fonts, radius, spacing } from '@/theme';
 import Markdown from 'react-native-markdown-display';
 
@@ -47,9 +48,12 @@ export default function AskTara() {
       }
     })();
   }, []);
-  // On focus: re-check the privacy toggle AND reload history so a Q&A just added by
-  // the answer view appears here (persistence is unchanged — same MEM_KEY).
+  // On focus: restore a question preserved by the answer view (out-of-credits /
+  // interrupted), re-check the privacy toggle, AND reload history so a Q&A just added
+  // by the answer view appears here (persistence is unchanged — same MEM_KEY).
   useFocusEffect(React.useCallback(() => {
+    const restored = takeAskDraft();
+    if (restored) setInput(restored);
     (async () => {
       const remember = await getRememberChat();
       setRememberChat(remember);

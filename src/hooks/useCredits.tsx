@@ -11,7 +11,7 @@ type CreditsState = {
   balance: number | null;                    // server balance; null when signed out / unknown
   loading: boolean;
   products: Record<string, any>;             // productId -> StoreProduct (priceString)
-  refresh: () => Promise<void>;
+  refresh: () => Promise<number | null>;     // re-read the server balance; returns it
   authorize: () => Promise<boolean>;         // atomic server decrement; true = question allowed
   buy: (productId: CreditProductId) => Promise<boolean>; // purchase → server verify → credit
   amountFor: (productId: string) => number;
@@ -47,12 +47,13 @@ export function CreditsProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Load (and grant the signup bonus for) the signed-in user's balance.
-  const loadBalance = useCallback(async () => {
+  // Load the signed-in user's balance (server-authoritative). Returns it too.
+  const loadBalance = useCallback(async (): Promise<number | null> => {
     const { data: sess } = await supabase.auth.getSession();
-    if (!sess.session) { setBalance(null); return; }
+    if (!sess.session) { setBalance(null); return null; }
     const { data, error } = await supabase.rpc('ensure_user_credits'); // grants 5 once, returns balance
-    if (!error && typeof data === 'number') setBalance(data);
+    if (!error && typeof data === 'number') { setBalance(data); return data; }
+    return null;
   }, []);
 
   useEffect(() => {
@@ -70,7 +71,7 @@ export function CreditsProvider({ children }: { children: React.ReactNode }) {
     return () => { cancelled = true; sub.subscription.unsubscribe(); };
   }, [loadBalance, loadProducts]);
 
-  const refresh = useCallback(async () => { await loadBalance(); }, [loadBalance]);
+  const refresh = useCallback(async (): Promise<number | null> => loadBalance(), [loadBalance]);
 
   // Atomic, RLS-scoped server decrement. Returns true only if the server authorized.
   const authorize = useCallback(async () => {
