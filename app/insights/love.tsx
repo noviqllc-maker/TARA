@@ -15,6 +15,7 @@ import { useChart } from '@/hooks/useChart';
 import { useProfile } from '@/hooks/useProfile';
 import { useSubscription } from '@/hooks/useSubscription';
 import { PremiumHint, PremiumSheet, PremiumNudgeBar } from '@/components/PremiumNudge';
+import { benefitsLeadingWith } from '@/lib/premium';
 import { computeChart } from '@/lib/vedic';
 import { searchPlaces, geocodePlace, hasPlacesKey, fallbackGeo, Place } from '@/lib/places';
 import { gunaMilan, personMoonFromChart, KOOTA_META, GunaResult } from '@/lib/compatibility';
@@ -329,6 +330,7 @@ export default function Love() {
         onClose={() => setPremiumSheet(false)}
         title="Your full relationship reading"
         message="Go beyond the score with favorable timing windows and personalized, in-depth guidance for this pairing."
+        benefits={benefitsLeadingWith('Deep compatibility reports')}
       />
       <Disclaimer />
     </Screen>

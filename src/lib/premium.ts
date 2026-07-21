@@ -9,3 +9,10 @@ export const PREMIUM_BENEFITS = [
   'Deep compatibility reports',
   'Advanced Vedic chart analysis',
 ] as const;
+
+// The same five benefits, reordered so a context-specific soft-lock leads with its most
+// relevant line (e.g. the chart sheet leads with the dasha timeline, the love sheet with
+// compatibility). No lines added or removed — never introduces an unbuilt claim.
+export function benefitsLeadingWith(lead: (typeof PREMIUM_BENEFITS)[number]): string[] {
+  return [lead, ...PREMIUM_BENEFITS.filter((b) => b !== lead)];
+}

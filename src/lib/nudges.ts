@@ -9,31 +9,31 @@ export type NudgeMessage = { line: string; cta: string };
 
 export const NUDGE_MESSAGES: Record<NudgeContext, NudgeMessage[]> = {
   home: [
-    { line: 'Your chart has more to say — unlock every insight, every day.', cta: 'Begin Premium' },
-    { line: 'Ask Tara anything, as often as the stars shift.', cta: 'Go Unlimited' },
+    { line: 'Your chart has more to say — unlock every insight, every day.', cta: 'Go Premium' },
+    { line: 'Bring every question to Tara — 100 a month with Premium.', cta: 'Go Premium' },
     { line: 'See your whole year, not just today.', cta: 'Unlock Year View' },
   ],
   tara_ai: [
-    { line: '100 Ask Tara questions every month with Premium.', cta: 'Begin Premium' },
-    { line: 'Go deeper — full chart analysis and your year of timing windows.', cta: 'Begin Premium' },
+    { line: '100 Ask Tara questions every month with Premium.', cta: 'Go Premium' },
+    { line: 'Go deeper — full chart analysis and your year of timing windows.', cta: 'Go Premium' },
   ],
   chart: [
     { line: 'Your full dasha timeline & deep chart readings await.', cta: 'Unlock Full Chart' },
-    { line: 'Every planet, every period — decoded with Premium.', cta: 'Begin Premium' },
+    { line: 'Every planet, every period — decoded with Premium.', cta: 'Go Premium' },
   ],
   life_love: [
-    { line: 'Ask every relationship question on your mind — unlimited with Premium.', cta: 'Begin Premium' },
+    { line: 'Ask your relationship questions — 100 a month with Premium.', cta: 'Go Premium' },
     { line: 'Deep compatibility readings for the connections that matter.', cta: 'Unlock Compatibility' },
   ],
   life_career: [
     { line: 'Know your career timing windows all year — not just today.', cta: 'See My Year' },
-    { line: 'Ask Tara every career question, whenever doubt strikes.', cta: 'Go Unlimited' },
+    { line: 'Bring every career doubt to Tara — 100 questions a month.', cta: 'Go Premium' },
   ],
   life_health: [
-    { line: "Blend your body's rhythm with your chart, every single day.", cta: 'Begin Premium' },
+    { line: "Blend your body's rhythm with your chart, every single day.", cta: 'Go Premium' },
   ],
   life_purpose: [
-    { line: 'Go deeper into your dharma with unlimited Tara guidance.', cta: 'Begin Premium' },
+    { line: "Go deeper into your dharma with Tara's Premium guidance.", cta: 'Go Premium' },
   ],
 };
 

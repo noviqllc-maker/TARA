@@ -128,7 +128,7 @@ export default function Paywall() {
           <Text style={{ fontSize: 30, lineHeight: 40, textAlign: 'center', includeFontPadding: false, color: colors.gold }}>✦</Text>
           <Text variant="h1" style={{ textAlign: 'center', marginTop: 12 }}>Tara Premium</Text>
           <Text variant="tiny" style={{ textAlign: 'center', marginTop: 8, marginBottom: 28 }}>
-            Your full Vedic life guide — unlimited.
+            Your full Vedic life guide.
           </Text>
 
           <View style={{ gap: 14, marginBottom: 28 }}>

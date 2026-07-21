@@ -8,6 +8,7 @@ import Screen from '@/components/Screen';
 import { Text, Card, Eyebrow, GhostButton } from '@/components/ui';
 import Disclaimer from '@/components/Disclaimer';
 import { PremiumHint, PremiumSheet } from '@/components/PremiumNudge';
+import { benefitsLeadingWith } from '@/lib/premium';
 import { useProfile } from '@/hooks/useProfile';
 import { useChart } from '@/hooks/useChart';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -145,6 +146,7 @@ export default function Chart() {
         onClose={() => setPremiumSheet(false)}
         title="Your full birth blueprint"
         message="Go beyond the chart with a deep natal reading — planet-by-planet guidance and the timing of your dashas."
+        benefits={benefitsLeadingWith('Complete Life Chapters & dasha timeline')}
       />
 
       <Disclaimer />
