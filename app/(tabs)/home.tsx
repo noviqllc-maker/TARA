@@ -180,9 +180,6 @@ export default function Home() {
         </Pressable>
       </Card>
 
-      {/* Premium nudge — free users only, directly below Tara's Message */}
-      <PremiumNudgeBar context="home" style={{ marginBottom: spacing.lg }} />
-
       {/* Journal Prompt (moved from Insights) */}
       <Card style={{ marginBottom: spacing.lg }}>
         <Eyebrow>Journal Prompt</Eyebrow>
@@ -191,6 +188,9 @@ export default function Home() {
           <Text variant="tiny" color={colors.gold} style={{ fontWeight: '600', fontSize: 13 }}>Open Mood Journal →</Text>
         </Pressable>
       </Card>
+
+      {/* Premium nudge — free users only, now below the Journal Prompt */}
+      <PremiumNudgeBar context="home" style={{ marginBottom: spacing.lg }} />
 
       {/* Explore Life Areas (moved from Insights) */}
       <Eyebrow color={colors.muted}>Explore Life Areas</Eyebrow>

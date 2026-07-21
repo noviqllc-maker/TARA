@@ -44,7 +44,7 @@ export default function Journal() {
             const on = emoji === e;
             return (
               <Pressable key={e} onPress={() => setEmoji(e)} hitSlop={4} style={[styles.mood, on && styles.moodOn]}>
-                <Text style={{ fontSize: 26 }}>{e}</Text>
+                <Text style={styles.moodGlyph}>{e}</Text>
               </Pressable>
             );
           })}
@@ -103,6 +103,9 @@ const styles = StyleSheet.create({
     width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center',
     borderWidth: 1.5, borderColor: 'transparent', opacity: 0.55,
   },
+  // Emoji glyphs clip top/bottom without an explicit lineHeight (the line box is shorter
+  // than the glyph). Same fix as the answer-view thumbs: lineHeight + includeFontPadding.
+  moodGlyph: { fontSize: 26, lineHeight: 36, includeFontPadding: false, textAlign: 'center' },
   moodOn: {
     borderColor: colors.gold, backgroundColor: 'rgba(205,163,73,0.14)',
     opacity: 1, transform: [{ scale: 1.08 }],

@@ -15,10 +15,11 @@ import {
 } from '@/lib/notifications';
 import { colors, radius, spacing } from '@/theme';
 
+// Mocked preview cards — show the new VARIED titles (not one fixed "day at a glance").
 const CARDS = [
-  'The Moon changed nakshatras overnight — your energy shifts with it.',
-  'Something is working in your favor today.',
-  'Before today gets busy, there’s one thing worth knowing.',
+  { title: 'Planetary Shift', body: 'The Moon has entered a new nakshatra.' },
+  { title: "Today's Cosmic Briefing", body: 'Your energy today looks different than yesterday.' },
+  { title: 'Your Daily Guidance', body: 'Your personal guidance is ready.' },
 ];
 
 export default function NotificationsPrimer() {
@@ -74,15 +75,15 @@ export default function NotificationsPrimer() {
         <View style={styles.phoneWrap}>
           <Animated.View entering={FadeInUp.duration(600).delay(150)} style={styles.phone}>
             <Text variant="tiny" color={colors.mutedDim} style={{ textAlign: 'center', marginBottom: 14, fontSize: 11 }}>9:41</Text>
-            {CARDS.map((body, i) => (
+            {CARDS.map((c, i) => (
               <View key={i} style={styles.card}>
                 <View style={styles.icon}><Text style={{ color: '#1a1018', fontSize: 13 }}>✦</Text></View>
                 <View style={{ flex: 1 }}>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text variant="tiny" color={colors.cream} style={{ fontWeight: '700', fontSize: 12 }}>Your day at a glance</Text>
+                    <Text variant="tiny" color={colors.cream} style={{ fontWeight: '700', fontSize: 12 }}>{c.title}</Text>
                     <Text variant="tiny" color={colors.mutedDim} style={{ fontSize: 10 }}>now</Text>
                   </View>
-                  <Text variant="tiny" color={colors.muted} style={{ marginTop: 3, lineHeight: 15, fontSize: 11.5 }}>{body}</Text>
+                  <Text variant="tiny" color={colors.muted} style={{ marginTop: 3, lineHeight: 15, fontSize: 11.5 }}>{c.body}</Text>
                 </View>
               </View>
             ))}

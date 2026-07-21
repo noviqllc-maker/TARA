@@ -97,8 +97,14 @@ export default function WellnessScreen() {
 
         <View style={{ height: 18 }} />
         <GoldButton label="Continue" onPress={finish} />
-        <View style={{ height: 10 }} />
-        <GhostButton label="Skip For Now" onPress={finish} />
+        {/* Skip is offered only while nothing is connected. Once Apple Health is
+            Connected, Continue is the single clear action (no "Skip For Now"). */}
+        {!connected && (
+          <>
+            <View style={{ height: 10 }} />
+            <GhostButton label="Skip For Now" onPress={finish} />
+          </>
+        )}
       </ScrollView>
     </View>
   );

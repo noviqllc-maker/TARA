@@ -1,78 +1,151 @@
 // src/data/notificationLines.ts
-// Daily-notification copy + selection. getNotificationLine() chooses a body with a
-// strict priority: (a) event-triggered (only when the engine confirms the event),
-// (b) chart-personalized from current conditions, (c) a static rotation that avoids
-// the last 7 used. No fake-intimacy / false-scarcity lines.
-import { dayOfYear } from '@/lib/nudges';
+// Daily-notification copy + selection. pickNotification() returns a { title, body } pair:
+//   • Titles rotate by content CATEGORY (general / planetary / career / love / money /
+//     fallback). Planetary titles are used ONLY when the engine confirms a real event.
+//   • Bodies come from category-matched pools (all approved copy).
+//   • Selection is seeded by (user id + date), deterministic per user per day, and the
+//     caller threads prevTitle so no title repeats two days running.
+// Honesty guardrails (do NOT add): fake intimacy ("someone may cross your path"), fake
+// urgency/expiry, or fake discovery ("I noticed something") — except "Something shifted
+// overnight." which is permitted ONLY alongside a real, engine-confirmed chart event.
 
 export type NotificationContext = {
   date: Date;
-  // (a) event-triggered — set true ONLY when the astro engine confirms it for this user
+  // event-triggered — set true ONLY when the astro engine confirms it for this user
   dashaChange?: boolean;
-  transitOnMoon?: boolean;
-  solarReturnWeek?: boolean;
-  // (b) chart-personalized (current conditions)
+  transitOnMoon?: boolean;      // a slow graha aspecting the natal Moon
   moonNakshatraChanged?: boolean;
-  strongestGraha?: string; // day's strongest transiting graha
-  // (c) static rotation — recently used bodies to avoid
-  recent?: string[];
+  mercuryRetro?: boolean;       // Mercury retrograde today
+  solarReturnWeek?: boolean;    // (kept for context; no dedicated copy)
+  // chart-personalized
+  strongestGraha?: string;      // day's strongest transiting graha
 };
 
-export const NOTIFICATION_LINES = {
-  event: {
-    dashaChange: 'Your dasha period is shifting. A new chapter is beginning.',
-    moonTransit: 'A rare alignment touches your Moon sign today.',
-    solarReturn: 'Your birthday chart for the year ahead is ready.',
-  },
-  chart: {
-    moonNakshatra: 'The Moon changed nakshatras overnight — your energy shifts with it.',
-    venus: 'Venus is active in your chart today. Relationships come into focus.',
-    saturn: 'Saturn asks for patience today. Slow is strong.',
-    jupiter: 'Jupiter favors decisions made before noon.',
-    timingWindow: 'A timing window opens this afternoon. See when.',
-  },
-  static: {
-    curiosity: [
-      'Before today gets busy, there’s one thing worth knowing.',
-      'Your chart has a message waiting.',
-      'Something shifted in the sky overnight.',
-      'Today isn’t an ordinary day for your chart.',
-      'One minute with Tara before your day begins.',
-    ],
-    warm: [
-      'Something is working in your favor today.',
-      'Today’s stars favor a small, brave step.',
-      'You’re more aligned than you think.',
-      'Trust your first instinct today.',
-    ],
-  },
+export type NotifPick = { title: string; body: string };
+
+const TITLE = {
+  general: "Today's Cosmic Briefing",
+  fallback: 'Your Daily Guidance',
+  planetary: 'Planetary Shift',
+  career: 'Career Timing',
+  love: 'Love Forecast',
+  money: 'Money Insight',
 } as const;
 
-const STATIC_POOL: string[] = [...NOTIFICATION_LINES.static.curiosity, ...NOTIFICATION_LINES.static.warm];
+export const NOTIFICATION_LINES = {
+  // General / curiosity — the everyday, always-safe pool.
+  general: [
+    'Before today gets busy, there’s something you should know.',
+    'One minute with Tara before your day begins.',
+    'Your energy today looks different than yesterday.',
+    'Today’s guidance was written just for you.',
+    'Your stars are pointing toward an opportunity.',
+    'Your personal guidance is ready.',
+    'Your chart is asking for your attention.',
+  ],
+  // Planetary — ONLY when the engine confirms the event is true that day.
+  planetary: {
+    nakshatra: [
+      'The Moon has entered a new nakshatra.',
+      'The sky changed overnight — so did your chart.',
+    ],
+    mercuryRetro: 'Mercury is slowing things down for a reason.',
+    jupiter: 'Jupiter is opening a new door.',
+    dasha: 'Your dasha is entering a powerful phase.',
+    saturn: 'Saturn is teaching you something today.',
+    shifted: 'Something shifted overnight.', // permitted only alongside a real event
+  },
+  careerMoney: [
+    'Your strongest work window starts soon.',
+    'Today favors bold decisions. See why.',
+    'There’s one decision worth waiting on.',
+  ],
+  love: [
+    'Love energy is shifting today.',
+    'Venus has a message for you.',
+    'Your relationships are under a new influence today.',
+  ],
+  wellness: [
+    'Your mind deserves a moment today.',
+    'Today’s guidance may bring clarity.',
+    'Trust yourself a little more today.',
+  ],
+  positive: [
+    'The universe is working quietly in your favor.',
+    'Today has more potential than you realize.',
+    'Trust the path you’re on today.',
+  ],
+} as const;
 
-// True if a body belongs to the static rotation (so callers only "remember" those).
-export function isStaticLine(body: string): boolean {
-  return STATIC_POOL.includes(body);
+// The "general" title (Today's Cosmic Briefing / Your Daily Guidance) draws from a safe,
+// non-committal blend so it never over-promises.
+const GENERAL_POOL: string[] = [
+  ...NOTIFICATION_LINES.general,
+  ...NOTIFICATION_LINES.wellness,
+  ...NOTIFICATION_LINES.positive,
+];
+
+// ---- seeded, deterministic selection ------------------------------------------
+function hashStr(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
+  return Math.abs(h);
+}
+const pickSeeded = (arr: readonly string[], seed: string): string => arr[hashStr(seed) % arr.length];
+
+function grahaTopic(g?: string): 'career' | 'love' | 'money' | undefined {
+  switch (g) {
+    case 'Venus': return 'love';
+    case 'Jupiter': return 'money';
+    case 'Saturn': case 'Sun': case 'Mars': case 'Mercury': return 'career';
+    default: return undefined;
+  }
 }
 
-export function getNotificationLine(ctx: NotificationContext): string {
-  // a. event-triggered — highest priority, only when confirmed
-  if (ctx.dashaChange) return NOTIFICATION_LINES.event.dashaChange;
-  if (ctx.transitOnMoon) return NOTIFICATION_LINES.event.moonTransit;
-  if (ctx.solarReturnWeek) return NOTIFICATION_LINES.event.solarReturn;
+// The planetary bodies that are actually TRUE today (empty → not a planetary day).
+function planetaryEligible(ctx: NotificationContext): string[] {
+  const P = NOTIFICATION_LINES.planetary;
+  const out: string[] = [];
+  if (ctx.moonNakshatraChanged) out.push(...P.nakshatra);
+  if (ctx.dashaChange) out.push(P.dasha);
+  if (ctx.mercuryRetro) out.push(P.mercuryRetro);
+  if (ctx.transitOnMoon && ctx.strongestGraha === 'Jupiter') out.push(P.jupiter);
+  if (ctx.transitOnMoon && ctx.strongestGraha === 'Saturn') out.push(P.saturn);
+  if (out.length) out.push(P.shifted); // only ever paired with a real event
+  return out;
+}
 
-  // b. chart-personalized
-  if (ctx.moonNakshatraChanged) return NOTIFICATION_LINES.chart.moonNakshatra;
-  switch (ctx.strongestGraha) {
-    case 'Venus': return NOTIFICATION_LINES.chart.venus;
-    case 'Saturn': return NOTIFICATION_LINES.chart.saturn;
-    case 'Jupiter': return NOTIFICATION_LINES.chart.jupiter;
+// Choose the day's { title, body }. `seed` = `${userId}:${YYYY-MM-DD}`. `prevTitle` is
+// the previous day's title so we never repeat a title two days running.
+export function pickNotification(ctx: NotificationContext, seed: string, prevTitle?: string): NotifPick {
+  const planetary = planetaryEligible(ctx);
+  let category: 'planetary' | 'career' | 'love' | 'money' | 'general';
+  if (planetary.length) {
+    category = 'planetary';
+  } else {
+    const topic = grahaTopic(ctx.strongestGraha);
+    // ~1 in 3 non-event days gets topic flavor; the rest stay general.
+    category = topic && hashStr(seed + ':cat') % 3 === 0 ? topic : 'general';
   }
-  if (ctx.strongestGraha) return NOTIFICATION_LINES.chart.timingWindow;
 
-  // c. static rotation — avoid the last 7 used, deterministic per day
-  const recent = ctx.recent ?? [];
-  const available = STATIC_POOL.filter((l) => !recent.includes(l));
-  const pool = available.length ? available : STATIC_POOL;
-  return pool[dayOfYear(ctx.date) % pool.length];
+  let title: string;
+  let body: string;
+  switch (category) {
+    case 'planetary': title = TITLE.planetary; body = pickSeeded(planetary, seed + ':b'); break;
+    case 'career':    title = TITLE.career;    body = pickSeeded(NOTIFICATION_LINES.careerMoney, seed + ':b'); break;
+    case 'money':     title = TITLE.money;     body = pickSeeded(NOTIFICATION_LINES.careerMoney, seed + ':b'); break;
+    case 'love':      title = TITLE.love;      body = pickSeeded(NOTIFICATION_LINES.love, seed + ':b'); break;
+    default:          title = hashStr(seed + ':t') % 2 === 0 ? TITLE.general : TITLE.fallback;
+                      body = pickSeeded(GENERAL_POOL, seed + ':b');
+  }
+
+  // No title two days running.
+  if (prevTitle && title === prevTitle) {
+    if (category === 'general') {
+      title = title === TITLE.general ? TITLE.fallback : TITLE.general;
+    } else {
+      title = TITLE.fallback !== prevTitle ? TITLE.fallback : TITLE.general;
+    }
+  }
+  return { title, body };
 }

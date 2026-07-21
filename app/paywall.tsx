@@ -10,7 +10,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import CosmicBackground from '@/components/CosmicBackground';
 import { Text, GoldButton } from '@/components/ui';
 import { useSubscription } from '@/hooks/useSubscription';
-import { PREMIUM_BENEFITS } from '@/lib/premium';
+import { PREMIUM_BENEFITS, PREMIUM_COPY } from '@/lib/premium';
 import { colors, radius, spacing } from '@/theme';
 
 type Tier = 'annual' | 'monthly';
@@ -128,7 +128,7 @@ export default function Paywall() {
           <Text style={{ fontSize: 30, lineHeight: 40, textAlign: 'center', includeFontPadding: false, color: colors.gold }}>✦</Text>
           <Text variant="h1" style={{ textAlign: 'center', marginTop: 12 }}>Tara Premium</Text>
           <Text variant="tiny" style={{ textAlign: 'center', marginTop: 8, marginBottom: 28 }}>
-            Your full Vedic life guide.
+            {PREMIUM_COPY.paywallSubtitle}
           </Text>
 
           <View style={{ gap: 14, marginBottom: 28 }}>

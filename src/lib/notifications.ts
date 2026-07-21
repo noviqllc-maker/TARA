@@ -1,8 +1,9 @@
 // src/lib/notifications.ts
-// Daily local notification — "Your day at a glance" at 8:00 AM device-local time.
-// Local notifications only (no push/APNs). Bodies are chosen per day by the astro
-// engine (see @/data/notificationLines); we schedule the next 3 days as explicit
-// dated notifications and refresh them on every app open so bodies stay current.
+// Daily local notification at 8:00 AM device-local time. Titles rotate by content
+// category (general / planetary / career / love / money / fallback) and never repeat two
+// days running; titles + bodies are chosen per day by the astro engine, seeded by
+// (user id + date) — see @/data/notificationLines. Local notifications only (no push/APNs);
+// we schedule the next 3 days as explicit dated notifications and refresh on every app open.
 //
 // Each notification carries a `data.route` deep-link, read on tap in app/_layout.tsx.
 //
@@ -10,17 +11,16 @@
 // rebuilt with `npx expo run:ios`; a JS-only reload won't pick it up.
 import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { BirthChart, computeTransitFactor } from '@/lib/vedic';
+import { supabase } from '@/lib/supabase';
+import { BirthChart, computeTransitFactor, computeAllTransits } from '@/lib/vedic';
 import { computeTransits } from '@/lib/transits';
-import { getNotificationLine, isStaticLine, NotificationContext } from '@/data/notificationLines';
+import { pickNotification, NotificationContext } from '@/data/notificationLines';
 
 export type NotifRoute = '/(tabs)/home' | '/(tabs)/tara';
 
-const DAILY_TITLE = 'Your day at a glance';
 const DAILY_ROUTE: NotifRoute = '/(tabs)/home';
 const DAILY_HOUR = 8; // 8:00 AM local
 const DAYS_AHEAD = 3;
-const RECENT_KEY = 'tara.notif.recent.v1';       // last static bodies used (avoid repeats)
 const PRIMER_SEEN_KEY = 'tara.notif.primerSeen.v1';
 const MS_DAY = 86_400_000;
 const SLOW_GRAHAS = ['Jupiter', 'Saturn', 'Rahu', 'Ketu', 'Mars'];
@@ -88,11 +88,11 @@ function dashaChangesNow(chart: BirthChart, date: Date): boolean {
 }
 
 export function buildNotificationContext(
-  chart: BirthChart | null, birthDate: string, date: Date, recent: string[],
+  chart: BirthChart | null, birthDate: string, date: Date,
 ): NotificationContext {
-  const ctx: NotificationContext = { date, recent };
+  const ctx: NotificationContext = { date };
   if (birthDate) ctx.solarReturnWeek = isSolarReturnWeek(birthDate, date);
-  if (!chart) return ctx; // static-only when there's no chart yet
+  if (!chart) return ctx; // general-only when there's no chart yet
 
   try {
     const factor = computeTransitFactor(chart, date);
@@ -105,19 +105,26 @@ export function buildNotificationContext(
     ctx.moonNakshatraChanged = !!today && !!yesterday && today !== yesterday;
   } catch {}
   try { ctx.dashaChange = dashaChangesNow(chart, date); } catch {}
+  try {
+    // Mercury retrograde today (confirmed) — gates the "Mercury is slowing things down" line.
+    ctx.mercuryRetro = computeAllTransits(chart, date).some((p) => p.name === 'Mercury' && p.retrograde);
+  } catch {}
   return ctx;
 }
 
 // ---- scheduling ---------------------------------------------------------------
-async function getRecent(): Promise<string[]> {
-  try { const v = await AsyncStorage.getItem(RECENT_KEY); return v ? JSON.parse(v) : []; } catch { return []; }
-}
-async function setRecent(list: string[]): Promise<void> {
-  try { await AsyncStorage.setItem(RECENT_KEY, JSON.stringify(list.slice(-7))); } catch {}
+const ymd = (d: Date) => `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+
+// Stable per-user seed component so rotation differs across users (and stays deterministic
+// per day). Reading the session is a local lookup — no auth logic is changed here.
+async function seedUser(): Promise<string> {
+  try { const { data } = await supabase.auth.getSession(); return data.session?.user?.id || 'anon'; }
+  catch { return 'anon'; }
 }
 
-// Cancel and re-schedule the next 3 daily 8 AM notifications with current bodies.
-// Returns false (no-op) when permission isn't granted.
+// Cancel and re-schedule the next 3 daily 8 AM notifications with fresh, varied titles +
+// bodies. Titles rotate by content category and never repeat two days running. Returns
+// false (no-op) when permission isn't granted.
 export async function refreshDailyNotifications(chart: BirthChart | null, birthDate = ''): Promise<boolean> {
   if (!(await Notifications.getPermissionsAsync()).granted) return false;
   await Notifications.cancelAllScheduledNotificationsAsync();
@@ -126,20 +133,19 @@ export async function refreshDailyNotifications(chart: BirthChart | null, birthD
   let first = new Date(now.getFullYear(), now.getMonth(), now.getDate(), DAILY_HOUR, 0, 0, 0);
   if (first.getTime() <= now.getTime()) first = new Date(first.getTime() + MS_DAY); // 8 AM already passed → start tomorrow
 
-  const recent = await getRecent();
-  const used: string[] = [];
+  const uid = await seedUser();
+  let prevTitle: string | undefined;
   for (let i = 0; i < DAYS_AHEAD; i++) {
     const fireDate = new Date(first.getTime() + i * MS_DAY);
-    const ctx = buildNotificationContext(chart, birthDate, fireDate, [...recent, ...used]);
-    const body = getNotificationLine(ctx);
-    if (isStaticLine(body)) used.push(body); // only static bodies count toward the "last 7"
+    const ctx = buildNotificationContext(chart, birthDate, fireDate);
+    const { title, body } = pickNotification(ctx, `${uid}:${ymd(fireDate)}`, prevTitle);
+    prevTitle = title;
     await Notifications.scheduleNotificationAsync({
       identifier: `tara-daily-${i}`,
-      content: { title: DAILY_TITLE, body, data: { route: DAILY_ROUTE } },
+      content: { title, body, data: { route: DAILY_ROUTE } },
       trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: fireDate },
     });
   }
-  await setRecent([...recent, ...used]);
   return true;
 }
 

@@ -329,7 +329,6 @@ export default function Love() {
         visible={premiumSheet}
         onClose={() => setPremiumSheet(false)}
         title="Your full relationship reading"
-        message="Go beyond the score with favorable timing windows and personalized, in-depth guidance for this pairing."
         benefits={benefitsLeadingWith('Deep compatibility reports')}
       />
       <Disclaimer />

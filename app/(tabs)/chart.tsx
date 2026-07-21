@@ -145,7 +145,6 @@ export default function Chart() {
         visible={premiumSheet}
         onClose={() => setPremiumSheet(false)}
         title="Your full birth blueprint"
-        message="Go beyond the chart with a deep natal reading — planet-by-planet guidance and the timing of your dashas."
         benefits={benefitsLeadingWith('Complete Life Chapters & dasha timeline')}
       />
 

@@ -13,7 +13,7 @@ import Animated, { FadeInUp } from 'react-native-reanimated';
 import { Text, Card, Eyebrow, GoldButton } from './ui';
 import { useSubscription } from '@/hooks/useSubscription';
 import { NudgeContext, nudgeForContext } from '@/lib/nudges';
-import { PREMIUM_BENEFITS } from '@/lib/premium';
+import { PREMIUM_BENEFITS, PREMIUM_COPY } from '@/lib/premium';
 import { colors, radius, spacing } from '@/theme';
 
 // Single source of truth for premium benefits (see @/lib/premium). Nudges/sheets show
@@ -56,7 +56,7 @@ export function PremiumNudge({
         <Pressable style={{ flex: 1 }} onPress={goPaywall}>
           <Text variant="tiny" color={colors.gold} style={{ fontWeight: '600' }}>✦ Explore Premium</Text>
           <Text variant="tiny" color={colors.muted} style={{ marginTop: 2 }}>
-            {message ?? 'Unlock deeper guidance whenever you’re ready.'}
+            {message ?? PREMIUM_COPY.bannerPool[0]}
           </Text>
         </Pressable>
         {onDismiss && (
@@ -124,7 +124,7 @@ export function PremiumHint({ message, onPress, style }: { message: string; onPr
 
 // Soft-lock: a warm sheet explaining the benefit → paywall. Dismissible ("Maybe later").
 export function PremiumSheet({
-  visible, title, message, benefits = DEFAULT_BENEFITS, onClose,
+  visible, title, message = PREMIUM_COPY.softLockSubtitle, benefits = DEFAULT_BENEFITS, onClose,
 }: {
   visible: boolean;
   title: string;

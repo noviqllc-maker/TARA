@@ -71,8 +71,9 @@ export default function NotificationsSettings() {
 
       <Card>
         <Text variant="tiny" color={colors.muted} style={{ lineHeight: 17 }}>
-          Titled “Your day at a glance,” it reflects your dasha, the Moon’s nakshatra, and the day’s
-          strongest graha. Scheduled on this device only — no push servers involved.
+          Each morning’s title and message reflect that day — your dasha, the Moon’s nakshatra, and the
+          day’s strongest graha — so no two days read the same. Scheduled on this device only — no push
+          servers involved.
         </Text>
       </Card>
     </Screen>
