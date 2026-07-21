@@ -4,15 +4,17 @@
 // user + all their rows server-side, and logs out of RevenueCat.
 import React, { useState } from 'react';
 import { View, Pressable, Alert, ActivityIndicator, StyleSheet } from 'react-native';
-import { router } from 'expo-router';
+import { useNavigation } from 'expo-router';
 import Screen from '@/components/Screen';
 import SubHeader from '@/components/SubHeader';
 import { Text, Card } from '@/components/ui';
 import { useAuth } from '@/hooks/useAuth';
+import { resetRoot } from '@/lib/nav';
 import { colors, radius } from '@/theme';
 
 export default function AccountSettings() {
   const { session, signOut, deleteAccount } = useAuth();
+  const nav = useNavigation();
   const [busy, setBusy] = useState(false);
 
   const email = session?.user?.email;
@@ -22,7 +24,8 @@ export default function AccountSettings() {
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Sign out', style: 'destructive',
-        onPress: async () => { await signOut(); router.replace('/auth' as any); },
+        // Reset the root stack → auth is the sole screen (no signed-in tabs left beneath).
+        onPress: async () => { await signOut(); resetRoot(nav, 'auth', '/auth'); },
       },
     ]);
   };
@@ -44,7 +47,7 @@ export default function AccountSettings() {
                 const ok = await deleteAccount();
                 setBusy(false);
                 if (!ok) { Alert.alert('Could not delete', 'Please try again in a moment.'); return; }
-                router.replace('/intro');
+                resetRoot(nav, 'intro', '/intro');
               },
             },
           ]),

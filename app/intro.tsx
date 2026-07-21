@@ -67,7 +67,7 @@ export default function Intro() {
         <Animated.View style={btnStyle}>
           <Pressable
             onPressIn={() => (scale.value = withSequence(withTiming(0.95, { duration: 90 }), withTiming(1, { duration: 200 })))}
-            onPress={() => router.push('/(onboarding)/name')}
+            onPress={() => router.replace('/(onboarding)/name')}
           >
             <LinearGradient
               colors={[colors.goldSoft, colors.terra]}

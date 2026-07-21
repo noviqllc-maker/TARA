@@ -1,19 +1,21 @@
 // app/settings/privacy.tsx
 import React, { useEffect, useState } from 'react';
 import { View, Switch, Pressable, Alert, Linking } from 'react-native';
-import { router } from 'expo-router';
+import { useNavigation } from 'expo-router';
 import Screen from '@/components/Screen';
 import SubHeader from '@/components/SubHeader';
 import { Text, Card } from '@/components/ui';
 import { useProfile } from '@/hooks/useProfile';
 import { getRememberChat, setRememberChat, clearChatHistory, wipeLocalData } from '@/lib/privacy';
 import { cancelDailyNotifications } from '@/lib/notifications';
+import { resetRoot } from '@/lib/nav';
 import { colors } from '@/theme';
 
 const PRIVACY_URL = 'https://tarawellness.org/privacy';
 
 export default function PrivacySettings() {
   const { reset } = useProfile();
+  const nav = useNavigation();
   const [remember, setRemember] = useState(true);
   useEffect(() => { getRememberChat().then(setRemember); }, []);
 
@@ -34,7 +36,7 @@ export default function PrivacySettings() {
           await wipeLocalData();
           await cancelDailyNotifications().catch(() => {});
           reset();
-          router.replace('/intro');
+          resetRoot(nav, 'intro', '/intro'); // reset root → intro is sole screen (no tabs beneath)
         },
       },
     ]);
