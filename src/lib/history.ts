@@ -25,17 +25,26 @@ async function queue(row: { question: string; answer: string; factor: string | n
 }
 
 // Persist a Q&A to the server. Queues locally if signed out or the write fails.
-export async function saveHistory(question: string, answer: string, factor?: string | null): Promise<void> {
+// Returns the new row's id (so the answer view can attach a 👍/👎 rating), or null.
+export async function saveHistory(question: string, answer: string, factor?: string | null): Promise<string | null> {
   const row = { question, answer, factor: factor ?? null };
   try {
     const { data: sess } = await supabase.auth.getSession();
     const uid = sess.session?.user?.id;
-    if (!uid) { await queue(row); return; }
-    const { error } = await supabase.from('ask_history').insert({ user_id: uid, ...row });
-    if (error) await queue(row);
+    if (!uid) { await queue(row); return null; }
+    const { data, error } = await supabase.from('ask_history').insert({ user_id: uid, ...row }).select('id').single();
+    if (error) { await queue(row); return null; }
+    return (data?.id as string) ?? null;
   } catch {
     await queue(row);
+    return null;
   }
+}
+
+// Attach / change the thumbs rating on an answer row (1 = 👍, -1 = 👎). RLS restricts the
+// update to the caller's own rows. Best-effort; no-op when there's no server row id.
+export async function setHistoryFeedback(id: string, feedback: 1 | -1): Promise<void> {
+  try { await supabase.from('ask_history').update({ feedback }).eq('id', id); } catch { /* best effort */ }
 }
 
 // Flush any queued entries (call after auth). Best effort; clears the queue on success.

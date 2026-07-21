@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Pressable, StyleSheet, TextInput } from 'react-native';
 import Slider from '@/components/Slider';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { loadTodayCheckin, saveCheckin } from '@/lib/checkin';
 import Screen from '@/components/Screen';
 import { Text, Card, Eyebrow, GoldButton } from '@/components/ui';
 import SubHeader from '@/components/SubHeader';
@@ -22,16 +23,29 @@ export default function Journal() {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
+    // Local cache first (instant), then the server row (authoritative, survives reinstall).
     AsyncStorage.getItem(KEY).then((v) => {
-      if (v) { const d = JSON.parse(v); setEmoji(d.emoji || ''); setEnergy(d.energy ?? 5); setStress(d.stress ?? 5); setNotes(d.notes || ''); }
+      if (v) { const d = JSON.parse(v); setEmoji(d.emoji || ''); setEnergy(d.energy ?? 5); setStress(d.stress ?? 5); setNotes(d.notes || ''); setReplay(d.replay || ''); }
+    });
+    loadTodayCheckin().then((c) => {
+      if (!c) return;
+      if (c.mood) setEmoji(c.mood);
+      if (typeof c.energy === 'number') setEnergy(c.energy);
+      if (typeof c.stress === 'number') setStress(c.stress);
+      if (typeof c.notes === 'string') setNotes(c.notes);
+      if (c.accuracy) setReplay(c.accuracy);
     });
   }, []);
 
   const save = () => {
-    AsyncStorage.setItem(KEY, JSON.stringify({ emoji, energy, stress, notes, date: new Date().toISOString() }));
+    AsyncStorage.setItem(KEY, JSON.stringify({ emoji, energy, stress, notes, replay, date: new Date().toISOString() }));
+    saveCheckin({ mood: emoji, energy, stress, notes, accuracy: replay || undefined }); // server, per user+date
     setSaved(true);
     setTimeout(() => setSaved(false), 1800);
   };
+
+  // Accuracy rating persists immediately (per user+date) so it survives even without Save.
+  const pickReplay = (r: string) => { setReplay(r); saveCheckin({ accuracy: r }); };
 
   return (
     <Screen>
@@ -83,7 +97,7 @@ export default function Journal() {
         <Text variant="serif" style={{ fontSize: 16, marginTop: 8 }}>How accurate was Tara today?</Text>
         <View style={styles.replay}>
           {REPLAY.map((r) => (
-            <Pressable key={r} onPress={() => setReplay(r)} style={[styles.replayBtn, replay === r && styles.replayOn]}>
+            <Pressable key={r} onPress={() => pickReplay(r)} style={[styles.replayBtn, replay === r && styles.replayOn]}>
               <Text variant="tiny" color={replay === r ? '#1a1018' : colors.cream}>{r}</Text>
             </Pressable>
           ))}

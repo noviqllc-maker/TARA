@@ -21,7 +21,7 @@ import { askTaraAnswer, ChatMessage, TaraAnswer } from '@/lib/ai';
 import { getLanguage } from '@/lib/language';
 import { getRememberChat } from '@/lib/privacy';
 import { setAskDraft } from '@/lib/askDraft';
-import { saveHistory } from '@/lib/history';
+import { saveHistory, setHistoryFeedback } from '@/lib/history';
 import { colors, fonts, radius, spacing } from '@/theme';
 
 const MEM_KEY = 'tara.chat.v1';       // shared with the Ask Tara screen
@@ -86,6 +86,7 @@ export default function AnswerView() {
   const [refreshNote, setRefreshNote] = useState('');   // brief feedback after a refetch
   const startedRef = useRef(false);   // effect runs run() once
   const authorizedRef = useRef(false); // a credit was already spent for this question
+  const historyIdRef = useRef<string | null>(null); // ask_history row id → attach 👍/👎
 
   // Return to Ask Tara; the pending question is restored there (draft set in run()).
   // Always drop the keyboard first so it can never linger back on the tab.
@@ -118,8 +119,9 @@ export default function AnswerView() {
     setAns(res);
     setAskDraft(''); // answered → don't restore the question to the input
     setState('ready');
-    // Persist to server-side history (survives reinstall; queues if signed out).
-    saveHistory(question, res.answer, factor.label);
+    // Persist to server-side history (survives reinstall; queues if signed out). Keep the
+    // row id so a thumbs rating can be written back to it.
+    saveHistory(question, res.answer, factor.label).then((id) => { historyIdRef.current = id; });
     // Append Q&A to local chat history (persistence unchanged) unless privacy opted out.
     if (await getRememberChat()) {
       try {
@@ -162,8 +164,11 @@ export default function AnswerView() {
     }
   }, [refresh, run]);
 
+  // One rating per answer, changeable. Writes to the ask_history row (server) and keeps a
+  // local log as an offline fallback. Selected thumb is highlighted in the UI.
   const rate = useCallback(async (r: 'up' | 'down') => {
     setRating(r);
+    if (historyIdRef.current) setHistoryFeedback(historyIdRef.current, r === 'up' ? 1 : -1);
     try {
       const raw = await AsyncStorage.getItem(FEEDBACK_KEY);
       const log = raw ? JSON.parse(raw) : [];
@@ -310,20 +315,19 @@ export default function AnswerView() {
       {state === 'ready' && (
         <View style={{ marginTop: spacing.xl }}>
           <Eyebrow color={colors.muted}>How was this answer?</Eyebrow>
+          <View style={styles.thumbs}>
+            <Pressable onPress={() => rate('up')} style={[styles.thumb, rating === 'up' && styles.thumbOn]} hitSlop={8}>
+              <Text style={styles.thumbGlyph}>👍</Text>
+            </Pressable>
+            <Pressable onPress={() => rate('down')} style={[styles.thumb, rating === 'down' && styles.thumbOn]} hitSlop={8}>
+              <Text style={styles.thumbGlyph}>👎</Text>
+            </Pressable>
+          </View>
           {rating ? (
             <Text variant="tiny" color={colors.sage} style={{ marginTop: 10 }}>
-              Thank you — Tara learns from this.
+              Thank you — Tara learns from this. Tap again to change.
             </Text>
-          ) : (
-            <View style={styles.thumbs}>
-              <Pressable onPress={() => rate('up')} style={styles.thumb} hitSlop={8}>
-                <Text style={styles.thumbGlyph}>👍</Text>
-              </Pressable>
-              <Pressable onPress={() => rate('down')} style={styles.thumb} hitSlop={8}>
-                <Text style={styles.thumbGlyph}>👎</Text>
-              </Pressable>
-            </View>
-          )}
+          ) : null}
         </View>
       )}
     </Screen>
@@ -353,6 +357,7 @@ const styles = StyleSheet.create({
     width: 56, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center',
     borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card,
   },
+  thumbOn: { borderColor: colors.gold, backgroundColor: 'rgba(205,163,73,0.14)' },
   // Emoji glyphs clip without an explicit lineHeight (the box is shorter than the glyph);
   // includeFontPadding:false + centered text keeps 👍/👎 fully visible in the tap target.
   thumbGlyph: { fontSize: 22, lineHeight: 30, includeFontPadding: false, textAlign: 'center' },
