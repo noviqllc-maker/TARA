@@ -13,13 +13,12 @@ import Animated, { FadeInUp } from 'react-native-reanimated';
 import { Text, Card, Eyebrow, GoldButton } from './ui';
 import { useSubscription } from '@/hooks/useSubscription';
 import { NudgeContext, nudgeForContext } from '@/lib/nudges';
+import { PREMIUM_BENEFITS } from '@/lib/premium';
 import { colors, radius, spacing } from '@/theme';
 
-const DEFAULT_BENEFITS = [
-  'Unlimited Ask Tara conversations',
-  'Your full year-ahead forecast',
-  'Deeper remedies & guidance',
-];
+// Single source of truth for premium benefits (see @/lib/premium). Nudges/sheets show
+// the first three; the paywall & profile card show all five.
+const DEFAULT_BENEFITS: string[] = [...PREMIUM_BENEFITS];
 
 const goPaywall = () => router.push('/paywall');
 

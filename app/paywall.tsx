@@ -2,7 +2,7 @@
 // Prices come EXCLUSIVELY from RevenueCat (live, local-currency). There are zero
 // hardcoded price numbers in this file — the savings % and effective monthly rate
 // are derived from the live package prices.
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Pressable, ScrollView, Alert, ActivityIndicator, StyleSheet, Linking } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,16 +10,8 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import CosmicBackground from '@/components/CosmicBackground';
 import { Text, GoldButton } from '@/components/ui';
 import { useSubscription } from '@/hooks/useSubscription';
+import { PREMIUM_BENEFITS } from '@/lib/premium';
 import { colors, radius, spacing } from '@/theme';
-
-// Paywall-specific benefit copy (the profile banner keeps its own PREMIUM_BENEFITS list).
-const BENEFITS = [
-  'Your day-at-a-glance, decoded — see how it plays out in real life',
-  'Daily recommendations: what to read, watch, and do for your chart',
-  'Timing windows — know exactly when the stars align for love, travel & decisions',
-  'The lessons the stars want you to teach you today',
-  '100 Ask Tara questions every month',
-];
 
 type Tier = 'annual' | 'monthly';
 
@@ -55,7 +47,6 @@ export default function Paywall() {
   const annualPkg =
     packages.find((p: any) => p.packageType === 'ANNUAL') ??
     packages.find((p: any) => p.identifier === '$rc_annual');
-  const plansReady = !!monthlyPkg?.product && !!annualPkg?.product;
 
   // Derive savings + effective monthly from the LIVE prices only.
   const monthlyPrice: number | undefined = monthlyPkg?.product?.price;
@@ -69,7 +60,7 @@ export default function Paywall() {
   }
 
   const onBuy = async () => {
-    const pkg = selected === 'annual' ? annualPkg : monthlyPkg;
+    const pkg = selectedPkg;
     if (!pkg) return;
     setBusy(true);
     try {
@@ -102,6 +93,29 @@ export default function Paywall() {
     { key: 'monthly', label: 'Monthly', period: 'month', pkg: monthlyPkg },
   ];
 
+  // Graceful degradation: render whichever tiers actually resolved a store product; show
+  // the error state only when NONE resolved. (tara_premium_yearly is new and may still be
+  // propagating in App Store Connect, so the annual product can lag the monthly one.)
+  const availableTiers = TIERS.filter((t) => !!t.pkg?.product);
+  const anyPlanReady = availableTiers.length > 0;
+  // Keep `selected` on a tier that resolved (default annual → first available).
+  const effectiveSelected: Tier = availableTiers.some((t) => t.key === selected)
+    ? selected
+    : (availableTiers[0]?.key ?? 'annual');
+  const selectedPkg = availableTiers.find((t) => t.key === effectiveSelected)?.pkg;
+
+  // Surface propagation issues in Metro: log which tiers' store products failed to resolve.
+  useEffect(() => {
+    if (loading || isPremium) return;
+    const unresolved = TIERS.filter((t) => !t.pkg?.product).map((t) => t.pkg?.identifier ?? `${t.key} (package absent)`);
+    if (unresolved.length) {
+      console.warn(
+        '[Paywall] store products that did NOT resolve (still propagating in ASC?):', unresolved,
+        '· resolved:', availableTiers.map((t) => t.pkg?.product?.identifier ?? t.key),
+      );
+    }
+  }, [loading, isPremium, monthlyPkg, annualPkg]);
+
   return (
     <View style={{ flex: 1 }}>
       <CosmicBackground intense />
@@ -118,7 +132,7 @@ export default function Paywall() {
           </Text>
 
           <View style={{ gap: 14, marginBottom: 28 }}>
-            {BENEFITS.map((f) => (
+            {PREMIUM_BENEFITS.map((f) => (
               <View key={f} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                 <Text style={{ color: colors.gold, fontSize: 16 }}>✓</Text>
                 <Text variant="body" style={{ flex: 1 }}>{f}</Text>
@@ -139,7 +153,7 @@ export default function Paywall() {
               </View>
               <View style={styles.skelButton} />
             </View>
-          ) : !plansReady ? (
+          ) : !anyPlanReady ? (
             <View style={styles.stateBox}>
               <Text variant="serif" style={{ fontSize: 16, textAlign: 'center' }}>Unable to load plans</Text>
               <Text variant="tiny" color={colors.muted} style={{ textAlign: 'center', marginTop: 6 }}>
@@ -151,10 +165,10 @@ export default function Paywall() {
             </View>
           ) : (
             <>
-              {/* Tiers — Annual selected by default */}
+              {/* Tiers — only those whose store product resolved (annual preferred). */}
               <View style={{ gap: 12, marginBottom: 24 }}>
-                {TIERS.map(({ key, label, period, pkg }) => {
-                  const active = selected === key;
+                {availableTiers.map(({ key, label, period, pkg }) => {
+                  const active = effectiveSelected === key;
                   const isAnnual = key === 'annual';
                   return (
                     <Pressable key={key} onPress={() => setSelected(key)} style={[styles.tier, active && styles.tierActive]}>
@@ -187,7 +201,7 @@ export default function Paywall() {
               <GoldButton
                 label={busy
                   ? <ActivityIndicator color="#1a1018" />
-                  : `Start Premium — ${(selected === 'annual' ? annualPkg : monthlyPkg).product.priceString}/${selected === 'annual' ? 'year' : 'month'}`}
+                  : `Start Premium — ${selectedPkg.product.priceString}/${effectiveSelected === 'annual' ? 'year' : 'month'}`}
                 onPress={onBuy}
                 disabled={busy}
               />
@@ -197,7 +211,7 @@ export default function Paywall() {
 
               {/* App Review 3.1.2: price, period, auto-renew terms + Privacy/Terms links. */}
               <Text variant="tiny" color={colors.mutedDim} style={{ textAlign: 'center', marginTop: 18, fontSize: 10, lineHeight: 15 }}>
-                {(selected === 'annual' ? annualPkg : monthlyPkg).product.priceString}/{selected === 'annual' ? 'year' : 'month'}, auto-renewing. Your Apple account is charged at confirmation and renews automatically unless canceled at least 24 hours before the end of the current period. Manage or cancel anytime in your account settings.
+                {selectedPkg.product.priceString}/{effectiveSelected === 'annual' ? 'year' : 'month'}, auto-renewing. Your Apple account is charged at confirmation and renews automatically unless canceled at least 24 hours before the end of the current period. Manage or cancel anytime in your account settings.
               </Text>
               <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, marginTop: 10 }}>
                 <Pressable onPress={() => Linking.openURL(PRIVACY_URL)} hitSlop={8}>

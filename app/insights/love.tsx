@@ -328,8 +328,7 @@ export default function Love() {
         visible={premiumSheet}
         onClose={() => setPremiumSheet(false)}
         title="Your full relationship reading"
-        message="Go beyond the score with detailed dosha remedies, favorable timing windows, and personalized guidance for this pairing."
-        benefits={['Detailed dosha remedies', 'Best timing windows for the relationship', 'Personalized, in-depth guidance']}
+        message="Go beyond the score with favorable timing windows and personalized, in-depth guidance for this pairing."
       />
       <Disclaimer />
     </Screen>

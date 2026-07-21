@@ -135,7 +135,7 @@ export default function Chart() {
       {!isPremium && (
         <PremiumHint
           style={{ marginTop: spacing.lg }}
-          message="Unlock your full birth blueprint — a deep natal reading with personalized remedies, dasha guidance and timing."
+          message="Unlock your full birth blueprint — a deep natal reading with dasha guidance and timing."
           onPress={() => setPremiumSheet(true)}
         />
       )}
@@ -144,8 +144,7 @@ export default function Chart() {
         visible={premiumSheet}
         onClose={() => setPremiumSheet(false)}
         title="Your full birth blueprint"
-        message="Go beyond the chart with a deep natal reading — planet-by-planet guidance, remedies, and the timing of your dashas."
-        benefits={['Deep natal reading & remedies', 'Dasha timeline guidance', 'Personalized planetary insights']}
+        message="Go beyond the chart with a deep natal reading — planet-by-planet guidance and the timing of your dashas."
       />
 
       <Disclaimer />

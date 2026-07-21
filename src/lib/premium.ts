@@ -5,7 +5,7 @@
 export const PREMIUM_BENEFITS = [
   '100 Ask Tara questions every month',
   'Full yearly forecast & timing windows',
+  'Complete Life Chapters & dasha timeline',
   'Deep compatibility reports',
-  'Complete Life Timeline & dashas',
-  'AI memory across conversations',
+  'Advanced Vedic chart analysis',
 ] as const;
