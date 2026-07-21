@@ -21,8 +21,8 @@ const SHOP_ITEMS: { id: ShopProductId; title: string; description: string; featu
   {
     id: 'yearaheadtarareport1',
     title: 'Year Ahead',
-    description: 'See how your next 12 months unfold — the opportunities, challenges, and milestones written in your stars, month by month.',
-    features: 'Monthly forecasts • Career • Love • Key dates • Health',
+    description: 'Your next 12 months, month by month — dasha periods, major transits, timing windows and a strength score for each. A living view that stays current, computed fresh from your chart every time you open it.',
+    features: 'Living 12-month view • Dasha & transits • Timing windows • Month strength',
     cta: 'Unlock Your Year',
   },
   {
@@ -97,9 +97,12 @@ export default function Profile() {
     );
   };
 
-  // Open the report screen (generates on first open, cached thereafter).
+  // Open the report. Year Ahead is a living 12-month view (computed, not a cached AI
+  // report), so it routes to its own screen; the others use the report renderer.
   const onView = (item: { id: string }) =>
-    router.push({ pathname: '/report/[kind]', params: { kind: item.id } } as any);
+    item.id === 'yearaheadtarareport1'
+      ? router.push('/report/year-ahead' as any)
+      : router.push({ pathname: '/report/[kind]', params: { kind: item.id } } as any);
   // Dev-only: QA report content with real charts, without a purchase.
   const onPreview = (item: { id: string }) =>
     router.push({ pathname: '/report/[kind]', params: { kind: item.id, preview: '1' } } as any);

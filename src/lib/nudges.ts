@@ -18,7 +18,9 @@ const CTA: Record<NudgeContext, string> = {
   tara_ai: 'Go Premium',
   chart: 'Unlock Full Chart',
   life_love: 'Unlock Compatibility',
-  life_career: 'See My Year',
+  // Was 'See My Year' — the yearly forecast is now the Year Ahead shop report, not a
+  // premium benefit, so this CTA must not imply premium includes it.
+  life_career: 'Go Premium',
   life_health: 'Go Premium',
   life_purpose: 'Go Premium',
 };

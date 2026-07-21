@@ -38,8 +38,19 @@ export default function ReportScreen() {
   const [state, setState] = useState<UIState>('loading');
   const [report, setReport] = useState<Report | null>(null);
 
+  // Year Ahead is no longer a cached AI report — it's the living 12-month view. Any entry
+  // point for that kind (owned or dev-preview) redirects there.
+  useEffect(() => {
+    if (kindParam === 'yearaheadtarareport1' && (isPreview || owns('yearaheadtarareport1'))) {
+      router.replace((isPreview ? '/report/year-ahead?preview=1' : '/report/year-ahead') as any);
+    }
+  }, [kindParam, isPreview, owns]);
+
   // force = ignore cache + regenerate (dev "Regenerate" / error "Try again").
   const run = useCallback(async (force = false) => {
+    // Year Ahead redirects to its own living view (above) for owners/preview — don't
+    // start an AI generation here. Non-owners still fall through to the locked state.
+    if (kind === 'yearaheadtarareport1' && (isPreview || owns(kind))) return;
     if (!valid) { setState('invalid'); return; }
     if (!chart) { setState('nochart'); return; }
     if (!isPreview && !owns(kind)) { setState('locked'); return; }
