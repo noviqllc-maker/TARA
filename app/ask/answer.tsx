@@ -5,7 +5,7 @@
 // existing chat history (respecting the "remember conversations" privacy setting),
 // so premium persistence is unchanged.
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Pressable, ActivityIndicator, StyleSheet, Keyboard } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Screen from '@/components/Screen';
@@ -88,7 +88,8 @@ export default function AnswerView() {
   const authorizedRef = useRef(false); // a credit was already spent for this question
 
   // Return to Ask Tara; the pending question is restored there (draft set in run()).
-  const close = useCallback(() => router.back(), []);
+  // Always drop the keyboard first so it can never linger back on the tab.
+  const close = useCallback(() => { Keyboard.dismiss(); router.back(); }, []);
 
   // First day of next calendar month — when the premium fair-use allowance refreshes.
   const resetDate = useMemo(() => {
@@ -133,6 +134,7 @@ export default function AnswerView() {
   // Follow-up chip → PREFILL the Ask Tara input (never auto-send/spend). Mirrors the
   // Home/Insights bridge: stash the draft, then return to the tab which restores it.
   const askFollowup = useCallback((qn: string) => {
+    Keyboard.dismiss();
     setAskDraft(qn);
     router.dismissTo('/(tabs)/tara' as any);
   }, []);
@@ -140,6 +142,7 @@ export default function AnswerView() {
   useEffect(() => {
     if (startedRef.current) return;
     startedRef.current = true;
+    Keyboard.dismiss(); // the answer view has no input — ensure the tab's keyboard is down
     run();
   }, [run]);
 
@@ -247,7 +250,7 @@ export default function AnswerView() {
 
   return (
     <Screen>
-      <Pressable onPress={() => router.back()} hitSlop={8} style={{ marginBottom: 18 }}>
+      <Pressable onPress={close} hitSlop={8} style={{ marginBottom: 18 }}>
         <Text variant="body" color={colors.muted}>✕ Close</Text>
       </Pressable>
 

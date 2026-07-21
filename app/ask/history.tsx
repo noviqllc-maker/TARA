@@ -1,6 +1,6 @@
 // app/ask/history.tsx — Past Ask Tara questions (server-side, survives reinstall).
 import React, { useEffect, useState } from 'react';
-import { View, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Pressable, ActivityIndicator, StyleSheet, Keyboard } from 'react-native';
 import Screen from '@/components/Screen';
 import SubHeader from '@/components/SubHeader';
 import { Text, Card } from '@/components/ui';
@@ -17,7 +17,10 @@ export default function History() {
   const [items, setItems] = useState<HistoryEntry[] | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
 
-  useEffect(() => { fetchHistory().then(setItems).catch(() => setItems([])); }, []);
+  useEffect(() => {
+    Keyboard.dismiss(); // ensure the Ask Tara keyboard never lingers over the journal
+    fetchHistory().then(setItems).catch(() => setItems([]));
+  }, []);
 
   return (
     <Screen>

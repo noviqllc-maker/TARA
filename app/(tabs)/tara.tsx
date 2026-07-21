@@ -1,7 +1,7 @@
 // app/(tabs)/tara.tsx
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  View, ScrollView, Pressable, StyleSheet, KeyboardAvoidingView, Platform, TextInput,
+  View, ScrollView, Pressable, StyleSheet, KeyboardAvoidingView, Platform, TextInput, Keyboard,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -46,12 +46,18 @@ export default function AskTara() {
   // answer view, so a capped premium user still gets there (and the credit-pack overflow).
   const outOfCredits = !isPremium && balance !== null && balance <= 0;
 
-  // Every question suggestion routes through here: it PREFILLS the input (focused, caret
-  // at end) and never sends. Spending a credit requires the explicit send press.
-  const prefill = useCallback((q: string) => {
+  // Every question suggestion routes through here: it PREFILLS the input and never sends.
+  // Spending a credit requires the explicit send press.
+  //  - focus:true  (direct chip tap on this tab) → focus + caret at end + raise keyboard.
+  //  - focus:false (arriving from a Home/Insights bridge) → prefill ONLY, do NOT raise the
+  //    keyboard. Auto-raising on a bridge arrival trapped users: the tara tab is a root tab
+  //    with no back button, the keyboard covered the tab bar, and there was no dismiss
+  //    affordance. Prefill-without-focus means the tab bar is visible on arrival.
+  const prefill = useCallback((q: string, opts?: { focus?: boolean }) => {
     const t = q.trim();
     if (!t) return;
     setInput(t);
+    if (opts?.focus === false) return;
     const end = t.length;
     setSel({ start: end, end });
     requestAnimationFrame(() => inputRef.current?.focus());
@@ -87,9 +93,10 @@ export default function AskTara() {
   // by the answer view appears here (persistence is unchanged — same MEM_KEY).
   useFocusEffect(React.useCallback(() => {
     // A question prefilled from Home / Insights (or preserved from an interrupted answer)
-    // lands in the input focused with the caret at the end — never auto-sent.
+    // lands in the input but does NOT raise the keyboard (see prefill) — the user taps the
+    // field to edit/send. Never auto-sent.
     const restored = takeAskDraft();
-    if (restored) prefill(restored);
+    if (restored) prefill(restored, { focus: false });
     // Re-read the server balance on entry: credits bought on the paywall (or granted by a
     // late webhook) must unlock questions here without waiting for an app restart.
     refresh();
@@ -101,6 +108,9 @@ export default function AskTara() {
         if (v) setMessages(JSON.parse(v));
       }
     })();
+    // Blur handler: whenever this tab loses focus (to the answer view, the journal, a tab
+    // switch, etc.) drop the keyboard so it can never linger over the next screen.
+    return () => { Keyboard.dismiss(); };
   }, [refresh, prefill]));
 
   // Pre-select a category when navigated here with a `category` param (e.g. from the
@@ -128,6 +138,7 @@ export default function AskTara() {
   const send = (text: string) => {
     const t = text.trim();
     if (!t) return;
+    Keyboard.dismiss(); // drop the keyboard before leaving the tab (belt-and-suspenders vs blur)
     if (outOfCredits) { router.push('/credits'); return; }
     setInput('');
     router.push({ pathname: '/ask/answer', params: { q: t } });
@@ -170,7 +181,7 @@ export default function AskTara() {
               </View>
             )}
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <Pressable onPress={() => router.push('/ask/history' as any)} hitSlop={6}>
+              <Pressable onPress={() => { Keyboard.dismiss(); router.push('/ask/history' as any); }} hitSlop={6}>
                 <Text variant="tiny" color={colors.gold}>◔ My Cosmic Journal</Text>
               </Pressable>
               {!empty && (
@@ -187,6 +198,8 @@ export default function AskTara() {
           style={{ flex: 1 }}
           contentContainerStyle={{ paddingHorizontal: spacing.xl, paddingBottom: 16 }}
           showsVerticalScrollIndicator={false}
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="handled"
         >
           {empty && (
             <View style={{ marginTop: 8 }}>
