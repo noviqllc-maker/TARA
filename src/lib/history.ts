@@ -65,6 +65,21 @@ export async function flushHistoryQueue(): Promise<void> {
   } catch { /* best effort */ }
 }
 
+// Permanently delete ALL of the user's Ask Tara history (server rows via the delete-own
+// RLS policy) and any local offline queue. Returns true on success.
+export async function deleteHistory(): Promise<boolean> {
+  try {
+    await AsyncStorage.removeItem(QUEUE_KEY); // clear any unsynced local cache too
+    const { data: sess } = await supabase.auth.getSession();
+    const uid = sess.session?.user?.id;
+    if (!uid) return true; // signed out → nothing server-side; local cache cleared above
+    const { error } = await supabase.from('ask_history').delete().eq('user_id', uid);
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
 // Newest-first history for the signed-in user (from the server).
 export async function fetchHistory(limit = 100): Promise<HistoryEntry[]> {
   try {

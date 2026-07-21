@@ -176,6 +176,7 @@ export type DailyContent = {
   leanInto: string;
   mantra: string;
   mantraNote: string;
+  mantraGraha: string;       // the graha the day's mantra derives from (day-lord)
   journalPrompt: string;
 };
 
@@ -201,6 +202,7 @@ function noChartContent(rng: Rng, date: Date): DailyContent {
     leanInto: 'Rest, hydration, journaling, gentle routine.',
     mantra: MANTRAS[graha].mantra,
     mantraNote: MANTRAS[graha].note,
+    mantraGraha: graha,
     journalPrompt: rng.pick(JOURNAL_PROMPTS),
   };
 }
@@ -317,6 +319,7 @@ export function composeDailyContent(chart: BirthChart | null, date: Date, seed: 
     leanInto: cap(mh.lean) + '.',
     mantra: dayMantra.mantra,
     mantraNote: dayMantra.note,
+    mantraGraha: events.dayLord,
     journalPrompt: rng.pick(JOURNAL_PROMPTS),
   };
 }

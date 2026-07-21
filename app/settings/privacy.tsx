@@ -7,6 +7,7 @@ import SubHeader from '@/components/SubHeader';
 import { Text, Card } from '@/components/ui';
 import { useProfile } from '@/hooks/useProfile';
 import { getRememberChat, setRememberChat, clearChatHistory, wipeLocalData } from '@/lib/privacy';
+import { deleteHistory } from '@/lib/history';
 import { cancelDailyNotifications } from '@/lib/notifications';
 import { resetRoot } from '@/lib/nav';
 import { colors } from '@/theme';
@@ -22,10 +23,28 @@ export default function PrivacySettings() {
   const toggleRemember = async (next: boolean) => { setRemember(next); await setRememberChat(next); };
 
   const onClearChat = () =>
-    Alert.alert('Clear chat history', 'This removes your Ask Tara conversation memory on this device.', [
+    Alert.alert('Clear chat memory', 'This removes your Ask Tara conversation thread on this device.', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Clear', style: 'destructive', onPress: () => clearChatHistory() },
     ]);
+
+  // Delete the server-side Ask Tara history (My Cosmic Journal) — all questions & answers.
+  const onDeleteJournal = () =>
+    Alert.alert(
+      'Delete My Cosmic Journal',
+      'This permanently deletes all your Ask Tara questions and answers. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete', style: 'destructive',
+          onPress: async () => {
+            const ok = await deleteHistory();
+            Alert.alert(ok ? 'Deleted' : 'Could not delete',
+              ok ? 'Your Cosmic Journal is now empty.' : 'Please try again in a moment.');
+          },
+        },
+      ],
+    );
 
   const onWipe = () =>
     Alert.alert('Delete all my data', 'This permanently erases your profile, chart inputs, chat, and settings from this device and restarts onboarding.', [
@@ -92,7 +111,10 @@ export default function PrivacySettings() {
 
       <Card>
         <Pressable onPress={onClearChat} style={{ paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(205,163,73,0.1)' }}>
-          <Text variant="body" style={{ fontSize: 14 }}>Clear Ask Tara history</Text>
+          <Text variant="body" style={{ fontSize: 14 }}>Clear chat memory</Text>
+        </Pressable>
+        <Pressable onPress={onDeleteJournal} style={{ paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(205,163,73,0.1)' }}>
+          <Text variant="body" style={{ fontSize: 14 }}>Delete My Cosmic Journal</Text>
         </Pressable>
         <Pressable onPress={onWipe} style={{ paddingVertical: 12 }}>
           <Text variant="body" color={colors.rose} style={{ fontSize: 14 }}>Delete all my data</Text>

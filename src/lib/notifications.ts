@@ -14,15 +14,32 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '@/lib/supabase';
 import { BirthChart, computeTransitFactor, computeAllTransits } from '@/lib/vedic';
 import { computeTransits } from '@/lib/transits';
-import { pickNotification, NotificationContext } from '@/data/notificationLines';
+import { pickNotification, pickMidday, pickEvening, NotificationContext } from '@/data/notificationLines';
 
 export type NotifRoute = '/(tabs)/home' | '/(tabs)/tara';
 
 const DAILY_ROUTE: NotifRoute = '/(tabs)/home';
-const DAILY_HOUR = 8; // 8:00 AM local
 const DAYS_AHEAD = 3;
 const PRIMER_SEEN_KEY = 'tara.notif.primerSeen.v1';
+const SLOTS_KEY = 'tara.notif.slots.v1';
 const MS_DAY = 86_400_000;
+
+// Three daily slots at fixed local hours.
+export type NotifSlots = { morning: boolean; midday: boolean; evening: boolean };
+const DEFAULT_SLOTS: NotifSlots = { morning: true, midday: true, evening: true };
+const SLOT_DEFS: { key: keyof NotifSlots; hour: number }[] = [
+  { key: 'morning', hour: 8 },
+  { key: 'midday', hour: 12 },
+  { key: 'evening', hour: 18 },
+];
+
+export async function getNotifSlots(): Promise<NotifSlots> {
+  try { const v = await AsyncStorage.getItem(SLOTS_KEY); return v ? { ...DEFAULT_SLOTS, ...JSON.parse(v) } : { ...DEFAULT_SLOTS }; }
+  catch { return { ...DEFAULT_SLOTS }; }
+}
+export async function setNotifSlots(slots: NotifSlots): Promise<void> {
+  try { await AsyncStorage.setItem(SLOTS_KEY, JSON.stringify(slots)); } catch {}
+}
 const SLOW_GRAHAS = ['Jupiter', 'Saturn', 'Rahu', 'Ketu', 'Mars'];
 
 // Show banners even in the foreground (otherwise iOS suppresses them).
@@ -122,29 +139,42 @@ async function seedUser(): Promise<string> {
   catch { return 'anon'; }
 }
 
-// Cancel and re-schedule the next 3 daily 8 AM notifications with fresh, varied titles +
-// bodies. Titles rotate by content category and never repeat two days running. Returns
-// false (no-op) when permission isn't granted.
+// Cancel and re-schedule the next few days across the ENABLED slots (8 AM briefing,
+// 12 PM timing, 6 PM reflection). Morning uses the category-rotating engine line (titles
+// never repeat two days running); midday/evening use their own disjoint pools, so no line
+// repeats across slots in a day. Returns false (no-op) when permission isn't granted.
 export async function refreshDailyNotifications(chart: BirthChart | null, birthDate = ''): Promise<boolean> {
   if (!(await Notifications.getPermissionsAsync()).granted) return false;
   await Notifications.cancelAllScheduledNotificationsAsync();
 
-  const now = new Date();
-  let first = new Date(now.getFullYear(), now.getMonth(), now.getDate(), DAILY_HOUR, 0, 0, 0);
-  if (first.getTime() <= now.getTime()) first = new Date(first.getTime() + MS_DAY); // 8 AM already passed → start tomorrow
-
+  const slots = await getNotifSlots();
   const uid = await seedUser();
-  let prevTitle: string | undefined;
-  for (let i = 0; i < DAYS_AHEAD; i++) {
-    const fireDate = new Date(first.getTime() + i * MS_DAY);
-    const ctx = buildNotificationContext(chart, birthDate, fireDate);
-    const { title, body } = pickNotification(ctx, `${uid}:${ymd(fireDate)}`, prevTitle);
-    prevTitle = title;
-    await Notifications.scheduleNotificationAsync({
-      identifier: `tara-daily-${i}`,
-      content: { title, body, data: { route: DAILY_ROUTE } },
-      trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: fireDate },
-    });
+  const now = new Date();
+
+  for (const { key, hour } of SLOT_DEFS) {
+    if (!slots[key]) continue;
+    let first = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour, 0, 0, 0);
+    if (first.getTime() <= now.getTime()) first = new Date(first.getTime() + MS_DAY); // slot hour passed → start tomorrow
+
+    let prevTitle: string | undefined;
+    for (let i = 0; i < DAYS_AHEAD; i++) {
+      const fireDate = new Date(first.getTime() + i * MS_DAY);
+      const seed = `${uid}:${ymd(fireDate)}:${key}`;
+      let pick;
+      if (key === 'morning') {
+        pick = pickNotification(buildNotificationContext(chart, birthDate, fireDate), seed, prevTitle);
+      } else if (key === 'midday') {
+        pick = pickMidday(seed);
+      } else {
+        pick = pickEvening(seed);
+      }
+      prevTitle = pick.title;
+      await Notifications.scheduleNotificationAsync({
+        identifier: `tara-${key}-${i}`,
+        content: { title: pick.title, body: pick.body, data: { route: DAILY_ROUTE } },
+        trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: fireDate },
+      });
+    }
   }
   return true;
 }

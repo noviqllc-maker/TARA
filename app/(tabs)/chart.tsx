@@ -8,7 +8,7 @@ import Screen from '@/components/Screen';
 import { Text, Card, Eyebrow, GhostButton } from '@/components/ui';
 import Disclaimer from '@/components/Disclaimer';
 import { PremiumHint, PremiumSheet } from '@/components/PremiumNudge';
-import { benefitsLeadingWith } from '@/lib/premium';
+import { benefitsLeadingWith, PREMIUM_COPY } from '@/lib/premium';
 import { useProfile } from '@/hooks/useProfile';
 import { useChart } from '@/hooks/useChart';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -132,11 +132,12 @@ export default function Chart() {
         <GhostButton label="Compatibility →" onPress={() => router.push('/insights/love')} />
       </View>
 
-      {/* Full chart stays free above; this only invites a deeper reading. */}
+      {/* Full chart stays free above; this only invites a deeper reading. Copy must NOT
+          name the "Birth/Soul Blueprint" shop report — use the neutral soft-lock line. */}
       {!isPremium && (
         <PremiumHint
           style={{ marginTop: spacing.lg }}
-          message="Unlock your full birth blueprint — a deep natal reading with dasha guidance and timing."
+          message={PREMIUM_COPY.softLockSubtitle}
           onPress={() => setPremiumSheet(true)}
         />
       )}
@@ -144,7 +145,7 @@ export default function Chart() {
       <PremiumSheet
         visible={premiumSheet}
         onClose={() => setPremiumSheet(false)}
-        title="Your full birth blueprint"
+        title="Your complete chart reading"
         benefits={benefitsLeadingWith('Complete Life Chapters & dasha timeline')}
       />
 

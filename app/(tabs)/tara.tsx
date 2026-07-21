@@ -35,6 +35,7 @@ export default function AskTara() {
   // 'ForYou' = the per-day chart prompts, surfaced as the first suggestion chip.
   const [category, setCategory] = useState<'ForYou' | QuestionCategory['key']>('ForYou');
   const [rememberChat, setRememberChat] = useState(true);
+  const [showFresh, setShowFresh] = useState(false); // view suggestions without clearing the thread
   const scrollRef = useRef<ScrollView>(null);
   const inputRef = useRef<TextInput>(null);
   // Temporary controlled selection so a prefill lands the caret at the END; released
@@ -141,14 +142,19 @@ export default function AskTara() {
     Keyboard.dismiss(); // drop the keyboard before leaving the tab (belt-and-suspenders vs blur)
     if (outOfCredits) { router.push('/credits'); return; }
     setInput('');
+    setShowFresh(false); // asking → return to the thread view on the way back
     router.push({ pathname: '/ask/answer', params: { q: t } });
   };
 
-  const empty = messages.length === 0;
+  // A thread exists once there are messages. `showFresh` lets the user view the suggestions
+  // WITHOUT clearing the thread (the ‹ back affordance); "New" still clears it.
+  const hasThread = messages.length > 0;
+  const showSuggestions = !hasThread || showFresh;
 
   // Start over → clears history and returns to the suggested-questions view.
   const clearChat = () => {
     setMessages([]);
+    setShowFresh(false);
     AsyncStorage.removeItem(MEM_KEY).catch(() => {});
   };
 
@@ -161,15 +167,29 @@ export default function AskTara() {
       >
         <View style={{ paddingHorizontal: spacing.xl, marginBottom: 8, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <View>
+            {/* During an active chat, ‹ returns to the suggestions view without clearing
+                the thread; from that view, ‹ returns to the chat. */}
+            {hasThread && (
+              <Pressable onPress={() => setShowFresh((v) => !v)} hitSlop={8} style={{ marginBottom: 2 }}>
+                <Text variant="tiny" color={colors.gold}>{showFresh ? '‹ Back to chat' : '‹ Suggestions'}</Text>
+              </Pressable>
+            )}
             <Eyebrow>Ask Tara · Your 24/7 Guide</Eyebrow>
             <Text variant="h2" style={{ marginTop: 4 }}>Ask Tara anything</Text>
           </View>
           <View style={{ alignItems: 'flex-end', gap: 7, paddingBottom: 4 }}>
-            {/* Premium: subtle monthly fair-use remaining. Free: credit count + Get more. */}
+            {/* Premium: monthly fair-use remaining (+ any credits as overflow). Free: credit count + Get more. */}
             {isPremium ? (
-              <Text variant="tiny" color={colors.gold} style={{ fontWeight: '600' }}>
-                ✦ {premiumRemaining === null ? '—' : premiumRemaining} left this month
-              </Text>
+              (premiumRemaining !== null && premiumRemaining <= 0 && (balance ?? 0) > 0) ? (
+                // Monthly used up → credits are now doing the work.
+                <Text variant="tiny" color={colors.gold} style={{ fontWeight: '600' }}>
+                  Using your credits · {balance} left
+                </Text>
+              ) : (
+                <Text variant="tiny" color={colors.gold} style={{ fontWeight: '600' }}>
+                  ✦ {premiumRemaining === null ? '—' : premiumRemaining} left this month{(balance ?? 0) > 0 ? ` · ${balance} credits` : ''}
+                </Text>
+              )
             ) : (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <Text variant="tiny" color={outOfCredits ? colors.terra : colors.gold} style={{ fontWeight: '600' }}>
@@ -184,7 +204,7 @@ export default function AskTara() {
               <Pressable onPress={() => { Keyboard.dismiss(); router.push('/ask/history' as any); }} hitSlop={6}>
                 <Text variant="tiny" color={colors.gold}>◔ My Cosmic Journal</Text>
               </Pressable>
-              {!empty && (
+              {hasThread && (
                 <Pressable onPress={clearChat} hitSlop={6}>
                   <Text variant="tiny" color={colors.muted}>New</Text>
                 </Pressable>
@@ -201,7 +221,7 @@ export default function AskTara() {
           keyboardDismissMode="on-drag"
           keyboardShouldPersistTaps="handled"
         >
-          {empty && (
+          {showSuggestions && (
             <View style={{ marginTop: 8 }}>
               <Text variant="serif" color={colors.muted} style={{ fontSize: 15, lineHeight: 23, marginBottom: 18 }}>
                 I know your chart, your dashas, today's transits and your wellness signals. Ask me about love, career, timing, or what to focus on.
@@ -240,7 +260,7 @@ export default function AskTara() {
             </View>
           )}
 
-          {messages.map((m, i) => (
+          {!showSuggestions && messages.map((m, i) => (
             <Animated.View
               key={i}
               entering={FadeInUp.duration(300)}

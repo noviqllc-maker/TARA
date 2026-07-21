@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Pressable, StyleSheet, TextInput } from 'react-native';
 import Slider from '@/components/Slider';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { router } from 'expo-router';
 import { loadTodayCheckin, saveCheckin } from '@/lib/checkin';
 import Screen from '@/components/Screen';
 import { Text, Card, Eyebrow, GoldButton } from '@/components/ui';
@@ -20,7 +21,6 @@ export default function Journal() {
   const [stress, setStress] = useState(5);
   const [notes, setNotes] = useState('');
   const [replay, setReplay] = useState('');
-  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     // Local cache first (instant), then the server row (authoritative, survives reinstall).
@@ -40,8 +40,8 @@ export default function Journal() {
   const save = () => {
     AsyncStorage.setItem(KEY, JSON.stringify({ emoji, energy, stress, notes, replay, date: new Date().toISOString() }));
     saveCheckin({ mood: emoji, energy, stress, notes, accuracy: replay || undefined }); // server, per user+date
-    setSaved(true);
-    setTimeout(() => setSaved(false), 1800);
+    // Confirmation screen (Done → Home; back-swipe → here). Accuracy can be rated there too.
+    router.push({ pathname: '/insights/checkin-saved', params: { accuracy: replay } } as any);
   };
 
   // Accuracy rating persists immediately (per user+date) so it survives even without Save.
@@ -89,7 +89,7 @@ export default function Journal() {
         />
       </Card>
 
-      <GoldButton label={saved ? '✓ Saved' : 'Save Entry'} onPress={save} />
+      <GoldButton label="Save Entry" onPress={save} />
 
       {/* Cosmic Replay */}
       <Card solid style={{ marginTop: spacing.xxl }}>

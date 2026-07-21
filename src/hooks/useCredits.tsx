@@ -64,11 +64,15 @@ export function CreditsProvider({ children }: { children: React.ReactNode }) {
       return null;
     }
     if (isPremiumRef.current) {
-      // Premium: show questions remaining this month (does not touch credits).
+      // Premium: monthly fair-use remaining is the primary metric.
       const { data, error } = await supabase.rpc('premium_ask_status');
       if (__DEV__) console.log('[Credits] premium_ask_status', { data, error });
-      if (!error && typeof data === 'number') { setPremiumRemaining(data); setBalance(null); return data; }
-      return null;
+      if (!error && typeof data === 'number') setPremiumRemaining(data);
+      // Also read the credit balance for DISPLAY (premium keeps any credits as overflow).
+      // ensure_user_credits is the only working reader — user_credits RLS is definer-only.
+      const { data: bal } = await supabase.rpc('ensure_user_credits');
+      setBalance(typeof bal === 'number' ? bal : null);
+      return typeof data === 'number' ? data : null;
     }
     const { data, error } = await supabase.rpc('ensure_user_credits'); // grants 5 once, returns balance
     if (!error && typeof data === 'number') { setBalance(data); setPremiumRemaining(null); return data; }

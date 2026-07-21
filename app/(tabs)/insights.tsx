@@ -55,6 +55,7 @@ export default function Insights() {
 
       <Card solid style={{ marginTop: spacing.lg }}>
         <Eyebrow>Mantra of the Day</Eyebrow>
+        <Text variant="tiny" color={colors.muted} style={{ marginTop: 4, fontSize: 11 }}>Today's mantra · {daily.mantraGraha}</Text>
         <Text variant="serif" style={{ fontSize: 19, marginTop: 8, color: colors.goldSoft }}>{daily.mantra}</Text>
         <Text variant="tiny" style={{ marginTop: 6 }}>{daily.mantraNote}</Text>
       </Card>

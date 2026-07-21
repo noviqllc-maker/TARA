@@ -149,3 +149,30 @@ export function pickNotification(ctx: NotificationContext, seed: string, prevTit
   }
   return { title, body };
 }
+
+// ---- midday & evening slots ----------------------------------------------------
+// Distinct pools per slot → a line can never repeat across slots in one day (the morning
+// pools above and these two are disjoint).
+const MIDDAY_LINES = [
+  'Your strongest window opens soon.',
+  'A good hour for bold moves is coming up.',
+  'The day’s energy is turning — mind your timing.',
+  'Your power hours are near. Make them count.',
+  'Midday check: the sky favors a focused push now.',
+];
+const EVENING_LINES = [
+  'A minute to reflect — how did today’s energy land?',
+  'How did today’s guidance play out? Take a moment.',
+  'Before the day closes, check in with yourself.',
+  'A quiet moment to journal how today felt.',
+  'How did today land? Tara’s listening.',
+];
+
+// Midday = timing/energy focus. Fixed title, seeded body.
+export function pickMidday(seed: string): NotifPick {
+  return { title: 'Timing Window', body: pickSeeded(MIDDAY_LINES, seed) };
+}
+// Evening = reflection / journal-prompt flavored. Fixed "Evening Reflection" title.
+export function pickEvening(seed: string): NotifPick {
+  return { title: 'Evening Reflection', body: pickSeeded(EVENING_LINES, seed) };
+}
