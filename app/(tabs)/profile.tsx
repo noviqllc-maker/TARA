@@ -6,7 +6,6 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import Screen from '@/components/Screen';
 import { Text, Card, Eyebrow, Divider } from '@/components/ui';
 import Disclaimer from '@/components/Disclaimer';
-import ProfileEditForm from '@/components/ProfileEditForm';
 import { useProfile } from '@/hooks/useProfile';
 import { useChart } from '@/hooks/useChart';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -54,7 +53,6 @@ export default function Profile() {
   const chart = useChart();
   const { isPremium, shopProducts, shopStatus, retryShop, owns, purchaseShop, restore, available } = useSubscription();
 
-  const [editing, setEditing] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [restoring, setRestoring] = useState(false);
 
@@ -140,31 +138,21 @@ export default function Profile() {
   return (
     <Screen ref={scrollRef}>
       <Animated.View entering={FadeInDown.duration(500)} style={{ marginBottom: spacing.lg }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-          <View style={{ flex: 1 }}>
-            <Eyebrow>Profile</Eyebrow>
-            <Text variant="h1" style={{ marginTop: 8 }}>{profile.name || "Friend"}</Text>
-          </View>
-          {!editing && (
-            <Pressable onPress={() => setEditing(true)} style={styles.editBtn}>
-              <Text variant="tiny" color="#1a1018" style={{ fontWeight: '600' }}>Edit</Text>
-            </Pressable>
-          )}
+        <View style={{ flex: 1 }}>
+          <Eyebrow>Profile</Eyebrow>
+          <Text variant="h1" style={{ marginTop: 8 }}>{profile.name || "Friend"}</Text>
         </View>
       </Animated.View>
 
-      {editing ? (
-        <ProfileEditForm onDone={() => setEditing(false)} />
-      ) : (
-        <Card style={{ marginBottom: spacing.lg }}>
-          {facts.map(([k, v], i) => (
-            <View key={k} style={[styles.row, i === facts.length - 1 && { borderBottomWidth: 0 }]}>
-              <Text variant="tiny" color={colors.muted}>{k}</Text>
-              <Text variant="body" color={colors.goldSoft} style={{ fontSize: 13.5 }}>{v}</Text>
-            </View>
-          ))}
-        </Card>
-      )}
+      {/* Birth details & computed placements — read-only. */}
+      <Card style={{ marginBottom: spacing.lg }}>
+        {facts.map(([k, v], i) => (
+          <View key={k} style={[styles.row, i === facts.length - 1 && { borderBottomWidth: 0 }]}>
+            <Text variant="tiny" color={colors.muted}>{k}</Text>
+            <Text variant="body" color={colors.goldSoft} style={{ fontSize: 13.5 }}>{v}</Text>
+          </View>
+        ))}
+      </Card>
 
       {/* Shop */}
       <View onLayout={(e) => { shopY.current = e.nativeEvent.layout.y; maybeScrollToShop(); }}>
@@ -309,7 +297,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(205,163,73,0.1)',
   },
-  editBtn: { backgroundColor: colors.goldSoft, borderRadius: radius.pill, paddingVertical: 8, paddingHorizontal: 18, marginLeft: 12 },
   shopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 },
   shopCta: { marginTop: 14, alignItems: 'center', backgroundColor: colors.goldSoft, borderRadius: radius.pill, paddingVertical: 11 },
   previewBtn: { marginTop: 10, alignItems: 'center', paddingVertical: 4 },
