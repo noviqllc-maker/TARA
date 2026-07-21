@@ -28,15 +28,15 @@ const SHOP_ITEMS: { id: ShopProductId; title: string; description: string; featu
   {
     id: 'birthblueprinttara1',
     title: 'Soul Blueprint',
-    description: 'Understand who you are at your core — your strengths, purpose, hidden talents, and the unique energy you were born with.',
-    features: 'Personality • Career • Relationships • Growth',
+    description: 'Your complete natal reading — core signature, all nine grahas by house and sign, the twelve houses, the notable yogas actually in your chart, and a navamsa lens. A permanent keepsake, computed from your birth chart.',
+    features: 'Core signature • 9 grahas • 12 houses • Yogas • Navamsa',
     cta: 'Reveal My Blueprint',
   },
   {
     id: 'dosharemediestara1',
     title: 'Personal Remedies',
-    description: 'Personalized colors, rituals, donation guidance, and spiritual remedies designed for your unique chart.',
-    features: 'Lucky colors • Rituals • Donation days • Gemstone guidance',
+    description: 'Traditional guidance drawn from your chart — remedies for the planetary period you’re living through now (mantra, day, colour, donation) plus your Sade Sati status, the chart conditions actually present, a natal strengthening set, and a weekly rhythm. Stays current with your dasha.',
+    features: 'Current dasha remedies • Sade Sati • Chart conditions • Gemstones • Weekly rhythm',
     cta: 'Get My Remedies',
   },
 ];
@@ -97,12 +97,15 @@ export default function Profile() {
     );
   };
 
-  // Open the report. Year Ahead is a living 12-month view (computed, not a cached AI
-  // report), so it routes to its own screen; the others use the report renderer.
+  // All three reports are now rich, computed in-app experiences with their own screens
+  // (no AI). Route each owner to its dedicated view.
+  const REPORT_ROUTE: Record<string, string> = {
+    yearaheadtarareport1: '/report/year-ahead',
+    birthblueprinttara1: '/report/blueprint',
+    dosharemediestara1: '/report/remedies',
+  };
   const onView = (item: { id: string }) =>
-    item.id === 'yearaheadtarareport1'
-      ? router.push('/report/year-ahead' as any)
-      : router.push({ pathname: '/report/[kind]', params: { kind: item.id } } as any);
+    router.push((REPORT_ROUTE[item.id] ?? { pathname: '/report/[kind]', params: { kind: item.id } }) as any);
   // Dev-only: QA report content with real charts, without a purchase.
   const onPreview = (item: { id: string }) =>
     router.push({ pathname: '/report/[kind]', params: { kind: item.id, preview: '1' } } as any);
