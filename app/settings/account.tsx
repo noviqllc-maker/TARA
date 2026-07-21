@@ -9,11 +9,14 @@ import Screen from '@/components/Screen';
 import SubHeader from '@/components/SubHeader';
 import { Text, Card } from '@/components/ui';
 import { useAuth } from '@/hooks/useAuth';
+import { useProfile } from '@/hooks/useProfile';
+import { wipeLocalData } from '@/lib/privacy';
 import { resetRoot } from '@/lib/nav';
 import { colors, radius } from '@/theme';
 
 export default function AccountSettings() {
   const { session, signOut, deleteAccount } = useAuth();
+  const { reset } = useProfile();
   const nav = useNavigation();
   const [busy, setBusy] = useState(false);
 
@@ -47,6 +50,11 @@ export default function AccountSettings() {
                 const ok = await deleteAccount();
                 setBusy(false);
                 if (!ok) { Alert.alert('Could not delete', 'Please try again in a moment.'); return; }
+                // Server rows gone + session cleared (deleteAccount → delete-account fn +
+                // signOut/Purchases.logOut). Now wipe all local tara.* caches and the
+                // in-memory profile so nothing can render deleted data before we land on intro.
+                await wipeLocalData();
+                reset();
                 resetRoot(nav, 'intro', '/intro');
               },
             },

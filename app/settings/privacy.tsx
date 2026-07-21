@@ -6,6 +6,7 @@ import Screen from '@/components/Screen';
 import SubHeader from '@/components/SubHeader';
 import { Text, Card } from '@/components/ui';
 import { useProfile } from '@/hooks/useProfile';
+import { useAuth } from '@/hooks/useAuth';
 import { getRememberChat, setRememberChat, clearChatHistory, wipeLocalData } from '@/lib/privacy';
 import { deleteHistory } from '@/lib/history';
 import { cancelDailyNotifications } from '@/lib/notifications';
@@ -16,6 +17,7 @@ const PRIVACY_URL = 'https://tarawellness.org/privacy';
 
 export default function PrivacySettings() {
   const { reset } = useProfile();
+  const { signOut } = useAuth();
   const nav = useNavigation();
   const [remember, setRemember] = useState(true);
   useEffect(() => { getRememberChat().then(setRemember); }, []);
@@ -52,10 +54,15 @@ export default function PrivacySettings() {
       {
         text: 'Delete everything', style: 'destructive',
         onPress: async () => {
+          // Clear EVERYTHING before navigating so no screen renders deleted data even for a
+          // frame: session (Purchases.logOut + supabase signOut + account keys), then all
+          // local tara.* caches (profile, journal, credits, drafts, chat…), then in-memory
+          // profile. signOut also matters so the root index guard can't send us to Home.
+          await signOut();
           await wipeLocalData();
           await cancelDailyNotifications().catch(() => {});
           reset();
-          resetRoot(nav, 'intro', '/intro'); // reset root → intro is sole screen (no tabs beneath)
+          resetRoot(nav, 'intro', '/intro'); // reset root → intro is the sole screen (no tabs beneath)
         },
       },
     ]);
