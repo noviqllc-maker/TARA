@@ -26,8 +26,8 @@ export const PREMIUM_COPY = {
   homeNudgeLine: "Go beyond today's horoscope. Understand your life's bigger picture.",
   softLockSubtitle: 'Personal guidance, written from your unique birth chart. No two readings are ever the same.',
   // Rotating short banners for nudges that vary (chosen deterministically per day).
+  // No "blueprint" here — it collides with the "Birth/Soul Blueprint" shop report.
   bannerPool: [
-    'Unlock your complete cosmic blueprint.',
     'Premium guidance for every chapter of life.',
     'Go beyond predictions. Understand yourself.',
     'Every answer begins with your birth chart.',
