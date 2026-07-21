@@ -20,8 +20,8 @@ export default function EnergyDashboard({
           <View key={d.key} style={{ alignItems: 'center', gap: 6 }}>
             <Ring value={d.score} size={74} stroke={6} color={domainColors[d.key]} />
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
-              {vedicOnly && <Text variant="tiny" color={colors.gold} style={{ fontSize: 9 }}>✦</Text>}
-              <Text variant="tiny" color={colors.cream} style={{ fontSize: 11 }}>{d.key}</Text>
+              {vedicOnly && <Text variant="tiny" color={colors.gold} style={{ fontSize: 10 }}>✦</Text>}
+              <Text color={colors.cream} style={{ fontSize: 13, fontWeight: '500' }}>{d.key}</Text>
             </View>
           </View>
         );

@@ -14,7 +14,7 @@ export type NudgeMessage = { line: string; cta: string };
 
 // Per-context call-to-action label (not marketing copy — button text).
 const CTA: Record<NudgeContext, string> = {
-  home: 'Go Premium',
+  home: 'Unlock Premium',
   tara_ai: 'Go Premium',
   chart: 'Unlock Full Chart',
   life_love: 'Unlock Compatibility',

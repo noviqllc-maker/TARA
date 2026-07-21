@@ -147,10 +147,29 @@ function composeBody(rng: Rng, { house, mechanism, leadPool }: CardInput): strin
 }
 
 // ---- public types --------------------------------------------------------------
+// One short "cosmic line" for the Home hero, keyed to the day's strongest graha. Phrased
+// as "{Graha} <verb-phrase> today." — Moon/Sun read with a leading article.
+const COSMIC_LINES: Record<string, string[]> = {
+  Sun: ['is lighting your way today.', 'brings quiet confidence today.', 'favors honest self-expression today.'],
+  Moon: ['favors creativity today.', 'softens the mood today.', 'turns your attention inward today.'],
+  Mars: ['fuels bold action today.', 'sharpens your drive today.', 'favors decisive moves today.'],
+  Mercury: ['sharpens your thinking today.', 'favors clear conversations today.', 'quickens the mind today.'],
+  Jupiter: ['is quietly opening doors today.', 'widens your horizons today.', 'favors growth today.'],
+  Venus: ['warms your connections today.', 'favors love and beauty today.', 'softens the day with grace today.'],
+  Saturn: ['rewards patience today.', 'asks you to build slowly today.', 'favors steady effort today.'],
+  Rahu: ['pulls you toward something new today.', 'stirs your ambition today.', 'favors bold reinvention today.'],
+  Ketu: ['invites you to let go today.', 'turns you inward today.', 'favors quiet reflection today.'],
+};
+const withArticle = (g: string) => (g === 'Moon' || g === 'Sun' ? `The ${g}` : g);
+function composeCosmicLine(rng: Rng, graha: string): string {
+  return `${withArticle(graha)} ${rng.pick(COSMIC_LINES[graha] ?? COSMIC_LINES.Moon)}`;
+}
+
 export type DailyMessage = { headline: string; body: string };
 export type DailyInsight = { key: string; label: string; color: string; text: string; question: string };
 export type DailyContent = {
   message: DailyMessage;
+  cosmicLine: string;        // one-line Home hero note from the day's strongest graha
   weatherSummary: string;
   insights: DailyInsight[];
   avoid: string;
@@ -172,6 +191,7 @@ function noChartContent(rng: Rng, date: Date): DailyContent {
   const body = `${rng.pick(GRAHA_LEADS.Moon)} ${rng.pick(['Lean into rest and reflection', 'Give your energy to quiet care'])}, because the Moon sits in ${t.moonNakshatra}.`;
   return {
     message: { headline: rng.pick(GRAHA_HEADLINES.Moon), body },
+    cosmicLine: composeCosmicLine(rng, 'Moon'),
     weatherSummary: `The Moon moves through ${t.moonSign} in ${t.moonNakshatra}, ${t.panchanga}. Add your birth details to personalize today’s reading to your chart.`,
     insights: [
       { key: 'emotional', label: 'Emotional Energy', color: colors.rose, question: 'Why does my emotional energy feel this way today?', text: `${NAKSHATRA_QUALITY[t.moonNakshatra] ?? 'A gentle lunar current moves today.'} Honor it without acting on every wave, because the Moon sits in ${t.moonNakshatra}.` },
@@ -290,6 +310,7 @@ export function composeDailyContent(chart: BirthChart | null, date: Date, seed: 
 
   return {
     message,
+    cosmicLine: composeCosmicLine(rng, driver),
     weatherSummary,
     insights: chosen.map(({ key, label, color, text, question }) => ({ key, label, color, text, question })),
     avoid: cap(mh.avoid) + '.',

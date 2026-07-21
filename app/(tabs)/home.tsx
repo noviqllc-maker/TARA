@@ -4,7 +4,7 @@ import { View, Pressable, StyleSheet, Alert, Linking } from 'react-native';
 import { router } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import Screen from '@/components/Screen';
-import { Text, Card, Eyebrow, GoldButton, Chip } from '@/components/ui';
+import { Text, Card, GoldButton, Chip } from '@/components/ui';
 import EnergyDashboard from '@/components/EnergyDashboard';
 import Disclaimer from '@/components/Disclaimer';
 import { PremiumNudgeBar } from '@/components/PremiumNudge';
@@ -36,6 +36,11 @@ const LIFE_AREAS = [
   { label: 'Health & Wellness', route: '/insights/wellness' },
   { label: 'Life Purpose', route: '/insights/purpose' },
 ];
+
+// Title-case gold section label (replaces the old all-caps Eyebrow on Home).
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return <Text color={colors.gold} style={styles.sectionLabel}>{children}</Text>;
+}
 
 export default function Home() {
   const { profile } = useProfile();
@@ -79,8 +84,10 @@ export default function Home() {
   // per calendar day + chart, matching the useTransits/useDailyEnergy pattern; no AI call).
   const dayKey = new Date().toDateString();
   const cosmic = useMemo(() => computeCosmicEvents(chart, new Date()), [chart, dayKey]);
-  // Tara's Message — engine-composed, seeded per user + day (no AI, no mock).
+  // Today's Guidance — engine-composed, seeded per user + day (no AI, no mock).
   const daily = useDailyContent();
+  // "Monday • July 20" — title case, dot separator (not all caps).
+  const dateLine = todayLong().replace(', ', ' • ');
 
   // Now fully live: nakshatra + dasha from the user's chart, and today's real sky.
   const weather: [string, string][] = [
@@ -94,15 +101,36 @@ export default function Home() {
   return (
     <Screen>
       <Animated.View entering={FadeInDown.duration(500)}>
-        <Eyebrow>{todayLong()}</Eyebrow>
-        <Text variant="h1" style={{ marginTop: 8, marginBottom: spacing.lg }}>
-          {greeting()},{'\n'}{profile.name || 'friend'} <Text style={{ color: colors.gold }}>✦</Text>
-        </Text>
+        <Text color={colors.gold} style={styles.dateLine}>{dateLine}</Text>
+        <Text variant="serif" style={styles.hero}>{greeting()},</Text>
+        <Text variant="serif" style={[styles.hero, styles.heroName]}>{profile.name || 'friend'}</Text>
+        {/* Dynamic cosmic line — deterministic, from the day's strongest real factor. */}
+        {daily.cosmicLine ? <Text style={styles.cosmicLine}>{daily.cosmicLine}</Text> : null}
       </Animated.View>
+
+      {/* Today's Guidance — the hero card, emotion-first (renamed from Tara's Message) */}
+      <Card solid glow style={{ marginBottom: spacing.lg }}>
+        <SectionLabel>Today's Guidance</SectionLabel>
+        <Text variant="serif" style={styles.guidanceHead}>{daily.message.headline}</Text>
+        <Text style={styles.guidanceBody}>{daily.message.body}</Text>
+        <GoldButton label="Ask About Today" onPress={() => router.push('/(tabs)/tara')} style={{ marginTop: 18 }} />
+        {/* Bridge: PREFILLS the question in Ask Tara (focused, not sent). The user's
+            explicit send press is the only thing that ever spends a credit. */}
+        <Pressable
+          onPress={() => {
+            setAskDraft(`About today's guidance — "${daily.message.headline}" — why is this the theme for me today?`);
+            router.push('/(tabs)/tara');
+          }}
+          hitSlop={6}
+          style={{ marginTop: 14, alignSelf: 'center' }}
+        >
+          <Text variant="tiny" color={colors.gold} style={{ fontWeight: '600', fontSize: 13 }}>Why today? →</Text>
+        </Pressable>
+      </Card>
 
       {/* Energy dashboard */}
       <Card style={{ marginBottom: spacing.lg }}>
-        <Eyebrow>Today's Energy</Eyebrow>
+        <SectionLabel>Today's Energy</SectionLabel>
         <View style={{ marginTop: 12 }}>
           <EnergyDashboard domains={energy.domains} vedicDomains={bodyChartOnly ? ['Body'] : []} />
         </View>
@@ -136,10 +164,10 @@ export default function Home() {
 
       {/* Today's Cosmic Events — deterministic panchanga + day-lord almanac */}
       <Card style={{ marginBottom: spacing.lg }}>
-        <Eyebrow>Today's Cosmic Events</Eyebrow>
+        <SectionLabel>Today's Cosmic Events</SectionLabel>
         <View style={styles.eventsGrid}>
           {[
-            { glyph: '☾', label: 'Moon', value: `${cosmic.moonSign} · ${cosmic.moonNakshatra}` },
+            { glyph: '☾', label: 'Moon', value: `${cosmic.moonSign} • ${cosmic.moonNakshatra}` },
             { glyph: '◐', label: 'Tithi', value: cosmic.tithi },
             { glyph: cosmic.dayLordGlyph, label: 'Planet of the day', value: cosmic.dayLord },
             { glyph: '⏱', label: 'Power hours', value: cosmic.power.window },
@@ -149,10 +177,10 @@ export default function Home() {
             <View key={c.label} style={styles.eventCell}>
               <Text style={{ fontSize: 16, color: colors.goldSoft, lineHeight: 22 }}>{c.glyph}</Text>
               <View style={{ flex: 1 }}>
-                <Text variant="tiny" color={colors.muted} style={{ fontSize: 10.5, letterSpacing: 0.3 }}>{c.label}</Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                <Text color={colors.muted} style={{ fontSize: 10.5, letterSpacing: 0.3 }}>{c.label}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 3 }}>
                   {c.swatch ? <View style={[styles.swatch, { backgroundColor: c.swatch }]} /> : null}
-                  <Text variant="body" color={colors.cream} style={{ fontSize: 12.5 }} numberOfLines={1}>{c.value}</Text>
+                  <Text color={colors.cream} style={styles.eventValue} numberOfLines={1}>{c.value}</Text>
                 </View>
               </View>
             </View>
@@ -160,29 +188,9 @@ export default function Home() {
         </View>
       </Card>
 
-      {/* Tara's message */}
-      <Card solid glow style={{ marginBottom: spacing.lg }}>
-        <Eyebrow>Tara's Message</Eyebrow>
-        <Text variant="serif" style={{ fontSize: 18, marginTop: 10, lineHeight: 25 }}>{daily.message.headline}</Text>
-        <Text variant="tiny" style={{ marginTop: 8 }}>{daily.message.body}</Text>
-        <GoldButton label="Ask Tara about today" onPress={() => router.push('/(tabs)/tara')} style={{ marginTop: 16 }} />
-        {/* Bridge: PREFILLS the question in Ask Tara (focused, not sent). The user's
-            explicit send press is the only thing that ever spends a credit. */}
-        <Pressable
-          onPress={() => {
-            setAskDraft(`About today's guidance — "${daily.message.headline}" — why is this the theme for me today?`);
-            router.push('/(tabs)/tara');
-          }}
-          hitSlop={6}
-          style={{ marginTop: 14, alignSelf: 'center' }}
-        >
-          <Text variant="tiny" color={colors.gold} style={{ fontWeight: '600', fontSize: 13 }}>Ask Tara why →</Text>
-        </Pressable>
-      </Card>
-
       {/* Journal Prompt (moved from Insights) */}
       <Card style={{ marginBottom: spacing.lg }}>
-        <Eyebrow>Journal Prompt</Eyebrow>
+        <SectionLabel>Journal Prompt</SectionLabel>
         <Text variant="serif" style={styles.journalPrompt}>“{daily.journalPrompt}”</Text>
         <Pressable onPress={() => router.push('/insights/journal')} hitSlop={6} style={{ marginTop: 14 }}>
           <Text variant="tiny" color={colors.gold} style={{ fontWeight: '600', fontSize: 13 }}>Open Mood Journal →</Text>
@@ -193,7 +201,7 @@ export default function Home() {
       <PremiumNudgeBar context="home" style={{ marginBottom: spacing.lg }} />
 
       {/* Explore Life Areas (moved from Insights) */}
-      <Eyebrow color={colors.muted}>Explore Life Areas</Eyebrow>
+      <SectionLabel>Explore Life Areas</SectionLabel>
       <View style={styles.lifeGrid}>
         {LIFE_AREAS.map((s) => (
           <Pressable key={s.label} style={styles.areaCard} onPress={() => router.push(s.route as any)}>
@@ -204,7 +212,7 @@ export default function Home() {
       </View>
 
       {/* Quick actions */}
-      <Eyebrow>Quick Actions</Eyebrow>
+      <SectionLabel>Quick Actions</SectionLabel>
       <View style={styles.quickGrid}>
         {QUICK.map((q) => (
           <Pressable
@@ -219,7 +227,7 @@ export default function Home() {
 
       {/* Cosmic weather */}
       <Card style={{ marginTop: spacing.lg }}>
-        <Eyebrow>Current Cosmic Weather</Eyebrow>
+        <SectionLabel>Current Cosmic Weather</SectionLabel>
         <View style={{ marginTop: 10, gap: 9 }}>
           {weather.map(([k, v]) => (
             <View key={k} style={styles.cwRow}>
@@ -236,6 +244,18 @@ export default function Home() {
 }
 
 const styles = StyleSheet.create({
+  // Header hero
+  dateLine: { fontSize: 13.5, fontWeight: '500', letterSpacing: 0.2, marginBottom: 12 },
+  hero: { fontSize: 48, fontWeight: '600', letterSpacing: -0.5, lineHeight: 52, color: colors.cream },
+  heroName: { color: colors.gold },
+  cosmicLine: { fontSize: 16, lineHeight: 22, color: colors.goldSoft, marginTop: 12, marginBottom: spacing.lg },
+  // Section labels (title case, gold, 14px medium — no all caps)
+  sectionLabel: { fontSize: 14, fontWeight: '500', letterSpacing: 0.1, marginBottom: 2 },
+  // Guidance hero card
+  guidanceHead: { fontSize: 31, fontWeight: '500', lineHeight: 40, marginTop: 12, marginBottom: 4, color: colors.cream },
+  guidanceBody: { fontSize: 15, lineHeight: 24, color: colors.cream, opacity: 0.85, marginTop: 10 },
+  // Cosmic events value (prominent)
+  eventValue: { fontSize: 14, fontWeight: '600' },
   connectRow: {
     marginTop: 12, paddingTop: 10, alignItems: 'center',
     borderTopWidth: 1, borderTopColor: colors.line,
