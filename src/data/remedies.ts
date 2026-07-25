@@ -108,7 +108,7 @@ export const SADE_SATI: Record<string, { title: string; body: string }> = {
   },
   peak: {
     title: 'Sade Sati · Peak phase',
-    body: 'Saturn transits your Moon sign — the central phase, when the mind feels the weight most. This is a maturing, foundation-laying time. Steady routines, patience, and honest simplicity carry you through, and what you build now tends to last.',
+    body: 'Saturn transits your Moon sign — the central phase, and the one tradition treats with the most care. This is a deeply maturing, foundation-laying time: steady routines, patience, and honest simplicity carry you through, and what you build now tends to last.',
   },
   setting: {
     title: 'Sade Sati · Setting phase',
@@ -124,7 +124,7 @@ export const SADE_SATI: Record<string, { title: string; body: string }> = {
   },
   clear: {
     title: 'Sade Sati · Clear',
-    body: 'You are not currently in Sade Sati or a Dhaiyya — Saturn is not pressuring your Moon right now. This is naturally a lighter period for the mind; a good time to build steadily while the skies are kind.',
+    body: 'Saturn’s intensive period isn’t active in your chart right now — you are not in Sade Sati or a Dhaiyya. This is naturally a lighter, steadier period for the mind, and a good time to build with focus.',
   },
 };
 
