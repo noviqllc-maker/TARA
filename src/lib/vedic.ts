@@ -487,6 +487,20 @@ export function computeAllTransits(chart: BirthChart, date: Date = new Date()): 
   return out;
 }
 
+// A single transiting body's sidereal sign index + retrograde flag on a date. Exposed for
+// fine (day-resolution) scans — e.g. the Year Ahead report binary-searches the exact day a
+// graha changes sign or stations — without recomputing the whole transit table each step.
+export function transitBodyOn(body: string, date: Date = new Date()): { signIndex: number; retrograde: boolean } {
+  const ayan = lahiriAyanamsa(date);
+  if (body === 'Rahu' || body === 'Ketu') {
+    const rahuLon = computeRahu(date, ayan);
+    const lon = body === 'Rahu' ? rahuLon : norm(rahuLon + 180);
+    return { signIndex: Math.floor(lon / 30), retrograde: true };
+  }
+  const { lon, retro } = siderealLongitude(body, date, ayan);
+  return { signIndex: Math.floor(lon / 30), retrograde: retro };
+}
+
 // Houses a graha casts its drishti onto, given the house it occupies.
 function aspectedHouses(planet: string, house: number): number[] {
   const offsets = ASPECT_OFFSETS[planet] || DEFAULT_ASPECTS;

@@ -50,8 +50,10 @@ export default function YearAhead() {
   );
 }
 
+const AREA_LABEL: [keyof YearMonth['lifeAreas'], string][] = [['career', 'Career'], ['love', 'Love'], ['money', 'Money']];
+
 function MonthCard({ month, index, open, onToggle }: { month: YearMonth; index: number; open: boolean; onToggle: () => void }) {
-  const themeFirstLine = month.theme.split('. ')[0] + '.';
+  const areas = AREA_LABEL.filter(([k]) => month.lifeAreas[k]);
   return (
     <Animated.View entering={FadeInDown.delay(Math.min(index, 8) * 40).duration(400)}>
       <Card solid={open} glow={open && index === 0} style={{ marginBottom: 12 }}>
@@ -67,8 +69,10 @@ function MonthCard({ month, index, open, onToggle }: { month: YearMonth; index: 
           {/* Strength bar */}
           <View style={styles.track}><View style={[styles.fill, { width: `${month.strength}%` }]} /></View>
 
+          {/* Collapsed preview = this month's DIFFERENTIATOR, so scanning the list shows
+              twelve distinct months rather than the same dasha line twelve times. */}
           {!open && (
-            <Text variant="tiny" color={colors.muted} style={{ marginTop: 8, lineHeight: 18 }} numberOfLines={2}>{themeFirstLine}</Text>
+            <Text variant="tiny" color={colors.muted} style={{ marginTop: 8, lineHeight: 18 }} numberOfLines={2}>{month.differentiator}</Text>
           )}
         </Pressable>
 
@@ -82,8 +86,36 @@ function MonthCard({ month, index, open, onToggle }: { month: YearMonth; index: 
 
             <Text variant="body" color={colors.cream} style={{ fontSize: 14.5, lineHeight: 22 }}>{month.theme}</Text>
 
+            {month.keyDates.length ? (
+              <View style={{ marginTop: 16 }}>
+                <Text variant="eyebrow" color={colors.muted} style={{ fontSize: 10.5 }}>Key dates</Text>
+                <View style={{ marginTop: 8, gap: 8 }}>
+                  {month.keyDates.map((k) => (
+                    <View key={k.date + k.text} style={{ flexDirection: 'row' }}>
+                      <Text variant="tiny" color={colors.gold} style={{ width: 74, fontSize: 12, fontWeight: '700' }}>{k.date}</Text>
+                      <Text variant="tiny" color={colors.cream} style={{ flex: 1, fontSize: 12.5, lineHeight: 18 }}>{k.text}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            ) : null}
+
+            {areas.length ? (
+              <View style={{ marginTop: 16 }}>
+                <Text variant="eyebrow" color={colors.muted} style={{ fontSize: 10.5 }}>Life areas</Text>
+                <View style={{ marginTop: 8, gap: 8 }}>
+                  {areas.map(([k, label]) => (
+                    <View key={k} style={{ flexDirection: 'row' }}>
+                      <Text variant="tiny" color={colors.goldSoft} style={{ width: 60, fontSize: 12, fontWeight: '600' }}>{label}</Text>
+                      <Text variant="tiny" color={colors.cream} style={{ flex: 1, fontSize: 12.5, lineHeight: 18 }}>{month.lifeAreas[k]}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            ) : null}
+
             {month.transits.length ? (
-              <View style={{ marginTop: 14 }}>
+              <View style={{ marginTop: 16 }}>
                 <Text variant="eyebrow" color={colors.muted} style={{ fontSize: 10.5 }}>Major transits</Text>
                 <View style={{ marginTop: 6, gap: 4 }}>
                   {month.transits.map((t) => (
@@ -93,7 +125,7 @@ function MonthCard({ month, index, open, onToggle }: { month: YearMonth; index: 
               </View>
             ) : null}
 
-            <View style={{ marginTop: 14 }}>
+            <View style={{ marginTop: 16 }}>
               <Text variant="eyebrow" color={colors.muted} style={{ fontSize: 10.5 }}>Timing windows</Text>
               <View style={styles.chips}>
                 {month.windows.map((w) => (
