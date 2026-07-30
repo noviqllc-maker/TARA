@@ -16,9 +16,13 @@ import { BirthChart, computeTransitFactor, computeAllTransits } from '@/lib/vedi
 import { computeTransits } from '@/lib/transits';
 import { pickNotification, pickMidday, pickEvening, NotificationContext } from '@/data/notificationLines';
 
-export type NotifRoute = '/(tabs)/home' | '/(tabs)/tara';
+export type NotifRoute = '/(tabs)/home' | '/(tabs)/tara' | '/practice/evening';
 
 const DAILY_ROUTE: NotifRoute = '/(tabs)/home';
+// The 6 PM slot ("Evening Reflection") deep-links into the Evening Ritual. There is no
+// premium-specific notification variant (all three slots are uniform for every user), so
+// this route change applies cleanly to everyone.
+const EVENING_ROUTE: NotifRoute = '/practice/evening';
 const DAYS_AHEAD = 3;
 const PRIMER_SEEN_KEY = 'tara.notif.primerSeen.v1';
 const SLOTS_KEY = 'tara.notif.slots.v1';
@@ -169,9 +173,10 @@ export async function refreshDailyNotifications(chart: BirthChart | null, birthD
         pick = pickEvening(seed);
       }
       prevTitle = pick.title;
+      const route = key === 'evening' ? EVENING_ROUTE : DAILY_ROUTE;
       await Notifications.scheduleNotificationAsync({
         identifier: `tara-${key}-${i}`,
-        content: { title: pick.title, body: pick.body, data: { route: DAILY_ROUTE } },
+        content: { title: pick.title, body: pick.body, data: { route } },
         trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: fireDate },
       });
     }

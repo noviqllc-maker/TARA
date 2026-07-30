@@ -10,17 +10,22 @@ import Screen from '@/components/Screen';
 import SubHeader from '@/components/SubHeader';
 import { Text, Card } from '@/components/ui';
 import { useChart } from '@/hooks/useChart';
+import { useDailyContent } from '@/hooks/useDailyContent';
 import { computeCosmicEvents } from '@/lib/panchanga';
 import { dayMantra } from '@/lib/mantras';
-import { computeObservances, todayObservance, Observance } from '@/lib/observances';
-import { loadJapa, JapaState } from '@/lib/practice';
+import { computeObservances, todayObservance, Observance, ObservanceKind } from '@/lib/observances';
+import { loadJapa, loadEvening, JapaState, EveningState } from '@/lib/practice';
+import { openSankalpaFor, Sankalpa } from '@/lib/sankalpa';
 import { colors, radius, spacing } from '@/theme';
+
+const SANKALPA_WINDOWS: ObservanceKind[] = ['amavasya', 'purnima', 'sankranti', 'ekadashi'];
 
 const DOW = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const MON = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 export default function PracticeHub() {
   const chart = useChart();
+  const daily = useDailyContent();
   const now = useMemo(() => new Date(), []);
   const dayKey = now.toDateString();
 
@@ -31,7 +36,14 @@ export default function PracticeHub() {
   const obs = today ?? upcoming;
 
   const [japa, setJapa] = useState<JapaState | null>(null);
-  useEffect(() => { loadJapa().then(setJapa); }, []);
+  const [eve, setEve] = useState<EveningState | null>(null);
+  const sankalpaWindow = today && SANKALPA_WINDOWS.includes(today.kind) ? today : null;
+  const [revisit, setRevisit] = useState<Sankalpa | null>(null);
+  useEffect(() => {
+    loadJapa().then(setJapa);
+    loadEvening().then(setEve);
+    if (sankalpaWindow) openSankalpaFor(sankalpaWindow.kind).then(setRevisit);
+  }, [sankalpaWindow?.kind]);
 
   return (
     <Screen>
@@ -71,6 +83,51 @@ export default function PracticeHub() {
         </Pressable>
       </Animated.View>
 
+      {/* Evening Ritual */}
+      <Animated.View entering={FadeInDown.delay(40).duration(360)}>
+        <Pressable onPress={() => router.push('/practice/evening' as any)}>
+          <Card style={{ marginBottom: 14 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
+                <Text style={{ fontSize: 20 }}>🌙</Text>
+                <View style={{ flex: 1 }}>
+                  <Text variant="serif" style={{ fontSize: 16 }}>Evening Reflection</Text>
+                  <Text variant="tiny" color={colors.muted} style={{ fontSize: 12, marginTop: 2 }}>
+                    {eve?.doneToday ? 'Closed today ✦' : 'A gentle 4-step wind-down'}
+                    {eve && eve.streak > 0 ? ` · ${eve.streak}-day streak` : ''}
+                  </Text>
+                </View>
+              </View>
+              <Text style={{ color: colors.gold, fontSize: 18 }}>›</Text>
+            </View>
+          </Card>
+        </Pressable>
+      </Animated.View>
+
+      {/* Sankalpa — invite on an auspicious window, else an entry to intentions/history */}
+      <Animated.View entering={FadeInDown.delay(80).duration(360)}>
+        <Pressable onPress={() => router.push('/practice/sankalpa' as any)}>
+          <Card solid={!!sankalpaWindow} glow={!!sankalpaWindow} style={{ marginBottom: 14 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text variant="eyebrow" color={colors.gold}>Sankalpa</Text>
+              <Text style={{ color: colors.gold, fontSize: 18 }}>›</Text>
+            </View>
+            {sankalpaWindow ? (
+              <>
+                <Text variant="serif" style={{ fontSize: 16, marginTop: 8 }}>Set a sankalpa under {sankalpaWindow.name}</Text>
+                <Text variant="tiny" color={colors.muted} style={{ marginTop: 4, fontSize: 12, lineHeight: 17 }}>
+                  {revisit ? `And revisit your last one: “${revisit.text}”` : 'An auspicious window to name a short intention — an invitation, never an obligation.'}
+                </Text>
+              </>
+            ) : (
+              <Text variant="tiny" color={colors.muted} style={{ marginTop: 8, fontSize: 12.5, lineHeight: 18 }}>
+                Set short intentions on auspicious windows, and revisit them when the window returns.
+              </Text>
+            )}
+          </Card>
+        </Pressable>
+      </Animated.View>
+
       {/* Today's / upcoming Observance */}
       {obs ? (
         <Animated.View entering={FadeInDown.delay(60).duration(360)}>
@@ -89,6 +146,14 @@ export default function PracticeHub() {
             </Card>
           </Pressable>
         </Animated.View>
+      ) : null}
+
+      {/* A relational / digital-wellness nudge for today (engine/calendar-gated). */}
+      {daily.relationalLine ? (
+        <View style={styles.nudge}>
+          <Text style={{ fontSize: 14 }}>🤝</Text>
+          <Text variant="tiny" color={colors.cream} style={{ flex: 1, fontSize: 12.5, lineHeight: 18 }}>{daily.relationalLine}</Text>
+        </View>
       ) : null}
 
       {/* Later-phase placeholders */}
@@ -118,6 +183,10 @@ export default function PracticeHub() {
 const styles = StyleSheet.create({
   devanagari: { fontSize: 30, color: colors.cream, marginTop: 14, lineHeight: 42 },
   mantraFoot: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 14, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.line },
+  nudge: {
+    flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: spacing.md, padding: 14,
+    borderRadius: radius.lg, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card,
+  },
   sectionLabel: { fontSize: 14, fontWeight: '500', marginTop: spacing.md, marginBottom: 12 },
   soonGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   soonCell: {

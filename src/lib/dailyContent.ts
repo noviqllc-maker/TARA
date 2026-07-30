@@ -12,6 +12,7 @@ import { BirthChart, computeTransitFactor, computeAllTransits, NAKSHATRAS } from
 import { computeTransits, houseTheme } from '@/lib/transits';
 import { computeCosmicEvents } from '@/lib/panchanga';
 import { MAHA_MEANING } from '@/data/dashaMeaning';
+import { pickRelationalNudge } from '@/data/relational';
 import { colors } from '@/theme';
 
 // ---- seeded RNG (xmur3 hash → mulberry32) --------------------------------------
@@ -178,6 +179,7 @@ export type DailyContent = {
   mantraNote: string;
   mantraGraha: string;       // the graha the day's mantra derives from (day-lord)
   journalPrompt: string;
+  relationalLine: string;    // a relational / digital-wellness nudge, engine/calendar-gated
 };
 
 // Anchor every engine read to local noon of the given day, so the astrological factors
@@ -204,6 +206,8 @@ function noChartContent(rng: Rng, date: Date): DailyContent {
     mantraNote: MANTRAS[graha].note,
     mantraGraha: graha,
     journalPrompt: rng.pick(JOURNAL_PROMPTS),
+    // No chart yet → only weekday-lord (tier-1) lines are eligible; the pick is stable per day.
+    relationalLine: pickRelationalNudge({ date }, `nochart:${date.toDateString()}`),
   };
 }
 
@@ -321,5 +325,11 @@ export function composeDailyContent(chart: BirthChart | null, date: Date, seed: 
     mantraNote: dayMantra.note,
     mantraGraha: events.dayLord,
     journalPrompt: rng.pick(JOURNAL_PROMPTS),
+    // Engine-gated relational nudge: Mercury retro / Venus-strong / Saturn-on-Moon are all
+    // confirmed here; otherwise it falls to the day's vāra-lord line. Seeded per (user + day).
+    relationalLine: pickRelationalNudge(
+      { date, mercuryRetro: retros.includes('Mercury'), venusStrong: driver === 'Venus', saturnOnMoon: factor.natalPlanet === 'Moon' && driver === 'Saturn' },
+      `${seed}:rel`,
+    ),
   };
 }

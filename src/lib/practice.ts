@@ -80,3 +80,53 @@ async function syncToServer(entryDate: string, rounds: number): Promise<void> {
     );
   } catch { /* best effort — local cache holds the truth */ }
 }
+
+// ---- Evening Ritual: daily completion + streak (same local-first pattern) -------
+const EVE_KEY = '@tara/practice/evening'; // { [YYYY-MM-DD]: 1 }
+
+export type EveningState = { doneToday: boolean; streak: number };
+
+function eveStreak(map: DayMap, today = checkinDate()): number {
+  let cursor = (map[today] ?? 0) >= 1 ? today : shiftKey(today, -1);
+  let streak = 0;
+  while ((map[cursor] ?? 0) >= 1) { streak++; cursor = shiftKey(cursor, -1); }
+  return streak;
+}
+
+async function readEve(): Promise<DayMap> {
+  try { const raw = await AsyncStorage.getItem(EVE_KEY); return raw ? (JSON.parse(raw) as DayMap) : {}; }
+  catch { return {}; }
+}
+async function writeEve(map: DayMap): Promise<void> {
+  try {
+    const entries = Object.entries(map).sort(([a], [b]) => (a < b ? 1 : -1)).slice(0, 400);
+    await AsyncStorage.setItem(EVE_KEY, JSON.stringify(Object.fromEntries(entries)));
+  } catch { /* best effort */ }
+}
+
+export async function loadEvening(): Promise<EveningState> {
+  const map = await readEve();
+  return { doneToday: (map[checkinDate()] ?? 0) >= 1, streak: eveStreak(map) };
+}
+
+// Mark today's Evening Ritual complete, with the optional one-line reflection. Local first,
+// then best-effort to practice_log (evening_done + evening_note).
+export async function recordEvening(note?: string): Promise<EveningState> {
+  const map = await readEve();
+  const key = checkinDate();
+  map[key] = 1;
+  await writeEve(map);
+  void syncEvening(key, note);
+  return { doneToday: true, streak: eveStreak(map) };
+}
+
+async function syncEvening(entryDate: string, note?: string): Promise<void> {
+  try {
+    const { data: sess } = await supabase.auth.getSession();
+    const uid = sess.session?.user?.id;
+    if (!uid) return;
+    const row: Record<string, unknown> = { user_id: uid, entry_date: entryDate, evening_done: true, updated_at: new Date().toISOString() };
+    if (note && note.trim()) row.evening_note = note.trim().slice(0, 280);
+    await supabase.from('practice_log').upsert(row, { onConflict: 'user_id,entry_date' });
+  } catch { /* best effort */ }
+}

@@ -23,6 +23,8 @@ export type NotificationContext = {
 
 export type NotifPick = { title: string; body: string };
 
+import { pickRelationalNudge, RelationalCtx } from '@/data/relational';
+
 const TITLE = {
   general: "Today's Cosmic Briefing",
   fallback: 'Your Daily Guidance',
@@ -30,6 +32,7 @@ const TITLE = {
   career: 'Career Timing',
   love: 'Love Forecast',
   money: 'Money Insight',
+  relational: 'A Gentle Nudge',
 } as const;
 
 export const NOTIFICATION_LINES = {
@@ -117,30 +120,44 @@ function planetaryEligible(ctx: NotificationContext): string[] {
 
 // Choose the day's { title, body }. `seed` = `${userId}:${YYYY-MM-DD}`. `prevTitle` is
 // the previous day's title so we never repeat a title two days running.
+// Build a RelationalCtx from the notification context (weekday + confirmed transits).
+function relCtx(ctx: NotificationContext): RelationalCtx {
+  return {
+    date: ctx.date,
+    mercuryRetro: ctx.mercuryRetro,
+    venusStrong: ctx.strongestGraha === 'Venus',
+    saturnOnMoon: ctx.transitOnMoon && ctx.strongestGraha === 'Saturn',
+  };
+}
+
 export function pickNotification(ctx: NotificationContext, seed: string, prevTitle?: string): NotifPick {
   const planetary = planetaryEligible(ctx);
-  let category: 'planetary' | 'career' | 'love' | 'money' | 'general';
+  let category: 'planetary' | 'career' | 'love' | 'money' | 'general' | 'relational';
   if (planetary.length) {
     category = 'planetary';
+  } else if (hashStr(seed + ':rel') % 4 === 0) {
+    // ~1 in 4 non-event days surfaces a relational / digital-wellness nudge (always gated).
+    category = 'relational';
   } else {
     const topic = grahaTopic(ctx.strongestGraha);
-    // ~1 in 3 non-event days gets topic flavor; the rest stay general.
+    // ~1 in 3 of the rest gets topic flavor; the remainder stay general.
     category = topic && hashStr(seed + ':cat') % 3 === 0 ? topic : 'general';
   }
 
   let title: string;
   let body: string;
   switch (category) {
-    case 'planetary': title = TITLE.planetary; body = pickSeeded(planetary, seed + ':b'); break;
-    case 'career':    title = TITLE.career;    body = pickSeeded(NOTIFICATION_LINES.careerMoney, seed + ':b'); break;
-    case 'money':     title = TITLE.money;     body = pickSeeded(NOTIFICATION_LINES.careerMoney, seed + ':b'); break;
-    case 'love':      title = TITLE.love;      body = pickSeeded(NOTIFICATION_LINES.love, seed + ':b'); break;
-    default:          title = hashStr(seed + ':t') % 2 === 0 ? TITLE.general : TITLE.fallback;
-                      body = pickSeeded(GENERAL_POOL, seed + ':b');
+    case 'planetary':  title = TITLE.planetary;  body = pickSeeded(planetary, seed + ':b'); break;
+    case 'relational': title = TITLE.relational; body = pickRelationalNudge(relCtx(ctx), seed + ':relb'); break;
+    case 'career':     title = TITLE.career;     body = pickSeeded(NOTIFICATION_LINES.careerMoney, seed + ':b'); break;
+    case 'money':      title = TITLE.money;      body = pickSeeded(NOTIFICATION_LINES.careerMoney, seed + ':b'); break;
+    case 'love':       title = TITLE.love;       body = pickSeeded(NOTIFICATION_LINES.love, seed + ':b'); break;
+    default:           title = hashStr(seed + ':t') % 2 === 0 ? TITLE.general : TITLE.fallback;
+                       body = pickSeeded(GENERAL_POOL, seed + ':b');
   }
 
-  // No title two days running.
-  if (prevTitle && title === prevTitle) {
+  // No title two days running (skip for relational — swapping its title would mismatch body).
+  if (prevTitle && title === prevTitle && category !== 'relational') {
     if (category === 'general') {
       title = title === TITLE.general ? TITLE.fallback : TITLE.general;
     } else {
