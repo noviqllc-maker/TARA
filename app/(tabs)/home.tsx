@@ -17,6 +17,7 @@ import { useHealth } from '@/hooks/useHealth';
 import { useDailyContent } from '@/hooks/useDailyContent';
 import { setAskDraft } from '@/lib/askDraft';
 import { computeCosmicEvents } from '@/lib/panchanga';
+import { todayObservance } from '@/lib/observances';
 import { greeting, todayLong } from '@/data/mock';
 import { colors, spacing } from '@/theme';
 
@@ -84,6 +85,9 @@ export default function Home() {
   // per calendar day + chart, matching the useTransits/useDailyEnergy pattern; no AI call).
   const dayKey = new Date().toDateString();
   const cosmic = useMemo(() => computeCosmicEvents(chart, new Date()), [chart, dayKey]);
+  // Today's observance (Ekādaśī / Pūrṇimā / festival …), if one is active — surfaced as a
+  // line on the cosmic-events card and echoed on the Practice card. Deterministic, no AI.
+  const observance = useMemo(() => todayObservance(new Date()), [dayKey]);
   // Today's Guidance — engine-composed, seeded per user + day (no AI, no mock).
   const daily = useDailyContent();
   // "Monday • July 20" — title case, dot separator (not all caps).
@@ -186,6 +190,16 @@ export default function Home() {
             </View>
           ))}
         </View>
+        {/* Today's observance, when one is active — informational, taps into Practice. */}
+        {observance ? (
+          <Pressable onPress={() => router.push('/practice/observances' as any)} hitSlop={6} style={styles.observanceLine}>
+            <Text style={{ fontSize: 14, color: colors.goldSoft }}>✦</Text>
+            <Text variant="tiny" color={colors.cream} style={{ flex: 1, fontSize: 12.5, lineHeight: 17 }}>
+              <Text variant="tiny" color={colors.gold} style={{ fontSize: 12.5, fontWeight: '600' }}>{observance.name}</Text>
+              {'  '}today · tap to read
+            </Text>
+          </Pressable>
+        ) : null}
       </Card>
 
       {/* Journal Prompt (moved from Insights) */}
@@ -196,6 +210,24 @@ export default function Home() {
           <Text variant="tiny" color={colors.gold} style={{ fontWeight: '600', fontSize: 13 }}>Open Mood Journal →</Text>
         </Pressable>
       </Card>
+
+      {/* Practice — free daily japa + observances (Practice Hub) */}
+      <Pressable onPress={() => router.push('/practice' as any)}>
+        <Card style={{ marginBottom: spacing.lg }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
+              <Text style={{ fontSize: 22 }}>🙏</Text>
+              <View style={{ flex: 1 }}>
+                <Text variant="serif" style={{ fontSize: 16 }}>Daily Practice</Text>
+                <Text variant="tiny" color={colors.muted} style={{ fontSize: 12, marginTop: 2 }}>
+                  Today's mantra{observance ? ` · ${observance.name}` : ' · japa & observances'}
+                </Text>
+              </View>
+            </View>
+            <Text style={{ color: colors.gold, fontSize: 18 }}>›</Text>
+          </View>
+        </Card>
+      </Pressable>
 
       {/* Premium nudge — free users only, now below the Journal Prompt */}
       <PremiumNudgeBar context="home" style={{ marginBottom: spacing.lg }} />
@@ -275,4 +307,8 @@ const styles = StyleSheet.create({
   eventsGrid: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 12, rowGap: 14 },
   eventCell: { width: '50%', flexDirection: 'row', gap: 8, paddingRight: 8 },
   swatch: { width: 10, height: 10, borderRadius: 5, borderWidth: 1, borderColor: colors.line },
+  observanceLine: {
+    flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 14, paddingTop: 12,
+    borderTopWidth: 1, borderTopColor: colors.line,
+  },
 });
