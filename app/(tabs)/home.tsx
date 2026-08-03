@@ -1,15 +1,16 @@
 // app/(tabs)/home.tsx
-import React, { useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Pressable, StyleSheet, Alert, Linking } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import Screen from '@/components/Screen';
-import { Text, Card, GoldButton, Chip } from '@/components/ui';
+import { Text, Card, GoldButton } from '@/components/ui';
 import EnergyDashboard from '@/components/EnergyDashboard';
 import Disclaimer from '@/components/Disclaimer';
 import { PremiumNudgeBar } from '@/components/PremiumNudge';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useProfile } from '@/hooks/useProfile';
+import { useAuth } from '@/hooks/useAuth';
 import { useChart } from '@/hooks/useChart';
 import { useTransits } from '@/hooks/useTransits';
 import { useDailyEnergy } from '@/hooks/useDailyEnergy';
@@ -18,25 +19,67 @@ import { useDailyContent } from '@/hooks/useDailyContent';
 import { setAskDraft } from '@/lib/askDraft';
 import { computeCosmicEvents } from '@/lib/panchanga';
 import { todayObservance } from '@/lib/observances';
+import { computeTransitFactor, BirthChart } from '@/lib/vedic';
+import { Topic } from '@/lib/topic';
+import { loadJapa, JapaState } from '@/lib/practice';
 import { greeting, todayLong } from '@/data/mock';
 import { colors, spacing } from '@/theme';
 
+// Quick actions — non-tab destinations only (Ask Tara & Birth Chart live in the tab bar).
 const QUICK = [
-  { label: 'Ask Tara', route: '/(tabs)/tara' },
-  { label: 'Birth Chart', route: '/(tabs)/chart' },
   { label: 'Compatibility', route: '/insights/love' },
   { label: "Today's Remedies", route: '/(tabs)/insights' },
-  { label: 'Shop', route: '/(tabs)/profile', params: { scrollTo: 'shop' } },
   { label: 'Life Timeline', route: '/chart/timeline' },
+  { label: 'Shop', route: '/(tabs)/profile', params: { scrollTo: 'shop' } },
 ];
 
-// Life-area detail screens (moved here from the Insights tab).
-const LIFE_AREAS = [
-  { label: 'Love & Relationships', route: '/insights/love' },
-  { label: 'Career & Money', route: '/insights/career' },
-  { label: 'Health & Wellness', route: '/insights/wellness' },
-  { label: 'Life Purpose', route: '/insights/purpose' },
+// Life areas, each mapped to the topic that biases its daily teaser factor. Love leads.
+const LIFE_AREAS: { label: string; route: string; topic: Topic }[] = [
+  { label: 'Love & Relationships', route: '/insights/love', topic: 'love' },
+  { label: 'Career & Money', route: '/insights/career', topic: 'career' },
+  { label: 'Health & Wellness', route: '/insights/wellness', topic: 'health' },
+  { label: 'Life Purpose', route: '/insights/purpose', topic: 'spiritual' },
 ];
+
+// ---- daily life-area teaser (deterministic, seeded by user+date+domain) ---------
+// A one-line read composed from the domain's strongest transiting graha (topic-biased, the
+// same engine the rest of the app uses) + a short domain-flavoured tag. Returns null so a
+// row degrades to a plain link when there's no chart / no factor.
+// Two tone phrasings per graha, so a graha that leads more than one domain on a busy day
+// still reads differently row to row (the tone is seeded per domain, like the advice).
+const GRAHA_TONE: Record<string, string[]> = {
+  Sun: ['the Sun lends clarity', 'the Sun brings a steadying focus'],
+  Moon: ['the Moon softens the mood', 'the Moon deepens feeling'],
+  Mars: ['Mars brings drive', 'Mars sharpens your edge'],
+  Mercury: ['Mercury quickens the mind', 'Mercury favours clear words'],
+  Jupiter: ['Jupiter opens things up', 'Jupiter widens the view'],
+  Venus: ['Venus warms the day', 'Venus draws people closer'],
+  Saturn: ['Saturn asks for patience', 'Saturn rewards steady effort'],
+  Rahu: ['Rahu stirs ambition', 'Rahu pulls toward the new'],
+  Ketu: ['Ketu turns you inward', 'Ketu invites you to let go'],
+};
+const DOMAIN_ADVICE: Partial<Record<Topic, string[]>> = {
+  love: ['listen first', 'lead with warmth', 'say the kind thing'],
+  career: ['pick one priority', 'move with intention', 'let steadiness lead'],
+  health: ['tend your energy gently', 'rest counts as work today', 'keep the rhythm simple'],
+  spiritual: ['make room for reflection', 'follow what holds meaning', 'trust the quiet pull'],
+};
+function teaserHash(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
+  return Math.abs(h);
+}
+function lifeAreaTeaser(chart: BirthChart | null, date: Date, topic: Topic, seed: string): string | null {
+  if (!chart) return null;
+  let graha: string;
+  try { graha = computeTransitFactor(chart, date, topic).transiting; } catch { return null; }
+  const tones = GRAHA_TONE[graha];
+  const advice = DOMAIN_ADVICE[topic];
+  if (!tones?.length || !advice?.length) return null;
+  const tone = tones[teaserHash(seed + ':tone') % tones.length];
+  const a = advice[teaserHash(seed) % advice.length];
+  return `${tone[0].toUpperCase()}${tone.slice(1)} — ${a}.`;
+}
 
 // Title-case gold section label (replaces the old all-caps Eyebrow on Home).
 function SectionLabel({ children }: { children: React.ReactNode }) {
@@ -45,6 +88,8 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 export default function Home() {
   const { profile } = useProfile();
+  const { session } = useAuth();
+  const uid = session?.user?.id || profile.name || 'anon';
   const chart = useChart();
   const transits = useTransits();
   // Real daily energy (chart + Moon transit + moon phase + Apple Health), shared
@@ -93,14 +138,23 @@ export default function Home() {
   // "Monday • July 20" — title case, dot separator (not all caps).
   const dateLine = todayLong().replace(', ', ' • ');
 
-  // Now fully live: nakshatra + dasha from the user's chart, and today's real sky.
-  const weather: [string, string][] = [
-    ['Nakshatra', chart?.nakshatra ?? transits.moonNakshatra],
+  // Per-domain daily teasers, seeded (user + date + domain), recomputed per calendar day.
+  const areaTeasers = useMemo(
+    () => LIFE_AREAS.map((a) => lifeAreaTeaser(chart, new Date(), a.topic, `${uid}:${dayKey}:${a.topic}`)),
+    [chart, uid, dayKey],
+  );
+
+  // The Cosmic Weather rows that AREN'T already in the events grid (nakshatra & tithi are),
+  // merged into the events card as a second row-group. No value is rendered twice on Home.
+  const cosmicRows: [string, string][] = [
     ['Dasha', chart?.currentDasha ?? '—'],
     ['Transit', transits.transitText],
-    ['Panchanga', transits.panchanga],
     ['Moon Phase', transits.moonPhase],
   ];
+
+  // Japa streak, surfaced on the Daily Practice card. Refetches on focus so it stays live.
+  const [japa, setJapa] = useState<JapaState | null>(null);
+  useFocusEffect(useCallback(() => { loadJapa().then(setJapa); }, []));
 
   return (
     <Screen>
@@ -166,7 +220,42 @@ export default function Home() {
         ) : null}
       </Card>
 
-      {/* Today's Cosmic Events — deterministic panchanga + day-lord almanac */}
+      {/* 4. Your Life Areas — promoted; each row carries a daily teaser (Love leads) */}
+      <SectionLabel>Your Life Areas</SectionLabel>
+      <View style={styles.lifeGrid}>
+        {LIFE_AREAS.map((s, i) => (
+          <Pressable key={s.label} style={styles.areaCard} onPress={() => router.push(s.route as any)}>
+            <View style={styles.areaTop}>
+              <Text variant="serif" style={{ fontSize: 15 }}>{s.label}</Text>
+              <Text style={{ color: colors.gold, fontSize: 18 }}>›</Text>
+            </View>
+            {areaTeasers[i] ? (
+              <Text variant="tiny" color={colors.muted} style={styles.areaTeaser}>{areaTeasers[i]}</Text>
+            ) : null}
+          </Pressable>
+        ))}
+      </View>
+
+      {/* 5. Daily Practice — streak surfaced here (pulls daily opens) */}
+      <Pressable onPress={() => router.push('/practice' as any)}>
+        <Card style={{ marginBottom: spacing.lg }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
+              <Text style={{ fontSize: 22 }}>🙏</Text>
+              <View style={{ flex: 1 }}>
+                <Text variant="serif" style={{ fontSize: 16 }}>Daily Practice</Text>
+                <Text variant="tiny" color={colors.muted} style={{ fontSize: 12, marginTop: 2 }}>
+                  {japa && japa.streak > 0 ? `🔥 ${japa.streak}-day streak · today’s mantra` : 'Japa, evening ritual & observances'}
+                </Text>
+              </View>
+            </View>
+            <Text style={{ color: colors.gold, fontSize: 18 }}>›</Text>
+          </View>
+        </Card>
+      </Pressable>
+
+      {/* 6. Today's Cosmic Events — panchanga/day-lord almanac + a merged second group
+             (Dasha, transit, Moon phase) absorbed from the old Cosmic Weather card */}
       <Card style={{ marginBottom: spacing.lg }}>
         <SectionLabel>Today's Cosmic Events</SectionLabel>
         <View style={styles.eventsGrid}>
@@ -190,6 +279,17 @@ export default function Home() {
             </View>
           ))}
         </View>
+
+        {/* Merged second group (was "Current Cosmic Weather") — no duplicate values. */}
+        <View style={styles.cosmicRows}>
+          {cosmicRows.map(([k, v]) => (
+            <View key={k} style={styles.cwRow}>
+              <Text variant="tiny" color={colors.muted}>{k}</Text>
+              <Text variant="body" color={colors.goldSoft} style={{ fontSize: 13, flexShrink: 1, textAlign: 'right' }} numberOfLines={1}>{v}</Text>
+            </View>
+          ))}
+        </View>
+
         {/* Today's observance, when one is active — informational, taps into Practice. */}
         {observance ? (
           <Pressable onPress={() => router.push('/practice/observances' as any)} hitSlop={6} style={styles.observanceLine}>
@@ -202,7 +302,7 @@ export default function Home() {
         ) : null}
       </Card>
 
-      {/* Journal Prompt (moved from Insights) */}
+      {/* 7. Journal Prompt */}
       <Card style={{ marginBottom: spacing.lg }}>
         <SectionLabel>Journal Prompt</SectionLabel>
         <Text variant="serif" style={styles.journalPrompt}>“{daily.journalPrompt}”</Text>
@@ -211,39 +311,10 @@ export default function Home() {
         </Pressable>
       </Card>
 
-      {/* Practice — free daily japa + observances (Practice Hub) */}
-      <Pressable onPress={() => router.push('/practice' as any)}>
-        <Card style={{ marginBottom: spacing.lg }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
-              <Text style={{ fontSize: 22 }}>🙏</Text>
-              <View style={{ flex: 1 }}>
-                <Text variant="serif" style={{ fontSize: 16 }}>Daily Practice</Text>
-                <Text variant="tiny" color={colors.muted} style={{ fontSize: 12, marginTop: 2 }}>
-                  Today's mantra{observance ? ` · ${observance.name}` : ' · japa & observances'}
-                </Text>
-              </View>
-            </View>
-            <Text style={{ color: colors.gold, fontSize: 18 }}>›</Text>
-          </View>
-        </Card>
-      </Pressable>
-
-      {/* Premium nudge — free users only, now below the Journal Prompt */}
+      {/* 8. Premium nudge — free users only */}
       <PremiumNudgeBar context="home" style={{ marginBottom: spacing.lg }} />
 
-      {/* Explore Life Areas (moved from Insights) */}
-      <SectionLabel>Explore Life Areas</SectionLabel>
-      <View style={styles.lifeGrid}>
-        {LIFE_AREAS.map((s) => (
-          <Pressable key={s.label} style={styles.areaCard} onPress={() => router.push(s.route as any)}>
-            <Text variant="body" style={{ fontSize: 13.5 }}>{s.label}</Text>
-            <Text style={{ color: colors.gold, fontSize: 18 }}>›</Text>
-          </Pressable>
-        ))}
-      </View>
-
-      {/* Quick actions */}
+      {/* 9. Quick Actions — non-tab destinations only */}
       <SectionLabel>Quick Actions</SectionLabel>
       <View style={styles.quickGrid}>
         {QUICK.map((q) => (
@@ -256,19 +327,6 @@ export default function Home() {
           </Pressable>
         ))}
       </View>
-
-      {/* Cosmic weather */}
-      <Card style={{ marginTop: spacing.lg }}>
-        <SectionLabel>Current Cosmic Weather</SectionLabel>
-        <View style={{ marginTop: 10, gap: 9 }}>
-          {weather.map(([k, v]) => (
-            <View key={k} style={styles.cwRow}>
-              <Text variant="tiny" color={colors.muted}>{k}</Text>
-              <Text variant="body" color={colors.goldSoft} style={{ fontSize: 13 }}>{v}</Text>
-            </View>
-          ))}
-        </View>
-      </Card>
 
       <Disclaimer />
     </Screen>
@@ -295,15 +353,17 @@ const styles = StyleSheet.create({
   journalPrompt: { fontSize: 16, marginTop: 10, lineHeight: 25, fontStyle: 'italic', color: colors.cream },
   lifeGrid: { gap: 10, marginTop: 12, marginBottom: spacing.lg },
   areaCard: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     padding: 16, backgroundColor: colors.card, borderColor: colors.line, borderWidth: 1, borderRadius: 16,
   },
+  areaTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  areaTeaser: { marginTop: 6, fontSize: 12.5, lineHeight: 17 },
   quickGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 12 },
   quick: {
     width: '47.5%', paddingVertical: 16, paddingHorizontal: 14,
     backgroundColor: colors.card, borderColor: colors.line, borderWidth: 1, borderRadius: 16,
   },
-  cwRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  cwRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
+  cosmicRows: { marginTop: 14, paddingTop: 14, borderTopWidth: 1, borderTopColor: colors.line, gap: 9 },
   eventsGrid: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 12, rowGap: 14 },
   eventCell: { width: '50%', flexDirection: 'row', gap: 8, paddingRight: 8 },
   swatch: { width: 10, height: 10, borderRadius: 5, borderWidth: 1, borderColor: colors.line },
