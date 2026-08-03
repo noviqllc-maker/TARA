@@ -2,9 +2,9 @@
 // Practice Hub — the home for daily devotional practice. All free, no entitlement checks.
 // Deterministic, engine-computed: Japa/Mantra, Observances, Evening Ritual, Sankalpa (on
 // window days), Today's Teaching (Svādhyāya), and Mauna (Amāvasyā / Saturdays).
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Pressable, StyleSheet } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import Screen from '@/components/Screen';
 import SubHeader from '@/components/SubHeader';
@@ -47,12 +47,16 @@ export default function PracticeHub() {
   const [mauna, setMauna] = useState<MaunaState | null>(null);
   const sankalpaWindow = today && SANKALPA_WINDOWS.includes(today.kind) ? today : null;
   const [revisit, setRevisit] = useState<Sankalpa | null>(null);
-  useEffect(() => {
+  // Practice completion state refetches on every focus, so the count/streak update live
+  // when returning from the japa (or evening/mauna) screen.
+  useFocusEffect(useCallback(() => {
     loadJapa().then(setJapa);
     loadEvening().then(setEve);
     if (maunaDay) loadMauna().then(setMauna);
+  }, [maunaDay]));
+  useEffect(() => {
     if (sankalpaWindow) openSankalpaFor(sankalpaWindow.kind).then(setRevisit);
-  }, [sankalpaWindow?.kind, maunaDay]);
+  }, [sankalpaWindow?.kind]);
 
   return (
     <Screen>
@@ -68,26 +72,43 @@ export default function PracticeHub() {
         </Text>
       </View>
 
-      {/* Today's Mantra → japa */}
+      {/* Today's Mantra → japa. Two zones: a count block (left) + the mantra (right). */}
       <Animated.View entering={FadeInDown.duration(360)}>
         <Pressable onPress={() => router.push('/practice/japa' as any)}>
           <Card solid glow style={{ marginBottom: 14 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Text variant="eyebrow" color={colors.gold}>Today's Mantra</Text>
-              <Text style={{ color: colors.gold, fontSize: 18 }}>›</Text>
+            <Text variant="eyebrow" color={colors.gold}>Today's Mantra</Text>
+
+            <View style={styles.mantraRow}>
+              {/* LEFT — count block anchors the layout even at zero */}
+              <View style={styles.countBlock}>
+                <Text style={styles.countNum}>{japa ? japa.today : 0}</Text>
+                <Text variant="tiny" color={colors.muted} style={styles.countLabel}>
+                  {japa && japa.today > 0 ? 'rounds today' : 'begin today’s japa'}
+                </Text>
+                {japa && japa.streak > 0 ? (
+                  <Text style={styles.streak}>✦ {japa.streak}-day streak</Text>
+                ) : null}
+              </View>
+
+              {/* RIGHT — mantra content, slightly tightened */}
+              <View style={styles.mantraContent}>
+                <Text style={styles.devanagari}>{mantra.devanagari}</Text>
+                <Text variant="serif" style={{ fontSize: 15, marginTop: 3 }}>{mantra.translit}</Text>
+                <Text variant="tiny" color={colors.muted} style={{ marginTop: 5, lineHeight: 16.5 }}>{mantra.meaning}</Text>
+                <View style={styles.grahaDayChip}>
+                  <Text variant="tiny" color={colors.goldSoft} style={{ fontSize: 11 }}>{mantra.glyph} {mantra.graha} · {mantra.day}</Text>
+                </View>
+              </View>
             </View>
-            <Text style={styles.devanagari}>{mantra.devanagari}</Text>
-            <Text variant="serif" style={{ fontSize: 16, marginTop: 4 }}>{mantra.translit}</Text>
-            <Text variant="tiny" color={colors.muted} style={{ marginTop: 6, lineHeight: 17 }}>{mantra.meaning}</Text>
-            <View style={styles.mantraFoot}>
-              <Text variant="tiny" color={colors.goldSoft} style={{ fontSize: 11.5 }}>{mantra.glyph} {mantra.graha} · {mantra.day}</Text>
-              <Text variant="tiny" color={colors.muted} style={{ fontSize: 11.5 }}>
-                {japa ? (japa.today > 0 ? `${japa.today} mālā today` : 'Begin a mālā →') : 'Begin a mālā →'}
-              </Text>
+
+            {/* CTA pill, bottom-right */}
+            <View style={{ alignItems: 'flex-end', marginTop: 14 }}>
+              <View style={styles.pill}>
+                <Text color="#1a1018" style={{ fontSize: 13, fontWeight: '600' }}>
+                  {japa && japa.today > 0 ? 'Continue' : 'Begin mālā'}
+                </Text>
+              </View>
             </View>
-            {japa && japa.streak > 0 ? (
-              <Text variant="tiny" color={colors.saffron} style={{ marginTop: 8, fontSize: 11.5 }}>✦ {japa.streak}-day streak</Text>
-            ) : null}
           </Card>
         </Pressable>
       </Animated.View>
@@ -211,8 +232,25 @@ export default function PracticeHub() {
 }
 
 const styles = StyleSheet.create({
-  devanagari: { fontSize: 30, color: colors.cream, marginTop: 14, lineHeight: 42 },
-  mantraFoot: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 14, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.line },
+  mantraRow: { flexDirection: 'row', marginTop: 14 },
+  // LEFT count block — fixed width, divider from the mantra content.
+  countBlock: {
+    width: 96, paddingRight: 14, borderRightWidth: 1, borderRightColor: colors.line, alignItems: 'flex-start',
+  },
+  countNum: { fontFamily: 'Fraunces_600SemiBold', fontSize: 32, color: colors.cream, lineHeight: 38 },
+  countLabel: { fontSize: 10.5, marginTop: 2, lineHeight: 14 },
+  streak: { fontFamily: 'Outfit_600SemiBold', fontSize: 11, color: colors.gold, marginTop: 10 },
+  // RIGHT mantra content.
+  mantraContent: { flex: 1, paddingLeft: 14 },
+  devanagari: { fontSize: 25, color: colors.cream, lineHeight: 36 },
+  grahaDayChip: {
+    alignSelf: 'flex-start', marginTop: 10, borderWidth: 1, borderColor: colors.line,
+    borderRadius: radius.pill, paddingVertical: 4, paddingHorizontal: 10,
+  },
+  pill: {
+    backgroundColor: colors.goldSoft, borderRadius: radius.pill,
+    paddingVertical: 9, paddingHorizontal: 20,
+  },
   nudge: {
     flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: spacing.md, padding: 14,
     borderRadius: radius.lg, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card,
