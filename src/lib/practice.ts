@@ -130,3 +130,42 @@ async function syncEvening(entryDate: string, note?: string): Promise<void> {
     await supabase.from('practice_log').upsert(row, { onConflict: 'user_id,entry_date' });
   } catch { /* best effort */ }
 }
+
+// ---- Mauna: kept-silence completion (occasional — Amāvasyā & Saturdays) ---------
+const MAUNA_KEY = '@tara/practice/mauna'; // { [YYYY-MM-DD]: 1 }
+
+export type MaunaState = { doneToday: boolean; total: number };
+
+export async function loadMauna(): Promise<MaunaState> {
+  try {
+    const raw = await AsyncStorage.getItem(MAUNA_KEY);
+    const map = raw ? (JSON.parse(raw) as DayMap) : {};
+    return { doneToday: (map[checkinDate()] ?? 0) >= 1, total: Object.values(map).filter((v) => v >= 1).length };
+  } catch { return { doneToday: false, total: 0 }; }
+}
+
+// Mark today's Mauna kept. Local first, then best-effort to practice_log (mauna_done).
+export async function recordMauna(): Promise<MaunaState> {
+  let map: DayMap = {};
+  try { const raw = await AsyncStorage.getItem(MAUNA_KEY); map = raw ? JSON.parse(raw) : {}; } catch { /* ignore */ }
+  const key = checkinDate();
+  map[key] = 1;
+  try {
+    const entries = Object.entries(map).sort(([a], [b]) => (a < b ? 1 : -1)).slice(0, 400);
+    await AsyncStorage.setItem(MAUNA_KEY, JSON.stringify(Object.fromEntries(entries)));
+  } catch { /* best effort */ }
+  void syncMauna(key);
+  return { doneToday: true, total: Object.values(map).filter((v) => v >= 1).length };
+}
+
+async function syncMauna(entryDate: string): Promise<void> {
+  try {
+    const { data: sess } = await supabase.auth.getSession();
+    const uid = sess.session?.user?.id;
+    if (!uid) return;
+    await supabase.from('practice_log').upsert(
+      { user_id: uid, entry_date: entryDate, mauna_done: true, updated_at: new Date().toISOString() },
+      { onConflict: 'user_id,entry_date' },
+    );
+  } catch { /* best effort */ }
+}
