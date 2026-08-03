@@ -11,10 +11,12 @@ import Screen from '@/components/Screen';
 import SubHeader from '@/components/SubHeader';
 import { Text, Card, GoldButton } from '@/components/ui';
 import { useChart } from '@/hooks/useChart';
+import { useProfile } from '@/hooks/useProfile';
 import { checkinDate } from '@/lib/checkin';
 import { dayMantra } from '@/lib/mantras';
 import { eveningPrompt, tomorrowPreview } from '@/lib/eveningRitual';
 import { recordEvening, loadEvening, EveningState } from '@/lib/practice';
+import { refreshDailyNotifications } from '@/lib/notifications';
 import { tick, completion } from '@/lib/haptics';
 import { colors, radius, spacing } from '@/theme';
 
@@ -23,6 +25,7 @@ const MINI = 11;
 
 export default function Evening() {
   const chart = useChart();
+  const { profile } = useProfile();
   const now = useMemo(() => new Date(), []);
   const seed = useMemo(() => `${chart?.ascendant.signIndex ?? 0}:${checkinDate(now)}`, [chart, now]);
   const prompt = useMemo(() => eveningPrompt(seed), [seed]);
@@ -40,7 +43,13 @@ export default function Evening() {
   const closeDay = () => {
     completion();
     setDone(true);
-    recordEvening(note).then(setEve);
+    recordEvening(note).then((s) => {
+      setEve(s);
+      // Reschedule so today's 6 PM push reflects the just-closed day (→ acknowledgment, not
+      // an ask) even if the app isn't re-foregrounded before 6 PM. Best-effort, no-op if
+      // notifications aren't permitted.
+      refreshDailyNotifications(chart, profile.birthDate).catch(() => {});
+    });
   };
 
   return (

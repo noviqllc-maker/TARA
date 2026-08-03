@@ -189,7 +189,26 @@ const EVENING_LINES = [
 export function pickMidday(seed: string): NotifPick {
   return { title: 'Timing Window', body: pickSeeded(MIDDAY_LINES, seed) };
 }
-// Evening = reflection / journal-prompt flavored. Fixed "Evening Reflection" title.
-export function pickEvening(seed: string): NotifPick {
+
+// Evening = reflection / journal-prompt flavored. Streak-aware when the caller passes local
+// practice state. VOICE RULES (hard): never loss-framed — no "don't lose/break", no "streak
+// ends", no countdown or guilt. The number is the hook; the invitation is the verb; only
+// rhythm/continuation language. Streak digits use ✦ (not the flame), per the unification.
+export type EveningCtx = { streak: number; doneToday: boolean };
+export function pickEvening(seed: string, ctx?: EveningCtx): NotifPick {
+  // Already closed today → a gentle acknowledgment, no ask.
+  if (ctx?.doneToday) {
+    return { title: 'Evening Reflection ✦', body: 'Day closed ✦ — see tomorrow’s line when you’re ready.' };
+  }
+  const n = ctx?.streak ?? 0;
+  if (n >= 2) {
+    const pool = [
+      `Your ${n}-day streak is ready for tonight’s close.`,
+      `${n} evenings closed in a row — tonight makes ${n + 1}.`,
+      `A quiet close keeps your ${n}-day rhythm alive.`,
+    ];
+    return { title: `Evening Reflection ✦ ${n}-day streak`, body: pickSeeded(pool, seed) };
+  }
+  // Streak 0 or 1 → the existing generic evening copy, unchanged.
   return { title: 'Evening Reflection', body: pickSeeded(EVENING_LINES, seed) };
 }

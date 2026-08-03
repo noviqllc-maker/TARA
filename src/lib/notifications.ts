@@ -15,6 +15,7 @@ import { supabase } from '@/lib/supabase';
 import { BirthChart, computeTransitFactor, computeAllTransits } from '@/lib/vedic';
 import { computeTransits } from '@/lib/transits';
 import { pickNotification, pickMidday, pickEvening, NotificationContext } from '@/data/notificationLines';
+import { loadEvening } from '@/lib/practice';
 
 export type NotifRoute = '/(tabs)/home' | '/(tabs)/tara' | '/practice/evening';
 
@@ -154,11 +155,17 @@ export async function refreshDailyNotifications(chart: BirthChart | null, birthD
   const slots = await getNotifSlots();
   const uid = await seedUser();
   const now = new Date();
+  // Local practice state — makes the 6 PM evening slot streak-aware (recomputed here on the
+  // daily refresh AND on every app foreground, since NotificationRefresher calls this on
+  // AppState 'active'; the evening screen also calls it right after a ritual completes).
+  const eve = await loadEvening();
 
   for (const { key, hour } of SLOT_DEFS) {
     if (!slots[key]) continue;
     let first = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour, 0, 0, 0);
     if (first.getTime() <= now.getTime()) first = new Date(first.getTime() + MS_DAY); // slot hour passed → start tomorrow
+    // Whether the nearest fire (i=0) lands TODAY — the only day "done today" can apply to.
+    const firstIsToday = first.getFullYear() === now.getFullYear() && first.getMonth() === now.getMonth() && first.getDate() === now.getDate();
 
     let prevTitle: string | undefined;
     for (let i = 0; i < DAYS_AHEAD; i++) {
@@ -170,7 +177,7 @@ export async function refreshDailyNotifications(chart: BirthChart | null, birthD
       } else if (key === 'midday') {
         pick = pickMidday(seed);
       } else {
-        pick = pickEvening(seed);
+        pick = pickEvening(seed, { streak: eve.streak, doneToday: i === 0 && firstIsToday && eve.doneToday });
       }
       prevTitle = pick.title;
       const route = key === 'evening' ? EVENING_ROUTE : DAILY_ROUTE;
