@@ -12,6 +12,7 @@ export const colors = {
   line: 'rgba(205,163,73,0.22)',
 
   cream: '#f5eee1',
+  creamDim: 'rgba(245,238,225,0.72)', // softer cream for readable secondary body text
   gold: '#cda349',
   goldSoft: '#e2c878',
   saffron: '#e8923a',

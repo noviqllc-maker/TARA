@@ -117,5 +117,6 @@ const styles = StyleSheet.create({
     marginTop: 18, paddingTop: 14, paddingHorizontal: 14, paddingBottom: 16,
     borderRadius: 14, borderWidth: 1, borderColor: 'rgba(205,163,73,0.3)', backgroundColor: 'rgba(205,163,73,0.06)',
   },
-  forTodayText: { fontFamily: fonts.serif, fontStyle: 'italic', fontSize: 15.5, lineHeight: 24, color: colors.goldSoft },
+  // Outfit regular (non-italic) in a softer cream — italic Fraunces read poorly at this size.
+  forTodayText: { fontFamily: fonts.sans, fontSize: 15, lineHeight: 23, color: colors.creamDim },
 });
