@@ -31,16 +31,19 @@ export function eveningPrompt(seed: string): string {
 
 // One-line preview of tomorrow, keyed to tomorrow's strongest transiting graha. Single line
 // only — this is the free-tier taste, not a forecast.
+// Tone-passed so all nine share the same measured warmth — each a "Tomorrow {quality} — a
+// day to/for {gentle invitation}" shape. Saturn as steady as Sun is bright; Rahu/Ketu warm,
+// neither ominous nor evasive; none darker or flatter than the rest.
 const TOMORROW_LINE: Record<string, string> = {
-  Sun:     'Tomorrow leans toward clarity and visibility — a day to show up as yourself.',
-  Moon:    'Tomorrow runs tender and intuitive — let feeling lead the pace.',
-  Mars:    'Tomorrow carries real drive — aim your energy rather than scatter it.',
-  Mercury: 'Tomorrow favours the mind and clear exchange — good for words and plans.',
-  Jupiter: 'Tomorrow feels a little more open — room to grow and to say yes.',
-  Venus:   'Tomorrow softens toward warmth and connection — lead with the heart.',
-  Saturn:  'Tomorrow rewards patience and steady effort over speed.',
-  Rahu:    'Tomorrow pulls toward something new — reach, but stay grounded.',
-  Ketu:    'Tomorrow turns inward — depth and release over motion.',
+  Sun:     'Tomorrow leans bright and clear — a day to show up fully as yourself.',
+  Moon:    'Tomorrow runs tender and intuitive — a day to let feeling set the pace.',
+  Mars:    'Tomorrow carries warm, ready energy — a day to move gently on what matters.',
+  Mercury: 'Tomorrow favours a clear, curious mind — a day for good words and plans.',
+  Jupiter: 'Tomorrow opens a little wider — a day with room to grow and say yes.',
+  Venus:   'Tomorrow softens toward warmth and connection — a day to lead with the heart.',
+  Saturn:  'Tomorrow rewards a steady, patient hand — a day for quiet progress that lasts.',
+  Rahu:    'Tomorrow leans toward something new — a day to reach, grounded and open.',
+  Ketu:    'Tomorrow turns gently inward — a day for depth, rest, and letting go.',
 };
 
 export function tomorrowPreview(chart: BirthChart | null, date: Date = new Date()): string {

@@ -29,7 +29,7 @@ export const RELATIONAL_NUDGES: Nudge[] = [
   { line: 'A heavier sky — be patient and plain in your closest conversations.',  tier: 2, gate: (c) => !!c.saturnOnMoon },
   // Weekday / vāra lord (tier 1) — always true on that day
   { line: 'The Moon’s day — check in with someone at home.',                      tier: 1, gate: day(1) }, // Monday
-  { line: 'Mars’s day — address a small friction before it grows.',              tier: 1, gate: day(2) }, // Tuesday
+  { line: 'Mars’s day — address a small friction gently before it grows.',       tier: 1, gate: day(2) }, // Tuesday
   { line: 'Mercury’s day — say the clear, kind thing you’ve been putting off.',  tier: 1, gate: day(3) }, // Wednesday
   { line: 'Jupiter’s day — thank someone who has helped you along.',             tier: 1, gate: day(4) }, // Thursday
   { line: 'Venus’s day — reach out to someone you’ve been meaning to.',          tier: 1, gate: day(5) }, // Friday
