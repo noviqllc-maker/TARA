@@ -133,6 +133,20 @@ const FESTIVALS: Festival[] = [
     practice:
       'Traditionally observed with a night-long vigil, chanting of Śiva mantras, offerings at the Śiva liṅga, and — for many — fasting and meditation through the night.',
   },
+  {
+    key: 'vasant-panchami', name: 'Vasant Pañchamī', tithiNum: 4, sunSign: 9, // Śukla Pañchamī, Sun in Makara (Māgha)
+    significance:
+      'Vasant Pañchamī, on the fifth waxing day of Māgha, welcomes the first stirrings of spring and honours Sarasvatī — goddess of knowledge, music, and the arts. It is a bright, hopeful day long linked with learning and fresh beginnings.',
+    practice:
+      'Traditionally observed by honouring Sarasvatī, wearing yellow, starting a child’s first lessons, and celebrating study, music, and the arts.',
+  },
+  {
+    key: 'karva-chauth', name: 'Karva Chauth', tithiNum: 18, sunSign: 6, // Kṛṣṇa Chaturthī, Sun in Tulā (Kārtika)
+    significance:
+      'Karva Chauth falls on the fourth waning day of Kārtika. Traditionally kept by married women — and in many families by partners for one another — as a day of devotion for a spouse’s wellbeing, it closes with the sighting of the Moon at night. Its customs vary considerably by region and community.',
+    practice:
+      'Traditionally marked by a day-long fast broken after moonrise, the giving of karva (small pots) and gifts, henna, and evening gatherings — observances that differ from region to region.',
+  },
 ];
 
 const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
