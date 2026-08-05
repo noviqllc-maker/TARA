@@ -17,6 +17,7 @@ export type HealthMetrics = {
   steps: number;
   activeEnergy: number; // kcal
   sleepHours: number;
+  stepsAvg7d: number;   // the user's own average daily steps over the prior 7 days (0 = unknown)
 };
 
 // Lazy require so non-iOS / Expo Go never tries to load the native module.
@@ -112,6 +113,11 @@ export async function fetchHealthMetrics(): Promise<HealthMetrics> {
     // Sleep: total asleep duration since last evening
     const sleepHours = await safeSleepHours(HK, lastNight(), now);
 
+    // The user's own 7-day step baseline (prior 7 full days, excluding today so today
+    // never biases its own comparison). Same already-granted StepCount category — no new
+    // permission. 0 when unavailable → activity classification falls back to "typical".
+    const stepsAvg7d = await safe7dStepAvg(HK, startOfToday());
+
     const hrv = hrvSample || 45;
     const rhr = rhrSample || 60;
     const sScore = sleepScore(sleepHours || 7);
@@ -129,6 +135,7 @@ export async function fetchHealthMetrics(): Promise<HealthMetrics> {
       steps: Math.round(steps || 0),
       activeEnergy: Math.round(energy || 0),
       sleepHours: Math.round((sleepHours || 0) * 10) / 10,
+      stepsAvg7d: Math.round(stepsAvg7d || 0),
     };
   } catch {
     return mockMetrics();
@@ -173,10 +180,19 @@ async function safeSleepHours(HK: any, from: Date, to: Date): Promise<number> {
   } catch { return 0; }
 }
 
+// Average daily steps over the 7 full days before today (prior week ÷ 7).
+async function safe7dStepAvg(HK: any, endExclusive: Date): Promise<number> {
+  try {
+    const start = new Date(endExclusive.getTime() - 7 * 86400000);
+    const total = await safeSum(HK, 'HKQuantityTypeIdentifierStepCount', start, endExclusive, 'count');
+    return total > 0 ? total / 7 : 0;
+  } catch { return 0; }
+}
+
 // Mock fallback (matches the original data so screens look right pre-connection).
 export function mockMetrics(): HealthMetrics {
   return {
     source: 'mock', sleep: 62, recovery: 48, hrv: 41, rhr: 58,
-    steps: 4280, activeEnergy: 320, sleepHours: 6.4,
+    steps: 4280, activeEnergy: 320, sleepHours: 6.4, stepsAvg7d: 5200,
   };
 }

@@ -2,7 +2,7 @@
 // seeded per user + day (see useDailyContent): the summary, the 5-6 rotating insight
 // cards, What to Avoid / Lean Into, and the Mantra of the Day. Each insight card carries
 // an "Ask Tara why →" bridge that routes through the normal (credit-gated) answer flow.
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Pressable, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -10,6 +10,11 @@ import Screen from '@/components/Screen';
 import { Text, Card, Eyebrow } from '@/components/ui';
 import Disclaimer from '@/components/Disclaimer';
 import { useDailyContent } from '@/hooks/useDailyContent';
+import { useHealth } from '@/hooks/useHealth';
+import { useSubscription } from '@/hooks/useSubscription';
+import { useAuth } from '@/hooks/useAuth';
+import { useProfile } from '@/hooks/useProfile';
+import { bodySuggestion, genericBodySuggestion, classifyHealth } from '@/lib/wellness';
 import { setAskDraft } from '@/lib/askDraft';
 import { todayLong } from '@/data/mock';
 import { colors, spacing } from '@/theme';
@@ -20,6 +25,20 @@ const askWhy = (q: string) => { setAskDraft(q); router.push('/(tabs)/tara'); };
 
 export default function Insights() {
   const daily = useDailyContent();
+  const { metrics, connected } = useHealth();
+  const { isPremium } = useSubscription();
+  const { session } = useAuth();
+  const { profile } = useProfile();
+
+  // The health-aware Body Signal suggestion (premium only — the free reading is unchanged so
+  // nothing leaks to the free tier). Seeded (user + date), same key style as useDailyContent.
+  const seed = `${session?.user?.id || profile.name || 'anon'}:${new Date().toDateString()}`;
+  const bodyExtra = useMemo(() => {
+    if (!isPremium || !connected) return null;                 // free tier / not connected → no suggestion
+    return classifyHealth(metrics).hasData
+      ? bodySuggestion(metrics, new Date(), seed)              // real data → state-tuned line
+      : genericBodySuggestion(new Date(), seed);              // connected, no samples yet → day-lord line
+  }, [isPremium, connected, metrics, seed]);
 
   return (
     <Screen>
@@ -36,6 +55,23 @@ export default function Insights() {
         <Card key={c.key} style={{ marginBottom: 12 }}>
           <Eyebrow color={c.color}>{c.label}</Eyebrow>
           <Text variant="tiny" style={{ marginTop: 8, fontSize: 13 }}>{c.text}</Text>
+
+          {/* Body Signal only: a lifestyle suggestion for premium (reading + suggestion), or a
+              gentle connect invite when Apple Health isn't linked yet. */}
+          {c.key === 'body' && bodyExtra ? (
+            <View style={styles.suggestion}>
+              <Text variant="tiny" color={colors.sage} style={{ fontSize: 12 }}>✦ </Text>
+              <Text variant="tiny" color={colors.creamDim} style={{ fontSize: 12.5, lineHeight: 18, flex: 1 }}>{bodyExtra}</Text>
+            </View>
+          ) : null}
+          {c.key === 'body' && !connected ? (
+            <Pressable onPress={() => router.push('/insights/wellness')} hitSlop={6} style={{ marginTop: 10 }}>
+              <Text variant="tiny" color={colors.muted} style={{ fontSize: 11.5 }}>
+                Connect Apple Health for guidance tuned to your real rhythm <Text variant="tiny" color={colors.gold} style={{ fontSize: 11.5 }}>→</Text>
+              </Text>
+            </Pressable>
+          ) : null}
+
           <Pressable onPress={() => askWhy(c.question)} hitSlop={6} style={{ marginTop: 12, alignSelf: 'flex-start' }}>
             <Text variant="tiny" color={colors.gold} style={{ fontWeight: '600', fontSize: 12.5 }}>Ask Tara why →</Text>
           </Pressable>
@@ -67,4 +103,8 @@ export default function Insights() {
 
 const styles = StyleSheet.create({
   dual: { flexDirection: 'row', gap: 12 },
+  suggestion: {
+    flexDirection: 'row', alignItems: 'flex-start', marginTop: 10, paddingTop: 10,
+    borderTopWidth: 1, borderTopColor: colors.line,
+  },
 });
