@@ -11,12 +11,13 @@
 export const PREMIUM_BENEFITS = [
   '100 Ask Tara questions every month',
   'Weekly & Monthly Guidance — your forecast, always current',
+  'The full Daily Insights — every layer of your day',
   'Health-aware daily guidance, tuned to your real rhythm',
   'Early access to new Tara features',
 ] as const;
 
-// The same four benefits, reordered so a context-specific soft-lock leads with its most
-// relevant line (e.g. the chart & love sheets lead with the forecast / Ask-Tara access).
+// The same five benefits, reordered so a context-specific soft-lock leads with its most
+// relevant line (e.g. the Insights depth soft-lock leads with the full Daily Insights line).
 // No lines added or removed — never introduces an unbuilt claim.
 export function benefitsLeadingWith(lead: (typeof PREMIUM_BENEFITS)[number]): string[] {
   return [lead, ...PREMIUM_BENEFITS.filter((b) => b !== lead)];

@@ -13,9 +13,7 @@ import { love } from '@/data/mock';
 import { useDailyEnergy } from '@/hooks/useDailyEnergy';
 import { useChart } from '@/hooks/useChart';
 import { useProfile } from '@/hooks/useProfile';
-import { useSubscription } from '@/hooks/useSubscription';
-import { PremiumHint, PremiumSheet, PremiumNudgeBar } from '@/components/PremiumNudge';
-import { benefitsLeadingWith } from '@/lib/premium';
+import { PremiumNudgeBar } from '@/components/PremiumNudge';
 import { computeChart } from '@/lib/vedic';
 import { searchPlaces, geocodePlace, hasPlacesKey, fallbackGeo, Place } from '@/lib/places';
 import { gunaMilan, personMoonFromChart, KOOTA_META, GunaResult } from '@/lib/compatibility';
@@ -48,9 +46,7 @@ export default function Love() {
 
   const userChart = useChart();
   const { profile } = useProfile();
-  const { isPremium } = useSubscription();
   const keyed = hasPlacesKey();
-  const [premiumSheet, setPremiumSheet] = useState(false);
 
   // ---- Partner birth details ----
   const [name, setName] = useState('');
@@ -308,14 +304,9 @@ export default function Love() {
               Tara uses the classic Ashtakoota method ({youAre === 'bride' ? 'you as bride' : 'you as groom'}). Guna Milan conventions vary between astrologers; treat this as guidance, not a verdict.
             </Text>
 
-            {/* Free score + breakdown stay fully visible above; this only invites going deeper. */}
-            {!isPremium && (
-              <PremiumHint
-                style={{ marginTop: 16 }}
-                message="Want the full relationship reading? Premium unlocks detailed remedies, timing windows and personalized guidance for this match."
-                onPress={() => setPremiumSheet(true)}
-              />
-            )}
+            {/* Free score + breakdown are fully visible above. The old soft-lock here promised
+                gated "detailed remedies, timing windows" that don't exist, so it was retired in
+                the Insights depth split. The top PremiumNudgeBar remains as the honest upsell. */}
           </View>
         )}
       </Card>
@@ -325,12 +316,6 @@ export default function Love() {
         onPress={() => router.push({ pathname: '/(tabs)/tara', params: { category: 'Love' } })}
       />
 
-      <PremiumSheet
-        visible={premiumSheet}
-        onClose={() => setPremiumSheet(false)}
-        title="Your full relationship reading"
-        benefits={benefitsLeadingWith('100 Ask Tara questions every month')}
-      />
       <Disclaimer />
     </Screen>
   );

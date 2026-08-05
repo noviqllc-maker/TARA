@@ -7,20 +7,15 @@ import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import Screen from '@/components/Screen';
 import { Text, Card, Eyebrow, GhostButton } from '@/components/ui';
 import Disclaimer from '@/components/Disclaimer';
-import { PremiumHint, PremiumSheet } from '@/components/PremiumNudge';
-import { benefitsLeadingWith, PREMIUM_COPY } from '@/lib/premium';
 import { useProfile } from '@/hooks/useProfile';
 import { useChart } from '@/hooks/useChart';
-import { useSubscription } from '@/hooks/useSubscription';
 import { PlanetPosition, BirthChart } from '@/lib/vedic';
 import { colors, fonts, spacing } from '@/theme';
 
 export default function Chart() {
   const { profile } = useProfile();
   const chart = useChart();
-  const { isPremium } = useSubscription();
   const [selected, setSelected] = useState<PlanetPosition | null>(null);
-  const [premiumSheet, setPremiumSheet] = useState(false);
 
   if (!chart) {
     return (
@@ -132,23 +127,8 @@ export default function Chart() {
         <GhostButton label="Compatibility →" onPress={() => router.push('/insights/love')} />
       </View>
 
-      {/* Full chart stays free above; this only invites a deeper reading. Copy must NOT
-          name the "Birth/Soul Blueprint" shop report — use the neutral soft-lock line. */}
-      {!isPremium && (
-        <PremiumHint
-          style={{ marginTop: spacing.lg }}
-          message={PREMIUM_COPY.softLockSubtitle}
-          onPress={() => setPremiumSheet(true)}
-        />
-      )}
-
-      <PremiumSheet
-        visible={premiumSheet}
-        onClose={() => setPremiumSheet(false)}
-        title="Your complete chart reading"
-        benefits={benefitsLeadingWith('Weekly & Monthly Guidance — your forecast, always current')}
-      />
-
+      {/* The full chart is free. No soft-lock here — it guarded no gated content, so it was
+          retired in the Insights depth split (an empty soft-lock reads as a false promise). */}
       <Disclaimer />
     </Screen>
   );
