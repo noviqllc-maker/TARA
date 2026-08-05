@@ -17,7 +17,7 @@ import { PREMIUM_BENEFITS, PREMIUM_COPY } from '@/lib/premium';
 import { colors, radius, spacing } from '@/theme';
 
 // Single source of truth for premium benefits (see @/lib/premium). Nudges/sheets show
-// the first three; the paywall & profile card show all five.
+// the first three; the paywall & profile card show all four.
 const DEFAULT_BENEFITS: string[] = [...PREMIUM_BENEFITS];
 
 const goPaywall = () => router.push('/paywall');

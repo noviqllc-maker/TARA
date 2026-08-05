@@ -329,7 +329,7 @@ export default function Love() {
         visible={premiumSheet}
         onClose={() => setPremiumSheet(false)}
         title="Your full relationship reading"
-        benefits={benefitsLeadingWith('Deep compatibility reports')}
+        benefits={benefitsLeadingWith('100 Ask Tara questions every month')}
       />
       <Disclaimer />
     </Screen>

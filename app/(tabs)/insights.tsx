@@ -51,6 +51,21 @@ export default function Insights() {
         <Text variant="serif" style={{ fontSize: 16.5, lineHeight: 25 }}>{daily.weatherSummary}</Text>
       </Card>
 
+      {/* Weekly & Monthly Guidance entry — premium forecast; free sees a locked teaser. */}
+      <Pressable onPress={() => router.push('/insights/forecast' as any)} style={{ marginBottom: spacing.lg }}>
+        <Card>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View style={{ flex: 1, paddingRight: 10 }}>
+              <Eyebrow color={colors.gold}>Weekly & Monthly Guidance</Eyebrow>
+              <Text variant="tiny" color={colors.muted} style={{ marginTop: 6, fontSize: 12.5 }}>
+                {isPremium ? 'Your week & month ahead — always current' : '✦ Premium · your week & month ahead'}
+              </Text>
+            </View>
+            <Text style={{ color: colors.gold, fontSize: 18 }}>›</Text>
+          </View>
+        </Card>
+      </Pressable>
+
       {daily.insights.map((c) => (
         <Card key={c.key} style={{ marginBottom: 12 }}>
           <Eyebrow color={c.color}>{c.label}</Eyebrow>

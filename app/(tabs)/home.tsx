@@ -254,6 +254,24 @@ export default function Home() {
         </Card>
       </Pressable>
 
+      {/* 5b. Weekly & Monthly Guidance — premium forecast; free sees a locked entry teaser */}
+      <Pressable onPress={() => router.push('/insights/forecast' as any)}>
+        <Card style={{ marginBottom: spacing.lg }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
+              <Text style={{ fontSize: 22 }}>🗓️</Text>
+              <View style={{ flex: 1 }}>
+                <Text variant="serif" style={{ fontSize: 16 }}>Weekly & Monthly Guidance</Text>
+                <Text variant="tiny" color={colors.muted} style={{ fontSize: 12, marginTop: 2 }}>
+                  {isPremium ? 'Your week & month ahead, always current' : '✦ Premium · your week & month ahead'}
+                </Text>
+              </View>
+            </View>
+            <Text style={{ color: colors.gold, fontSize: 18 }}>›</Text>
+          </View>
+        </Card>
+      </Pressable>
+
       {/* 6. Today's Cosmic Events — panchanga/day-lord almanac + a merged second group
              (Dasha, transit, Moon phase) absorbed from the old Cosmic Weather card */}
       <Card style={{ marginBottom: spacing.lg }}>

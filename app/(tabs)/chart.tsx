@@ -146,7 +146,7 @@ export default function Chart() {
         visible={premiumSheet}
         onClose={() => setPremiumSheet(false)}
         title="Your complete chart reading"
-        benefits={benefitsLeadingWith('Complete Life Chapters & dasha timeline')}
+        benefits={benefitsLeadingWith('Weekly & Monthly Guidance — your forecast, always current')}
       />
 
       <Disclaimer />

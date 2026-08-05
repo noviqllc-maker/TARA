@@ -2,18 +2,22 @@
 // Single source of truth for the Premium benefit list. Used by BOTH the paywall
 // checklist (app/paywall.tsx) and the profile upgrade banner (app/(tabs)/profile.tsx)
 // so the two never drift. No ad references — the free tier has no ads either.
-// The yearly forecast is NOT here — it's the ownership-gated "Year Ahead" shop report,
-// not a premium benefit (see app/report/year-ahead.tsx). Premium copy must not promise it.
+//
+// TRUTH RULE: every line here must map to a shipped feature. The 12-month "Year Ahead" is
+// the ownership-gated shop report (app/report/year-ahead.tsx), NOT a premium benefit — but
+// the rolling "Weekly & Monthly Guidance" forecast (app/insights/forecast.tsx) IS premium,
+// so it appears below. Removed in the truth-up: "Complete Life Chapters & dasha timeline",
+// "Deep compatibility reports", "Advanced Vedic chart analysis" — none were implemented.
 export const PREMIUM_BENEFITS = [
   '100 Ask Tara questions every month',
-  'Complete Life Chapters & dasha timeline',
-  'Deep compatibility reports',
-  'Advanced Vedic chart analysis',
+  'Weekly & Monthly Guidance — your forecast, always current',
+  'Health-aware daily guidance, tuned to your real rhythm',
+  'Early access to new Tara features',
 ] as const;
 
-// The same five benefits, reordered so a context-specific soft-lock leads with its most
-// relevant line (e.g. the chart sheet leads with the dasha timeline, the love sheet with
-// compatibility). No lines added or removed — never introduces an unbuilt claim.
+// The same four benefits, reordered so a context-specific soft-lock leads with its most
+// relevant line (e.g. the chart & love sheets lead with the forecast / Ask-Tara access).
+// No lines added or removed — never introduces an unbuilt claim.
 export function benefitsLeadingWith(lead: (typeof PREMIUM_BENEFITS)[number]): string[] {
   return [lead, ...PREMIUM_BENEFITS.filter((b) => b !== lead)];
 }

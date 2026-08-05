@@ -16,10 +16,14 @@ export type NudgeMessage = { line: string; cta: string };
 const CTA: Record<NudgeContext, string> = {
   home: 'Unlock Premium',
   tara_ai: 'Go Premium',
-  chart: 'Unlock Full Chart',
-  life_love: 'Unlock Compatibility',
-  // Was 'See My Year' — the yearly forecast is now the Year Ahead shop report, not a
-  // premium benefit, so this CTA must not imply premium includes it.
+  // Was 'Unlock Full Chart' — "Advanced Vedic chart analysis" was removed in the paywall
+  // truth-up, so this CTA must not imply premium unlocks deeper chart analysis.
+  chart: 'Go Premium',
+  // Was 'Unlock Compatibility' — "Deep compatibility reports" was removed in the truth-up;
+  // premium doesn't include a compatibility product, so the CTA can't promise one.
+  life_love: 'Go Premium',
+  // Was 'See My Year' — the yearly forecast is the Year Ahead shop report, not a premium
+  // benefit, so this CTA must not imply premium includes it.
   life_career: 'Go Premium',
   life_health: 'Go Premium',
   life_purpose: 'Go Premium',
