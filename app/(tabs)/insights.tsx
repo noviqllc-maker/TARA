@@ -8,7 +8,7 @@
 //            section label + first ~6 words + ✦, tapping opens the PremiumSheet. No "Ask Tara
 //            why" on a teaser, and the full composed text is NEVER carried into the teaser
 //            render model (truncated at composition, not clipped visually) so it can't leak.
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Pressable, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -21,7 +21,7 @@ import { useHealth } from '@/hooks/useHealth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
-import { bodySuggestion, genericBodySuggestion, classifyHealth } from '@/lib/wellness';
+import { bodySuggestion, genericBodySuggestion, classifyHealth, dayLordOf } from '@/lib/wellness';
 import { benefitsLeadingWith } from '@/lib/premium';
 import { setAskDraft } from '@/lib/askDraft';
 import { todayLong } from '@/data/mock';
@@ -65,6 +65,23 @@ export default function Insights() {
       ? bodySuggestion(metrics, new Date(), seed)
       : genericBodySuggestion(new Date(), seed);
   }, [isPremium, connected, metrics, seed]);
+
+  // TODO(remove-before-release): temporary Body Signal verification log. Prints the raw
+  // HealthKit values, the derived bands, the dominant state, the day lord, and the exact
+  // suggestion that would be selected — one [BodySignal] line, __DEV__ only, no behavior
+  // change. Re-fires when metrics settle (they load async from the health hook).
+  useEffect(() => {
+    if (!__DEV__) return;
+    const c = classifyHealth(metrics);
+    const now = new Date();
+    const selected = c.hasData ? bodySuggestion(metrics, now, seed) : genericBodySuggestion(now, seed);
+    // eslint-disable-next-line no-console
+    console.log(
+      `[BodySignal] src=${metrics.source} sleep=${metrics.sleepHours}h steps=${metrics.steps} avg7d=${metrics.stepsAvg7d} recovery=${metrics.recovery}` +
+      ` | bands sleep=${c.sleep} activity=${c.activity} recovery=${c.recovery} | state=${c.hasData ? c.state : 'generic(no-data)'}` +
+      ` | lord=${dayLordOf(now)} | "${selected}"`,
+    );
+  }, [metrics, seed]);
 
   // Split the day's cards into free (full) and gated (teaser). Truncation happens HERE, so a
   // gated card's view-model carries only its 6-word teaser — never the full composed text.
