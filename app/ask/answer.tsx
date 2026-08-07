@@ -54,7 +54,7 @@ function AnswerBody({ text }: { text: string }) {
         if (label && LEAD_INS.has(label.toLowerCase())) {
           return (
             <Text key={i} variant="serif" style={styles.answer}>
-              <Text style={styles.leadIn}>{label} — </Text>{line.slice(sep + 3).trim()}
+              <Text style={styles.leadIn}>{label}: </Text>{line.slice(sep + 3).trim()}
             </Text>
           );
         }
@@ -160,7 +160,7 @@ export default function AnswerView() {
       authorizedRef.current = false; // allow the atomic decrement to run for the pending question
       run();
     } else {
-      setRefreshNote('Balance refreshed — still 0 credits');
+      setRefreshNote('Balance refreshed. Still 0 credits');
     }
   }, [refresh, run]);
 
@@ -239,7 +239,7 @@ export default function AnswerView() {
           <Text variant="eyebrow" color={colors.gold} style={{ marginBottom: 10 }}>✦ Fair-use limit</Text>
           <Text variant="serif" style={{ fontSize: 22, textAlign: 'center' }}>You've reached this month's limit</Text>
           <Text variant="tiny" color={colors.muted} style={{ marginTop: 8, marginBottom: 22, textAlign: 'center', lineHeight: 19 }}>
-            You've asked 100 questions this month — the fair-use limit for Premium. Your questions refresh on {resetDate}.
+            You've asked 100 questions this month: the fair-use limit for Premium. Your questions refresh on {resetDate}.
           </Text>
           <View style={{ alignSelf: 'stretch', paddingHorizontal: spacing.xl }}>
             <GoldButton label="Done" onPress={close} />
@@ -325,7 +325,7 @@ export default function AnswerView() {
           </View>
           {rating ? (
             <Text variant="tiny" color={colors.sage} style={{ marginTop: 10 }}>
-              Thank you — Tara learns from this. Tap again to change.
+              Thank you. Tara learns from this. Tap again to change.
             </Text>
           ) : null}
         </View>

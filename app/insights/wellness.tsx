@@ -47,7 +47,7 @@ export default function Wellness() {
             {live
               ? `Showing your real data${metrics.sleepHours ? ` · ${metrics.sleepHours}h sleep` : ''}.`
               : connected
-                ? 'Connected, but no data yet — enable categories in the Health app.'
+                ? 'Connected, but no data yet. Enable categories in the Health app.'
                 : 'Blend your real sleep, recovery & HRV with your chart.'}
           </Text>
         </View>
@@ -94,9 +94,9 @@ export default function Wellness() {
       <Card style={{ marginTop: spacing.lg }}>
         <Eyebrow>Focus Areas</Eyebrow>
         <View style={{ marginTop: 10, gap: 8 }}>
-          <Text variant="tiny">Body — <Text color={colors.goldSoft}>{metrics.recovery < 55 ? 'Restoration & hydration' : 'Steady movement'}</Text></Text>
-          <Text variant="tiny">Mind — <Text color={colors.goldSoft}>{metrics.sleep < 60 ? 'Single-tasking' : 'Focused output'}</Text></Text>
-          <Text variant="tiny">Spiritual — <Text color={colors.goldSoft}>{mockExtra.spiritualAlignment}</Text></Text>
+          <Text variant="tiny">Body: <Text color={colors.goldSoft}>{metrics.recovery < 55 ? 'Restoration & hydration' : 'Steady movement'}</Text></Text>
+          <Text variant="tiny">Mind: <Text color={colors.goldSoft}>{metrics.sleep < 60 ? 'Single-tasking' : 'Focused output'}</Text></Text>
+          <Text variant="tiny">Spiritual: <Text color={colors.goldSoft}>{mockExtra.spiritualAlignment}</Text></Text>
         </View>
       </Card>
 

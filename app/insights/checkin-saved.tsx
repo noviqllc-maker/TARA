@@ -29,7 +29,7 @@ export default function CheckinSaved() {
         <Text style={{ fontSize: 34, lineHeight: 44, color: colors.gold }}>✦</Text>
         <Text variant="serif" style={{ fontSize: 24, marginTop: 10, textAlign: 'center' }}>Entry saved</Text>
         <Text variant="tiny" color={colors.muted} style={{ marginTop: 10, textAlign: 'center', lineHeight: 20 }}>
-          Thank you — come back tomorrow to journal your feelings.
+          Thank you. Come back tomorrow to journal your feelings.
         </Text>
 
         {/* Accuracy — reflects an earlier rating, or lets you rate now. */}
@@ -44,7 +44,7 @@ export default function CheckinSaved() {
           </View>
           {replay ? (
             <Text variant="tiny" color={colors.sage} style={{ marginTop: 10, textAlign: 'center' }}>
-              Thank you — Tara learns from this.
+              Thank you. Tara learns from this.
             </Text>
           ) : null}
         </View>

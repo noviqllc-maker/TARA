@@ -81,7 +81,7 @@ export default function NotificationsSettings() {
           <View style={{ flex: 1, paddingRight: 12 }}>
             <Text variant="serif" style={{ fontSize: 16 }}>Daily notifications</Text>
             <Text variant="tiny" color={colors.muted} style={{ marginTop: 4, lineHeight: 17 }}>
-              Three moments a day — a morning briefing, a midday timing cue, and an evening reflection — each written from your chart.
+              Three moments a day: a morning briefing, a midday timing cue, and an evening reflection, each written from your chart.
             </Text>
           </View>
           {ready ? (
@@ -117,8 +117,8 @@ export default function NotificationsSettings() {
 
       <Card>
         <Text variant="tiny" color={colors.muted} style={{ lineHeight: 17 }}>
-          Each message reflects that day — your dasha, the Moon’s nakshatra, and the day’s strongest graha —
-          so no two read the same. Scheduled on this device only — no push servers involved.
+          Each message reflects that day: your dasha, the Moon’s nakshatra, and the day’s strongest graha,
+          so no two read the same. Scheduled on this device only. No push servers involved.
         </Text>
       </Card>
     </Screen>

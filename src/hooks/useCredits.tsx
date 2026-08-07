@@ -78,7 +78,7 @@ export function CreditsProvider({ children }: { children: React.ReactNode }) {
     if (!error && typeof data === 'number') { setBalance(data); setPremiumRemaining(null); return data; }
     // Do NOT silently coalesce an error to 0 — keep balance null (shows "—", not a false
     // "out of credits").
-    if (__DEV__) console.warn('[Credits] ensure_user_credits failed — balance unknown, not 0:', error?.message ?? error);
+    if (__DEV__) console.warn('[Credits] ensure_user_credits failed: balance unknown, not 0:', error?.message ?? error);
     return null;
   }, []);
 

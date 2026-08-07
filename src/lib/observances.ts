@@ -55,19 +55,19 @@ export type Observance = {
 // ---- copy for the recurring markers -------------------------------------------
 const EKADASHI = {
   significance:
-    'Ekādaśī is the eleventh lunar day of each fortnight, held across many traditions as an especially sattvic, devotional window dedicated to Viṣṇu. Falling twice a lunar month, it is regarded as a natural pause in the cycle — a day associated with lightness, clarity, and turning inward.',
+    'Ekādaśī is the eleventh lunar day of each fortnight, held across many traditions as an especially sattvic, devotional window dedicated to Viṣṇu. Falling twice a lunar month, it is regarded as a natural pause in the cycle: a day associated with lightness, clarity, and turning inward.',
   practice:
     'Traditionally observed with fasting or a lighter diet, extra prayer, and the reciting of Viṣṇu’s names; many keep it as a quiet day of devotion and reflection.',
 };
 const PURNIMA = {
   significance:
-    'Pūrṇimā, the full Moon, is considered a high point of the lunar month — the mind and emotions are seen as fullest and most receptive. Many festivals and vows are traditionally anchored to it, and it is long associated with completion, gratitude, and devotion.',
+    'Pūrṇimā, the full Moon, is considered a high point of the lunar month. The mind and emotions are seen as fullest and most receptive. Many festivals and vows are traditionally anchored to it, and it is long associated with completion, gratitude, and devotion.',
   practice:
     'Traditionally marked by prayer, charity, moonlit worship, and readings of sacred texts; a number of communities observe a fast or dedicate the day to a chosen deity.',
 };
 const AMAVASYA = {
   significance:
-    'Amāvasyā, the new Moon, closes the lunar month — a dark, quiet turning point traditionally set aside for remembering ancestors (pitṛ) and for inner renewal before the next cycle begins.',
+    'Amāvasyā, the new Moon, closes the lunar month: a dark, quiet turning point traditionally set aside for remembering ancestors (pitṛ) and for inner renewal before the next cycle begins.',
   practice:
     'Traditionally observed with remembrance of forebears, charity, and quiet reflection; some keep it as a day of rest and simple, inward practice.',
 };
@@ -79,7 +79,7 @@ function sankrantiCopy(signIdx: number): { name: string; significance: string; p
     return {
       name: 'Makara Sankrānti',
       significance:
-        'Makara Sankrānti marks the Sun’s turn into Makara (Capricorn) and the beginning of its northward course (uttarāyaṇa) — one of the most widely celebrated solar festivals, welcomed across India under many names as a time of light, harvest, and fresh beginnings.',
+        'Makara Sankrānti marks the Sun’s turn into Makara (Capricorn) and the beginning of its northward course (uttarāyaṇa). It is one of the most widely celebrated solar festivals, welcomed across India under many names as a time of light, harvest, and fresh beginnings.',
       practice:
         'Traditionally celebrated with offerings to the Sun, sesame and jaggery sweets, kite-flying, bathing at sacred rivers, and acts of charity.',
     };
@@ -87,7 +87,7 @@ function sankrantiCopy(signIdx: number): { name: string; significance: string; p
   return {
     name: `${RASHI[signIdx]} Sankrānti`,
     significance:
-      `The Sun enters ${RASHI[signIdx]}, a Sankrānti — the monthly solar ingress from one sign to the next. These turning points are traditionally treated as auspicious junctures, marking the rhythm of the solar year.`,
+      `The Sun enters ${RASHI[signIdx]}, a Sankrānti: the monthly solar ingress from one sign to the next. These turning points are traditionally treated as auspicious junctures, marking the rhythm of the solar year.`,
     practice:
       'Traditionally observed with offerings to the Sun, charity, and a bath at first light; a gentle moment to set intentions for the month ahead.',
   };
@@ -110,14 +110,14 @@ const FESTIVALS: Festival[] = [
     significance:
       'Janmāṣṭamī marks the birth of Kṛṣṇa, celebrated on the eighth waning day of Bhādrapada. It is one of the most beloved festivals of devotion, remembering Kṛṣṇa’s life, teachings, and play.',
     practice:
-      'Traditionally observed with night-long devotion, singing and storytelling of Kṛṣṇa’s life, a midnight celebration of his birth, and — in many places — joyful community events.',
+      'Traditionally observed with night-long devotion, singing and storytelling of Kṛṣṇa’s life, a midnight celebration of his birth, and, in many places, joyful community events.',
   },
   {
     key: 'navaratri', name: 'Śāradā Navarātri (begins)', tithiNum: 0, sunSign: 5, // Śukla Pratipada, Sun in Kanyā (Āśvina)
     significance:
-      'Śāradā Navarātri opens on the first waxing day of Āśvina — nine nights honouring the Divine Mother in her many forms. It is a period of devotion, dance, and renewal, culminating in the celebration of the triumph of good.',
+      'Śāradā Navarātri opens on the first waxing day of Āśvina: nine nights honouring the Divine Mother in her many forms. It is a period of devotion, dance, and renewal, culminating in the celebration of the triumph of good.',
     practice:
-      'Traditionally observed over nine nights with worship of the Goddess, devotional music and dance (garbā / daṇḍiyā), and — for many — fasting or a simplified diet.',
+      'Traditionally observed over nine nights with worship of the Goddess, devotional music and dance (garbā / daṇḍiyā), and, for many, fasting or a simplified diet.',
   },
   {
     key: 'diwali', name: 'Dīpāvalī (Lakṣmī Pūjā)', tithiNum: 29, sunSign: 6, // Amāvasyā, Sun in Tulā (Kārtika)
@@ -129,14 +129,14 @@ const FESTIVALS: Festival[] = [
   {
     key: 'maha-shivaratri', name: 'Mahā Śivarātri', tithiNum: 28, sunSign: 10, // Kṛṣṇa Caturdaśī, Sun in Kumbha (Māgha/Phālguna)
     significance:
-      'Mahā Śivarātri, the “great night of Śiva,” falls on the fourteenth waning day as the Sun moves through Kumbha. It is a solemn, devotional night traditionally kept in honour of Śiva — a time of stillness, mantra, and inner awakening.',
+      'Mahā Śivarātri, the “great night of Śiva,” falls on the fourteenth waning day as the Sun moves through Kumbha. It is a solemn, devotional night traditionally kept in honour of Śiva: a time of stillness, mantra, and inner awakening.',
     practice:
-      'Traditionally observed with a night-long vigil, chanting of Śiva mantras, offerings at the Śiva liṅga, and — for many — fasting and meditation through the night.',
+      'Traditionally observed with a night-long vigil, chanting of Śiva mantras, offerings at the Śiva liṅga, and, for many, fasting and meditation through the night.',
   },
   {
     key: 'vasant-panchami', name: 'Vasant Pañchamī', tithiNum: 4, sunSign: 9, // Śukla Pañchamī, Sun in Makara (Māgha)
     significance:
-      'Vasant Pañchamī, on the fifth waxing day of Māgha, welcomes the first stirrings of spring and honours Sarasvatī — goddess of knowledge, music, and the arts. It is a bright, hopeful day long linked with learning and fresh beginnings.',
+      'Vasant Pañchamī, on the fifth waxing day of Māgha, welcomes the first stirrings of spring and honours Sarasvatī: goddess of knowledge, music, and the arts. It is a bright, hopeful day long linked with learning and fresh beginnings.',
     practice:
       'Traditionally observed by honouring Sarasvatī, wearing yellow, starting a child’s first lessons, and celebrating study, music, and the arts.',
   },

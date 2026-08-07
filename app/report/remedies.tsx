@@ -34,7 +34,7 @@ export default function Remedies() {
       {/* 1. CURRENT FOCUS (living) */}
       <SectionLabel>Your Current Focus</SectionLabel>
       <Text variant="tiny" color={colors.muted} style={{ marginBottom: 12, lineHeight: 17 }}>
-        For this chapter of your life — remedies for the planetary period you’re living through now. This section updates as your dasha and Saturn’s transit move.
+        For this chapter of your life: remedies for the planetary period you’re living through now. This section updates as your dasha and Saturn’s transit move.
       </Text>
       <Card solid glow style={{ marginBottom: 12 }}>
         <Text variant="eyebrow" color={colors.gold}>Running period · {r.focus.mahaLord}–{r.focus.antarLord}</Text>
@@ -70,7 +70,7 @@ export default function Remedies() {
       {/* 3. STRENGTHENING SET (natal, permanent) */}
       <SectionLabel>Your Strengthening Set</SectionLabel>
       <Text variant="tiny" color={colors.muted} style={{ marginBottom: 12, lineHeight: 17 }}>
-        Natal guidance keyed to the grahas that most shape your chart. Gemstones are shared as tradition — “traditionally associated,” never a prescription.
+        Natal guidance keyed to the grahas that most shape your chart. Gemstones are shared as tradition: “traditionally associated,” never a prescription.
       </Text>
       <StrengthCard heading={`Support · ${r.strengthen.weakest.name}`} why={r.strengthen.weakest.why} rem={r.strengthen.weakest.remedy} />
       <StrengthCard heading={`Lean on · ${r.strengthen.supportive.name}`} why={r.strengthen.supportive.why} rem={r.strengthen.supportive.remedy} />

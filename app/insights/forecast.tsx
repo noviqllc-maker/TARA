@@ -31,7 +31,7 @@ export default function Forecast() {
     return (
       <Screen>
         <SubHeader eyebrow="Guidance" title="Weekly & Monthly Guidance" />
-        <Card><Text variant="body">Add your birth details first — your forecast is built from your chart.</Text></Card>
+        <Card><Text variant="body">Add your birth details first. Your forecast is built from your chart.</Text></Card>
       </Screen>
     );
   }
@@ -44,7 +44,7 @@ export default function Forecast() {
       <Screen>
         <SubHeader eyebrow="Guidance" title="Weekly & Monthly Guidance" />
         <Text variant="tiny" color={colors.muted} style={{ marginBottom: 16, lineHeight: 18 }}>
-          Your week and month ahead — day by day, always current, computed fresh from your chart.
+          Your week and month ahead: day by day, always current, computed fresh from your chart.
         </Text>
 
         {preview.length ? (
@@ -65,7 +65,7 @@ export default function Forecast() {
           <Text style={{ fontSize: 24, color: colors.gold }}>✦</Text>
           <Text variant="serif" style={{ fontSize: 19, marginTop: 8, textAlign: 'center' }}>Unlock your full forecast</Text>
           <Text variant="tiny" color={colors.muted} style={{ marginTop: 8, textAlign: 'center', lineHeight: 19 }}>
-            Daily readings, key dates, opportunity windows and watch periods — for the week and the month ahead.
+            Daily readings, key dates, opportunity windows and watch periods, for the week and the month ahead.
           </Text>
           <View style={{ marginTop: 14, gap: 7, alignSelf: 'stretch' }}>
             {PREMIUM_BENEFITS.map((b) => (
@@ -91,7 +91,7 @@ export default function Forecast() {
     <Screen>
       <SubHeader eyebrow="Guidance" title="Weekly & Monthly Guidance" />
       <Text variant="tiny" color={colors.muted} style={{ marginBottom: 16, lineHeight: 18 }}>
-        Your week and month ahead — always current, computed fresh from your chart each time you open it.
+        Your week and month ahead: always current, computed fresh from your chart each time you open it.
       </Text>
 
       {/* WEEK AHEAD */}

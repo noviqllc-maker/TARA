@@ -100,14 +100,14 @@ function dashaContextCandidates(chapter: string, lord: string, theme: string): s
     `The ${lord} sub-period keeps its hand on the wheel, tilting things toward ${theme}.`,
     `Your ${chapter} stays the backdrop, with ${lord} setting the undertone.`,
     `Running quietly beneath the month, ${lord}'s influence favours ${theme}.`,
-    `This all unfolds inside your ${chapter} — a longer arc that ${lord} is colouring now.`,
+    `This all unfolds inside your ${chapter}, a longer arc that ${lord} is colouring now.`,
     `${lord}'s sub-period continues to shape the bigger picture toward ${theme}.`,
     `The through-line remains your ${chapter}, steady under the month's shifts.`,
     `As a slower current, ${lord} keeps nudging you toward ${theme}.`,
     `Zoom out and it's all still your ${chapter}, with ${lord} tinting the days.`,
     `Beneath the headlines, ${lord} quietly draws you toward ${theme}.`,
     `Your longer season of ${chapter} holds, with ${lord} shading it toward ${theme}.`,
-    `The bigger arc — your ${chapter} — keeps its own slow rhythm underneath.`,
+    `The bigger arc, your ${chapter}, keeps its own slow rhythm underneath.`,
   ];
 }
 
@@ -119,7 +119,7 @@ const DIRECTIVES = [
   'Protect your energy and pick your moments.',
   'Start what you can sustain, not just what excites you.',
   'Tend the relationships that feed you.',
-  'Build a little every day — it compounds.',
+  'Build a little every day. It compounds.',
   'Trust the slower, surer path this month.',
   'Choose depth over speed.',
   'Keep your promises small and your follow-through complete.',
@@ -188,7 +188,7 @@ function dashaTransition(chart: BirthChart, monthStart: Date, monthEnd: Date): D
   if (next) {
     const lastAntarEnd = present?.antardashas?.length ? parseMonYear(present.antardashas[present.antardashas.length - 1].end) : null;
     const boundary = lastAntarEnd ?? new Date(next.start, 0, 1);
-    if (boundary >= monthStart && boundary < monthEnd) return { kind: 'dashaMaha', lord: next.planet, text: `${next.planet} Mahādasha begins — a new life chapter` };
+    if (boundary >= monthStart && boundary < monthEnd) return { kind: 'dashaMaha', lord: next.planet, text: `${next.planet} Mahādasha begins: a new life chapter` };
   }
   for (const a of present?.antardashas ?? []) {
     const s = parseMonYear(a.start);
@@ -265,15 +265,15 @@ function leadCandidates(sig: Signal, ctx: Ctx, openerSeed: string): string[] {
   const opener = (k: number) => ops[(start + k) % ops.length];
   switch (sig.kind) {
     case 'dashaMaha':
-      return [`${M} opens a new chapter as your ${sig.lord!} Mahādasha begins — the year's backdrop resets here.`];
+      return [`${M} opens a new chapter as your ${sig.lord!} Mahādasha begins. The year's backdrop resets here.`];
     case 'dashaAntar':
       return [`${M} retunes as your ${sig.lord!} sub-period begins, shifting the texture of the months just ahead.`];
     case 'station': {
       const b = sig.body!; const benefit = benefitOf(b); const d = ordinalDay(sig.day!);
       if (sig.direction === 'direct')
-        return [0, 1, 2].map((k) => `${M} ${opener(k)} as ${b} stations direct on the ${d} — forward motion returns to ${benefit}.`);
+        return [0, 1, 2].map((k) => `${M} ${opener(k)} as ${b} stations direct on the ${d}: forward motion returns to ${benefit}.`);
       return [
-        `${M} asks for a second pass as ${b} turns retrograde on the ${d} — a stretch to revisit ${benefit}, not rush it.`,
+        `${M} asks for a second pass as ${b} turns retrograde on the ${d}: a stretch to revisit ${benefit}, not rush it.`,
         `${M} settles inward as ${b} turns retrograde on the ${d}, favouring review over launch around ${benefit}.`,
       ];
     }
@@ -285,7 +285,7 @@ function leadCandidates(sig: Signal, ctx: Ctx, openerSeed: string): string[] {
       const b = sig.body!;
       if (sig.natal === 'Moon')
         return [0, 1].map((k) => `${M} ${opener(k)} as transiting ${b} ${(sig.aspect || 'meets').toLowerCase()}s your natal Moon, setting the month's emotional weather.`);
-      return [`${M} brings you into focus as ${b} crosses your ascendant — a month that turns on your own direction.`];
+      return [`${M} brings you into focus as ${b} crosses your ascendant: a month that turns on your own direction.`];
     }
   }
   return [`${M} keeps an even, workmanlike rhythm.`];
@@ -295,12 +295,12 @@ function leadCandidates(sig: Signal, ctx: Ctx, openerSeed: string): string[] {
 function scoreLead(M: string, prevM: string, delta: number): string {
   return delta >= 0
     ? `${M} lifts into a brighter, more open stretch after ${prevM}'s slower build.`
-    : `${M} eases into a quieter, more inward stretch after ${prevM}'s push — a build rather than a breakthrough.`;
+    : `${M} eases into a quieter, more inward stretch after ${prevM}'s push: a build rather than a breakthrough.`;
 }
 function textureLead(M: string, strength: number): string {
-  if (strength >= 68) return `${M} carries a steady, favourable current — no single headline, just momentum you can use.`;
-  if (strength >= 52) return `${M} keeps an even, workmanlike rhythm — a month for quiet, real progress.`;
-  return `${M} runs slower and more reflective — a season for maintenance over launches.`;
+  if (strength >= 68) return `${M} carries a steady, favourable current: no single headline, just momentum you can use.`;
+  if (strength >= 52) return `${M} keeps an even, workmanlike rhythm: a month for quiet, real progress.`;
+  return `${M} runs slower and more reflective: a season for maintenance over launches.`;
 }
 
 // The 5th theme sentence — a "meanwhile" clause from a secondary signal. Two phrasings so
@@ -343,7 +343,7 @@ function lifeAreaLine(domain: 'career' | 'love' | 'money', sigs: Signal[], mahaL
     const b = relevant.body!;
     if (relevant.kind === 'station')
       return relevant.direction === 'direct'
-        ? `${b} turning direct clears a hold-up — a good stretch to restart what stalled.`
+        ? `${b} turning direct clears a hold-up: a good stretch to restart what stalled.`
         : `${b} retrograde favours revisiting and refining over launching.`;
     if (relevant.kind === 'ingress')
       return `${b}'s move into your ${ord(relevant.house)} house draws focus to ${HOUSE_SHORT[relevant.house ?? 1]}.`;
@@ -369,7 +369,7 @@ function favorsCandidates(top: Signal | null, antarLord: string): string[] {
   else if (top?.kind === 'dashaMaha' || top?.kind === 'dashaAntar') phrase = lower(ANTAR_THEME[top.lord!]?.rewards?.[0] ?? g(top.lord!).theme);
   else phrase = lower(ANTAR_THEME[antarLord]?.rewards?.[0] ?? g(antarLord).theme);
   return [
-    `It favours ${phrase} — a good time to ${verb}.`,
+    `It favours ${phrase}, a good time to ${verb}.`,
     `This is a month for ${phrase}.`,
     `Good energy here for ${phrase}.`,
     `Lean into ${phrase}; there's room to ${verb}.`,

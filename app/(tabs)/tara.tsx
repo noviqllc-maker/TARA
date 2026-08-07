@@ -187,13 +187,13 @@ export default function AskTara() {
                 </Text>
               ) : (
                 <Text variant="tiny" color={colors.gold} style={{ fontWeight: '600' }}>
-                  ✦ {premiumRemaining === null ? '—' : premiumRemaining} left this month{(balance ?? 0) > 0 ? ` · ${balance} credits` : ''}
+                  ✦ {premiumRemaining === null ? '–' : premiumRemaining} left this month{(balance ?? 0) > 0 ? ` · ${balance} credits` : ''}
                 </Text>
               )
             ) : (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <Text variant="tiny" color={outOfCredits ? colors.terra : colors.gold} style={{ fontWeight: '600' }}>
-                  ✦ {balance === null ? '—' : balance}
+                  ✦ {balance === null ? '–' : balance}
                 </Text>
                 <Pressable onPress={() => router.push('/credits')} hitSlop={6} style={styles.getMorePill}>
                   <Text variant="tiny" color={colors.gold} style={{ fontSize: 10.5, fontWeight: '700', letterSpacing: 0.3 }}>Get more</Text>

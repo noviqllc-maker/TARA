@@ -78,7 +78,7 @@ function lifeAreaTeaser(chart: BirthChart | null, date: Date, topic: Topic, seed
   if (!tones?.length || !advice?.length) return null;
   const tone = tones[teaserHash(seed + ':tone') % tones.length];
   const a = advice[teaserHash(seed) % advice.length];
-  return `${tone[0].toUpperCase()}${tone.slice(1)} — ${a}.`;
+  return `${tone[0].toUpperCase()}${tone.slice(1)}. ${a[0].toUpperCase()}${a.slice(1)}.`;
 }
 
 // Title-case gold section label (replaces the old all-caps Eyebrow on Home).
@@ -147,7 +147,7 @@ export default function Home() {
   // The Cosmic Weather rows that AREN'T already in the events grid (nakshatra & tithi are),
   // merged into the events card as a second row-group. No value is rendered twice on Home.
   const cosmicRows: [string, string][] = [
-    ['Dasha', chart?.currentDasha ?? '—'],
+    ['Dasha', chart?.currentDasha ?? '–'],
     ['Transit', transits.transitText],
     ['Moon Phase', transits.moonPhase],
   ];
@@ -176,7 +176,7 @@ export default function Home() {
             explicit send press is the only thing that ever spends a credit. */}
         <Pressable
           onPress={() => {
-            setAskDraft(`About today's guidance — "${daily.message.headline}" — why is this the theme for me today?`);
+            setAskDraft(`About today's guidance, "${daily.message.headline}": why is this the theme for me today?`);
             router.push('/(tabs)/tara');
           }}
           hitSlop={6}

@@ -84,7 +84,7 @@ export function computeRemedies(chart: BirthChart, now: Date = new Date()): Reme
     ?? nonNode[nonNode.length - 1];
   const weakWhy =
     dignityOf(weakestP.name, weakestP.sign) === 'debilitated' ? `challenged in ${weakestP.sign}, so a little support helps it shine`
-      : DUSTHANA.includes(weakestP.house) ? `placed in your ${ord(weakestP.house)} house, a house of challenge — strengthening it brings ease`
+      : DUSTHANA.includes(weakestP.house) ? `placed in your ${ord(weakestP.house)} house, a house of challenge, so strengthening it brings ease`
         : `the graha that most welcomes your support right now`;
 
   const supportiveP =
@@ -93,9 +93,9 @@ export function computeRemedies(chart: BirthChart, now: Date = new Date()): Reme
     ?? nonNode.find((x) => [1, 4, 5, 7, 9, 10].includes(x.house))
     ?? nonNode[0];
   const supWhy =
-    dignityOf(supportiveP.name, supportiveP.sign) === 'exalted' ? `exalted in ${supportiveP.sign} — your strongest ally, worth honouring often`
-      : dignityOf(supportiveP.name, supportiveP.sign) === 'own' ? `strong in its own sign — a natural source of support`
-        : `well placed in your ${ord(supportiveP.house)} house — a dependable strength to lean on`;
+    dignityOf(supportiveP.name, supportiveP.sign) === 'exalted' ? `exalted in ${supportiveP.sign}: your strongest ally, worth honouring often`
+      : dignityOf(supportiveP.name, supportiveP.sign) === 'own' ? `strong in its own sign, a natural source of support`
+        : `well placed in your ${ord(supportiveP.house)} house, a dependable strength to lean on`;
 
   return {
     focus: {

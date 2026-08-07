@@ -10,8 +10,8 @@
 // "Deep compatibility reports", "Advanced Vedic chart analysis" — none were implemented.
 export const PREMIUM_BENEFITS = [
   '100 Ask Tara questions every month',
-  'Weekly & Monthly Guidance — your forecast, always current',
-  'The full Daily Insights — every layer of your day',
+  'Weekly & Monthly Guidance: your forecast, always current',
+  'The full Daily Insights: every layer of your day',
   'Health-aware daily guidance, tuned to your real rhythm',
   'Early access to new Tara features',
 ] as const;

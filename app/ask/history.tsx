@@ -33,7 +33,7 @@ export default function History() {
       ) : items.length === 0 ? (
         <Card>
           <Text variant="tiny" color={colors.muted} style={{ lineHeight: 18 }}>
-            Your Cosmic Journal fills as you ask Tara — every question and answer, kept here and carried with your account across devices.
+            Your Cosmic Journal fills as you ask Tara: every question and answer, kept here and carried with your account across devices.
           </Text>
         </Card>
       ) : (

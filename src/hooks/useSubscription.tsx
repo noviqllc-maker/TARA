@@ -170,7 +170,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
         const configured = await ensureConfigured(Purchases);
         if (cancelled) return;
         if (!configured) {
-          if (__DEV__) console.warn('[RC] not configured after wait — is EXPO_PUBLIC_REVENUECAT_IOS_KEY set?');
+          if (__DEV__) console.warn('[RC] not configured after wait. Is EXPO_PUBLIC_REVENUECAT_IOS_KEY set?');
           setAvailable(false);
           return;
         }

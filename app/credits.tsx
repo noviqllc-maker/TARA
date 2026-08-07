@@ -77,7 +77,7 @@ export default function CreditsPaywall() {
               <>
                 <Text variant="h1" style={{ textAlign: 'center', marginTop: 16 }}>Purchase received</Text>
                 <Text variant="tiny" color={colors.muted} style={{ textAlign: 'center', marginTop: 10, lineHeight: 20 }}>
-                  Your credits are arriving shortly — they’ll appear on your next visit. You were not charged twice.
+                  Your credits are arriving shortly. They’ll appear on your next visit. You were not charged twice.
                 </Text>
               </>
             )}

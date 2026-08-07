@@ -25,7 +25,7 @@ export default function Observances() {
     <Screen>
       <SubHeader eyebrow="Practice · Calendar" title="Observances" />
       <Text variant="tiny" color={colors.muted} style={{ marginBottom: spacing.lg, lineHeight: 18 }}>
-        The next 30 days of lunar and solar observances, computed from the sky. Descriptions are shared in the spirit of tradition — informational, never prescriptive.
+        The next 30 days of lunar and solar observances, computed from the sky. Descriptions are shared in the spirit of tradition: informational, never prescriptive.
       </Text>
 
       {list.length === 0 ? (

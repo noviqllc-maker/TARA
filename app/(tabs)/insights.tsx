@@ -119,7 +119,7 @@ export default function Insights() {
             <View style={{ flex: 1, paddingRight: 10 }}>
               <Eyebrow color={colors.gold}>Weekly & Monthly Guidance</Eyebrow>
               <Text variant="tiny" color={colors.muted} style={{ marginTop: 6, fontSize: 12.5 }}>
-                {isPremium ? 'Your week & month ahead — always current' : '✦ Premium · your week & month ahead'}
+                {isPremium ? 'Your week & month ahead. Always current' : '✦ Premium · your week & month ahead'}
               </Text>
             </View>
             <Text style={{ color: colors.gold, fontSize: 18 }}>›</Text>
@@ -217,7 +217,7 @@ export default function Insights() {
         visible={sheet}
         onClose={() => setSheet(false)}
         title="Tara Premium"
-        benefits={benefitsLeadingWith('The full Daily Insights — every layer of your day')}
+        benefits={benefitsLeadingWith('The full Daily Insights: every layer of your day')}
       />
     </Screen>
   );

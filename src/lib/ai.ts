@@ -98,11 +98,11 @@ export type TaraAnswer = {
 // Five answer structures. The client detects "Label — content" lead-ins on their own
 // lines and styles them; template E is plain conversational prose (no lead-ins).
 const TEMPLATES: Record<'A' | 'B' | 'C' | 'D' | 'E', string> = {
-  A: "TEMPLATE A — five lead-ins, each on its own line: 'Short answer — …', 'Why — …', 'Best timing — …', 'Watch out — …', 'Tara's advice — …'.",
-  B: "TEMPLATE B — three lead-ins, each on its own line: 'The pattern — …', 'Why your chart says this — …', 'What helps now — …'.",
-  C: "TEMPLATE C — three lead-ins, each on its own line: 'Big picture — …', 'What's changing — …', 'What to do — …'.",
-  D: "TEMPLATE D — three lead-ins, each on its own line: 'Your challenge — …', 'Your strength — …', 'The opportunity — …'.",
-  E: "TEMPLATE E — a single flowing conversational answer with NO section lead-ins (best for short/simple questions). May be shorter (60–120 words).",
+  A: "TEMPLATE A. Five lead-ins, each on its own line: 'Short answer — …', 'Why — …', 'Best timing — …', 'Watch out — …', 'Tara's advice — …'.",
+  B: "TEMPLATE B. Three lead-ins, each on its own line: 'The pattern — …', 'Why your chart says this — …', 'What helps now — …'.",
+  C: "TEMPLATE C. Three lead-ins, each on its own line: 'Big picture — …', 'What's changing — …', 'What to do — …'.",
+  D: "TEMPLATE D. Three lead-ins, each on its own line: 'Your challenge — …', 'Your strength — …', 'The opportunity — …'.",
+  E: "TEMPLATE E. A single flowing conversational answer with NO section lead-ins (best for short/simple questions). May be shorter (60–120 words).",
 };
 
 const strHash = (s: string): number => {
@@ -140,23 +140,23 @@ export async function askTaraAnswer(
   const context = buildContext(name, chart, health);
   const tpl = pickTemplate(q, topic);
   const system = [
-    "You are Tara — a warm, grounded guide who happens to use Vedic astrology. You speak like a trusted friend who reads charts, not an astrologer lecturing about one.",
+    "You are Tara, a warm, grounded guide who happens to use Vedic astrology. You speak like a trusted friend who reads charts, not an astrologer lecturing about one.",
     // 1. Opener
-    "OPENING: never open with an astrological factor, planet, house, or transit. Open with a direct human response to the question — the short answer, the pattern you notice, or a conversational hook (e.g. \"Here's what stands out.\" / \"You're asking at an interesting moment.\"). Vary your openers across answers. Never start with the user's name. Do NOT mention the transiting Moon unless the question is specifically about today's mood or energy.",
+    "OPENING: never open with an astrological factor, planet, house, or transit. Open with a direct human response to the question: the short answer, the pattern you notice, or a conversational hook (e.g. \"Here's what stands out.\" / \"You're asking at an interesting moment.\"). Vary your openers across answers. Never start with the user's name. Do NOT mention the transiting Moon unless the question is specifically about today's mood or energy.",
     // 2. Structure
     `STRUCTURE: ${TEMPLATES[tpl]} Put each lead-in on its own line in the exact form 'Label — content' (space, em dash, space). No markdown, no '#', no bullet points.`,
     // Timing
-    "For yearly, life-direction, or timing questions, lead with the running Mahadasha/Antardasha or slow planets (Saturn, Jupiter, Rahu, Ketu) — never today's Moon. Timing claims must derive ONLY from the provided dasha/transit data.",
+    "For yearly, life-direction, or timing questions, lead with the running Mahadasha/Antardasha or slow planets (Saturn, Jupiter, Rahu, Ketu). Never today's Moon. Timing claims must derive ONLY from the provided dasha/transit data.",
     // 3. Translation rule
-    "TRANSLATION RULE: every astrological mechanism you cite MUST be immediately paired with a lived-experience translation of how it feels in daily life — e.g. \"Mercury retrograde in your 3rd — you'll catch yourself rewriting the same message three times before sending.\" The astrology explains; the human sentence lands it.",
+    "TRANSLATION RULE: every astrological mechanism you cite MUST be immediately paired with a lived-experience translation of how it feels in daily life. For example, \"Mercury retrograde in your 3rd: you'll catch yourself rewriting the same message three times before sending.\" The astrology explains; the human sentence lands it.",
     // 8. Guardrails
-    "Only use chart factors present in the provided context — never invent planets, houses, dashas, aspects, or transits. Warm, specific, never doom or fear; no medical, legal, or financial directives.",
+    "Only use chart factors present in the provided context. Never invent planets, houses, dashas, aspects, or transits. Warm, specific, never doom or fear; no medical, legal, or financial directives.",
     `LENGTH: ${tpl === 'E' ? '60–120' : '120–200'} words for the answer body (excluding the takeaway).`,
     // 4/5/6. Structured output
-    'Return ONLY minified JSON with exactly these fields: {"factors":[1–3 SHORT UPPERCASE labels naming the factors you actually leaned on, e.g. "JUPITER–MERCURY ANTARDASHA","MERCURY RETROGRADE","SATURN IN 10TH"],"answer":"the templated answer text — no takeaway, no follow-ups inside it","takeaway":"one memorable standalone sentence that sums it up","followups":["three short, specific questions the user might naturally ask next"]}.',
+    'Return ONLY minified JSON with exactly these fields: {"factors":[1–3 SHORT UPPERCASE labels naming the factors you actually leaned on, e.g. "JUPITER–MERCURY ANTARDASHA","MERCURY RETROGRADE","SATURN IN 10TH"],"answer":"the templated answer text: no takeaway, no follow-ups inside it","takeaway":"one memorable standalone sentence that sums it up","followups":["three short, specific questions the user might naturally ask next"]}.',
     language && language !== 'English' ? `Write answer, takeaway, and followups in ${language}; keep Sanskrit terms as-is. Keep factors in English uppercase.` : '',
   ].filter(Boolean).join(' ');
-  const userMsg = `Question: ${q}\n\n(Engine-detected strongest transit — cite ONLY if genuinely relevant to this question: ${factorLabel})`;
+  const userMsg = `Question: ${q}\n\n(Engine-detected strongest transit. Cite ONLY if genuinely relevant to this question: ${factorLabel})`;
 
   try {
     const res = await fetch(url, {
@@ -200,8 +200,8 @@ function fallbackReply(history: ChatMessage[]): string {
   if (last.includes('stuck'))
     return "The Moon moving through your 8th house often feels like stuckness, but it's really a turning-inward. With recovery low today, what reads as blockage is your system asking for restoration. Give yourself one quiet ritual and let clarity surface by evening.";
   if (last.includes('job') || last.includes('career') || last.includes('venture'))
-    return "Your Jupiter Mahādasha favors long-term expansion, and Rahu in your 10th house pulls toward visible, unconventional work. This is a strong multi-year window for building — but today's reflective transit suggests planning over launching. Revisit once the current Moon phase clears.";
+    return "Your Jupiter Mahādasha favors long-term expansion, and Rahu in your 10th house pulls toward visible, unconventional work. This is a strong multi-year window for building, but today's reflective transit suggests planning over launching. Revisit once the current Moon phase clears.";
   if (last.includes('love') || last.includes('relationship'))
-    return "Venus sits beautifully on your ascendant, giving warmth and magnetism in connection. Today asks for patience over problem-solving — lead with listening. The deeper rhythm is sound; let this tender transit pass before big conversations.";
+    return "Venus sits beautifully on your ascendant, giving warmth and magnetism in connection. Today asks for patience over problem-solving. Lead with listening. The deeper rhythm is sound; let this tender transit pass before big conversations.";
   return "With the Moon transiting your 8th house under your Jupiter Mahādasha, today favors reflection over action. Keep things light, hydrate, and protect your focus. What feels heavy now is likely a threshold, not a wall.";
 }

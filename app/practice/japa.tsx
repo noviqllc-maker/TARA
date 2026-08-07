@@ -124,8 +124,8 @@ export default function Japa() {
           ) : null}
 
           <View style={styles.stats}>
-            <Stat label="Today" value={japa ? `${japa.today} mālā` : '—'} />
-            <Stat label="Streak" value={japa ? `${japa.streak} day${japa.streak === 1 ? '' : 's'}` : '—'} />
+            <Stat label="Today" value={japa ? `${japa.today} mālā` : '–'} />
+            <Stat label="Streak" value={japa ? `${japa.streak} day${japa.streak === 1 ? '' : 's'}` : '–'} />
           </View>
         </View>
       ) : (

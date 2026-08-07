@@ -147,20 +147,20 @@ function sectionSpec(kind: ReportKind, chart: BirthChart): string {
     const months = nextMonthLabels(12, new Date());
     return [
       'Produce sections IN THIS ORDER:',
-      '1) heading "The Year\'s Theme" — ~80 words on the year\'s overall theme, grounded in the ruling Mahadasha lord.',
+      '1) heading "The Year\'s Theme": ~80 words on the year\'s overall theme, grounded in the ruling Mahadasha lord.',
       `2) EXACTLY 12 monthly sections, one per month, with these EXACT headings in order: ${months.join(', ')}.`,
       '   Each monthly body is 60–90 words and MUST cover: the month\'s tone, a career note, a relationship note, and one key date range to act on or hold back.',
-      '3) heading "Three to Prioritise This Year" — three concise priorities as a short paragraph.',
+      '3) heading "Three to Prioritise This Year": three concise priorities as a short paragraph.',
     ].join('\n');
   }
   if (kind === 'birthblueprinttara1') {
     return [
       'Produce sections IN THIS ORDER, each heading EXACTLY as written:',
-      '1) "Core Nature" — personality drawn from lagna + Moon sign + nakshatra.',
-      '2) "Strengths & Growth Edges" — natural strengths and the edges to grow.',
-      '3) "Career Path" — suitable directions from the 10th house and dasha lords, with concrete field examples.',
-      '4) "Love & Relationships" — patterns from Venus and the 7th house, and what they need in a partner.',
-      "5) \"Your Life's Thread\" — a ~100-word synthesis that ties it together.",
+      '1) "Core Nature": personality drawn from lagna + Moon sign + nakshatra.',
+      '2) "Strengths & Growth Edges": natural strengths and the edges to grow.',
+      '3) "Career Path": suitable directions from the 10th house and dasha lords, with concrete field examples.',
+      '4) "Love & Relationships": patterns from Venus and the 7th house, and what they need in a partner.',
+      "5) \"Your Life's Thread\": a ~100-word synthesis that ties it together.",
     ].join('\n');
   }
   // dosha
@@ -172,15 +172,15 @@ function sectionSpec(kind: ReportKind, chart: BirthChart): string {
   if (sat) inds.push(`Shani/Saturn (Saturn in ${sat.sign}, house ${sat.house})`);
   if (rahu) inds.push('the Rahu–Ketu axis');
   return [
-    'Start with one section heading "Understanding Your Remedies" — a warm, 2–3 sentence, non-fearful framing.',
+    'Start with one section heading "Understanding Your Remedies": a warm, 2–3 sentence, non-fearful framing.',
     `Then ONE section for EACH of these indicators: ${inds.join('; ')}${'.'}`,
     'Also add a section for any clearly afflicted/weak planet listed in the data (skip if none).',
     'Each indicator section MUST cover, as short labelled paragraphs within the body:',
-    '  • What it is in THIS chart — plain language, empowering, never doom-based.',
-    '  • Colors — which to favour, tied to the ruling planet\'s weekday.',
-    '  • Donations (daan) — traditional items + the weekday, framed as acts of goodwill.',
-    '  • Simple practices — an optional mantra or fasting day, presented as tradition, not obligation.',
-    'TONE: empowering and supportive. NO "cursed" framing. Do NOT pressure toward expensive gemstones — gemstones may be mentioned only as optional tradition.',
+    '  • What it is in THIS chart: plain language, empowering, never doom-based.',
+    '  • Colors: which to favour, tied to the ruling planet\'s weekday.',
+    '  • Donations (daan): traditional items + the weekday, framed as acts of goodwill.',
+    '  • Simple practices: an optional mantra or fasting day, presented as tradition, not obligation.',
+    'TONE: empowering and supportive. NO "cursed" framing. Do NOT pressure toward expensive gemstones. Gemstones may be mentioned only as optional tradition.',
   ].join('\n');
 }
 
@@ -205,10 +205,10 @@ function buildPrompt(kind: ReportKind, chart: BirthChart): { system: string; pro
   // long, JSON-only report instead of a 3–6 sentence markdown chat reply.
   const system =
     `You are Tara, a warm, grounded Vedic astrology guide writing a premium "${REPORT_META[kind].title}". ` +
-    'Base everything ONLY on the chart data provided — never invent positions. Write with warmth and clarity, ' +
+    'Base everything ONLY on the chart data provided. Never invent positions. Write with warmth and clarity, ' +
     'in second person ("you"). This is for reflection and wellness, not prediction or fear. ' +
-    'CRITICAL: reply with ONLY valid JSON of the form {"sections":[{"heading":"...","body":"..."}]} — ' +
-    'no markdown, no code fences, no preamble, no trailing commentary. Use "\\n\\n" between paragraphs in a body.';
+    'CRITICAL: reply with ONLY valid JSON of the form {"sections":[{"heading":"...","body":"..."}]}. ' +
+    'No markdown, no code fences, no preamble, no trailing commentary. Use "\\n\\n" between paragraphs in a body.';
   const prompt = [
     `Write the "${REPORT_META[kind].title}" using this chart data (JSON):`,
     JSON.stringify(data),

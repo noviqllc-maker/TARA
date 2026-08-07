@@ -30,7 +30,7 @@ export const supabaseConfigured =
 
 if (__DEV__ && !supabaseConfigured) {
   console.warn(
-    '[Supabase] Not configured — set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY ' +
+    '[Supabase] Not configured. Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY ' +
     'in .env and restart Metro (npx expo start -c). Sign in with Apple is disabled until then.',
   );
 }

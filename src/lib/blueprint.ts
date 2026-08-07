@@ -57,7 +57,7 @@ export function computeBlueprint(chart: BirthChart): Blueprint {
     lagnaLordHouse
       ? `${lagnaLord}, the lord of your ascendant, sits in your ${ord(lagnaLordHouse)} house, colouring your path with ${low(HOUSE_THEME[lagnaLordHouse - 1])}.`
       : `${lagnaLord} rules your ascendant and guides how your nature expresses itself.`,
-    `Together these weave a life that is unmistakably your own — steady in its core, and unfolding in its own time.`,
+    `Together these weave a life that is unmistakably your own: steady in its core, and unfolding in its own time.`,
   ].join(' ');
 
   // ---- NINE GRAHAS ----
@@ -89,7 +89,7 @@ export function computeBlueprint(chart: BirthChart): Blueprint {
     const theme = HOUSE_THEME[i];
     const reading = occupants.length
       ? `${occupants.join(' and ')} ${occupants.length > 1 ? 'occupy' : 'occupies'} this house, so ${low(theme)} is emphasised in your life. Its lord ${lord} sits in your ${ord(lordHouse ?? house)} house, linking this area to ${low(HOUSE_THEME[(lordHouse ?? house) - 1])}.`
-      : `No graha sits here, so this house expresses through its lord ${lord} in your ${ord(lordHouse ?? house)} house — connecting ${low(theme)} to ${low(HOUSE_THEME[(lordHouse ?? house) - 1])}.`;
+      : `No graha sits here, so this house expresses through its lord ${lord} in your ${ord(lordHouse ?? house)} house, connecting ${low(theme)} to ${low(HOUSE_THEME[(lordHouse ?? house) - 1])}.`;
     return { house, sign, lord, occupants, theme, reading };
   });
 
@@ -111,14 +111,14 @@ export function computeBlueprint(chart: BirthChart): Blueprint {
   const byHouse: Record<number, string[]> = {};
   chart.planets.forEach((p) => { (byHouse[p.house] ??= []).push(p.name); });
   for (let h = 1; h <= 12; h++) {
-    if ((byHouse[h]?.length ?? 0) >= 3) patterns.push({ key: `stellium-${h}`, text: `A stellium in your ${ord(h)} house — ${byHouse[h].join(', ')} gather here, concentrating great focus and intensity on ${low(HOUSE_THEME[h - 1])}.` });
+    if ((byHouse[h]?.length ?? 0) >= 3) patterns.push({ key: `stellium-${h}`, text: `A stellium in your ${ord(h)} house: ${byHouse[h].join(', ')} gather here, concentrating great focus and intensity on ${low(HOUSE_THEME[h - 1])}.` });
   }
   // Exalted / debilitated placements.
   for (const p of chart.planets) {
     if (['Rahu', 'Ketu'].includes(p.name)) continue;
     const d = dignityOf(p.name, p.sign);
-    if (d === 'exalted') patterns.push({ key: `exalt-${p.name}`, text: `Exalted ${p.name} in ${p.sign} — placed in its sign of greatest strength, a real gift woven into your chart.` });
-    if (d === 'debilitated') patterns.push({ key: `debil-${p.name}`, text: `${p.name} in ${p.sign}, its sign of challenge — a place of growth where its strength is earned through experience, and often quietly redeemed over life.` });
+    if (d === 'exalted') patterns.push({ key: `exalt-${p.name}`, text: `Exalted ${p.name} in ${p.sign}: placed in its sign of greatest strength, a real gift woven into your chart.` });
+    if (d === 'debilitated') patterns.push({ key: `debil-${p.name}`, text: `${p.name} in ${p.sign}, its sign of challenge: a place of growth where its strength is earned through experience, and often quietly redeemed over life.` });
   }
 
   // ---- NAVAMSA (D9) LENS ----
@@ -127,12 +127,12 @@ export function computeBlueprint(chart: BirthChart): Blueprint {
     .filter(Boolean) as { name: string; sign: string }[];
   const navamsa = {
     lagna: asc.navamsaSign,
-    reading: `In the Navāṁśa (D9) — the divisional chart that reveals your inner life and partnerships — your D9 ascendant is ${asc.navamsaSign}, ${low(LAGNA_ESSENCE[asc.navamsaSign] ?? 'carrying its own inner tone')}. Venus in ${planetByName('Venus')?.navamsaSign ?? asc.navamsaSign} in the D9 speaks to what you seek in love and commitment, while your D9 as a whole shows the person you are still quietly becoming beneath the surface.`,
+    reading: `In the Navāṁśa (D9), the divisional chart that reveals your inner life and partnerships, your D9 ascendant is ${asc.navamsaSign}, ${low(LAGNA_ESSENCE[asc.navamsaSign] ?? 'carrying its own inner tone')}. Venus in ${planetByName('Venus')?.navamsaSign ?? asc.navamsaSign} in the D9 speaks to what you seek in love and commitment, while your D9 as a whole shows the person you are still quietly becoming beneath the surface.`,
     notable,
   };
 
   // ---- CLOSING takeaway ----
-  const takeaway = `${asc.sign} rising, ${chart.moonSign} Moon, ${chart.nakshatra} nakshatra — a ${low(LAGNA_ESSENCE[asc.sign] ?? 'unique')?.split(',')[0]} soul, here to grow into the fullness of who you already are.`;
+  const takeaway = `${asc.sign} rising, ${chart.moonSign} Moon, ${chart.nakshatra} nakshatra: a ${low(LAGNA_ESSENCE[asc.sign] ?? 'unique')?.split(',')[0]} soul, here to grow into the fullness of who you already are.`;
 
   return {
     hero: { lagna: asc.sign, lagnaLord, sun: chart.sunSign, moon: chart.moonSign, nakshatra: chart.nakshatra, pada: chart.nakshatraPada, essence },

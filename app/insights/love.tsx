@@ -151,7 +151,7 @@ export default function Love() {
         <View>
           <Eyebrow>Compatibility · Guṇa Milan</Eyebrow>
           <Text variant="tiny" style={{ marginTop: 6 }}>
-            Enter your partner's birth details for a real Ashtakoota (36-point) match — computed from both Moons.
+            Enter your partner's birth details for a real Ashtakoota (36-point) match, computed from both Moons.
           </Text>
         </View>
 
@@ -245,7 +245,7 @@ export default function Love() {
 
         {!userChart && (
           <Text variant="tiny" color={colors.terra}>
-            Complete your own birth details in Profile first — your Moon is needed for the match.
+            Complete your own birth details in Profile first. Your Moon is needed for the match.
           </Text>
         )}
 
@@ -260,7 +260,7 @@ export default function Love() {
             <View style={{ alignItems: 'center', marginBottom: 14 }}>
               <Ring value={result.total} max={36} label="Guṇa / 36" color={colors.lav} size={120} />
               <Text variant="serif" style={{ marginTop: 10, fontSize: 17 }}>
-                {result.total} / 36 — {result.rating}
+                {result.total} / 36: {result.rating}
               </Text>
               <Text variant="tiny" color={colors.muted} style={{ marginTop: 6, textAlign: 'center', lineHeight: 18 }}>
                 {result.tone}
@@ -286,12 +286,12 @@ export default function Love() {
               <View style={{ marginTop: 12, gap: 6 }}>
                 {result.doshas.nadi && (
                   <Text variant="tiny" color={colors.terra}>
-                    ✦ Nadi dosha — same Nadi scores zero; the most serious of the doshas. Remedies can soften its effect.
+                    ✦ Nadi dosha: same Nadi scores zero; the most serious of the doshas. Remedies can soften its effect.
                   </Text>
                 )}
                 {result.doshas.bhakoot && (
                   <Text variant="tiny" color={colors.terra}>
-                    ✦ Bhakoot dosha — the Moon-sign positions sit in a strained relationship.
+                    ✦ Bhakoot dosha: the Moon-sign positions sit in a strained relationship.
                   </Text>
                 )}
                 <Pressable onPress={() => router.push('/(tabs)/profile')} style={{ marginTop: 2 }}>

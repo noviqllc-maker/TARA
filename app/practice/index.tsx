@@ -146,7 +146,7 @@ export default function PracticeHub() {
               <>
                 <Text variant="serif" style={{ fontSize: 16, marginTop: 8 }}>Set a sankalpa under {sankalpaWindow.name}</Text>
                 <Text variant="tiny" color={colors.muted} style={{ marginTop: 4, fontSize: 12, lineHeight: 17 }}>
-                  {revisit ? `And revisit your last one: “${revisit.text}”` : 'An auspicious window to name a short intention — an invitation, never an obligation.'}
+                  {revisit ? `And revisit your last one: “${revisit.text}”` : 'An auspicious window to name a short intention: an invitation, never an obligation.'}
                 </Text>
               </>
             ) : (
@@ -206,7 +206,7 @@ export default function PracticeHub() {
                 <Text style={{ color: colors.gold, fontSize: 18 }}>›</Text>
               </View>
               <Text variant="tiny" color={colors.cream} style={{ marginTop: 8, fontSize: 12.5, lineHeight: 18 }}>
-                Mauna — the practice of kept silence. A quiet space traditionally honoured on new-moon and Saturn’s day.
+                Mauna: the practice of kept silence. A quiet space traditionally honoured on new-moon and Saturn’s day.
               </Text>
               <Text variant="tiny" color={mauna?.doneToday ? colors.saffron : colors.gold} style={{ marginTop: 10, fontWeight: '600', fontSize: 12.5 }}>
                 {mauna?.doneToday ? 'Silence kept today ✦' : 'Begin 10 quiet minutes →'}
@@ -225,7 +225,7 @@ export default function PracticeHub() {
       ) : null}
 
       <Text variant="tiny" color={colors.mutedDim} style={{ textAlign: 'center', marginTop: spacing.lg, fontStyle: 'italic', lineHeight: 17 }}>
-        Practice is offered in the spirit of tradition — described, never prescribed.
+        Practice is offered in the spirit of tradition: described, never prescribed.
       </Text>
     </Screen>
   );

@@ -62,20 +62,20 @@ export const snapshot: SnapshotStat[] = [
 
 export const planets: Planet[] = [
   { name: 'Sun', glyph: '☉', sign: 'Virgo', house: 5, degree: '6°14′', explanation: 'Your core identity expresses through service, precision, and analytical care. Leadership comes quietly through competence.' },
-  { name: 'Moon', glyph: '☾', sign: 'Virgo', house: 5, degree: '12°48′', explanation: 'Emotional security through order and usefulness. You process feelings by problem-solving — remember rest is also productive.' },
+  { name: 'Moon', glyph: '☾', sign: 'Virgo', house: 5, degree: '12°48′', explanation: 'Emotional security through order and usefulness. You process feelings by problem-solving. Remember rest is also productive.' },
   { name: 'Mars', glyph: '♂', sign: 'Cancer', house: 3, degree: '21°02′', retrograde: false, explanation: 'Drive shows up in communication and protecting those close to you. Channel restlessness into focused short-term action.' },
   { name: 'Mercury', glyph: '☿', sign: 'Libra', house: 6, degree: '2°31′', explanation: 'A diplomatic, balanced mind that weighs every side. Strong for negotiation and refining systems.' },
-  { name: 'Jupiter', glyph: '♃', sign: 'Gemini', house: 2, degree: '15°55′', explanation: 'Growth through learning, words, and resourcefulness. Your Mahādasha lord — a multi-year season of expansion.' },
-  { name: 'Venus', glyph: '♀', sign: 'Taurus', house: 1, degree: '9°20′', explanation: 'Venus in its own sign on your ascendant — natural grace, aesthetic sense, and magnetism. Beauty is part of your path.' },
+  { name: 'Jupiter', glyph: '♃', sign: 'Gemini', house: 2, degree: '15°55′', explanation: 'Growth through learning, words, and resourcefulness. Your Mahādasha lord, a multi-year season of expansion.' },
+  { name: 'Venus', glyph: '♀', sign: 'Taurus', house: 1, degree: '9°20′', explanation: 'Venus in its own sign on your ascendant: natural grace, aesthetic sense, and magnetism. Beauty is part of your path.' },
   { name: 'Saturn', glyph: '♄', sign: 'Pisces', house: 11, degree: '24°07′', retrograde: true, explanation: 'Long-term gains arrive through patient, compassionate networks. Discipline around hopes yields lasting reward.' },
   { name: 'Rahu', glyph: '☊', sign: 'Aquarius', house: 10, degree: '3°44′', explanation: 'Karmic pull toward unconventional careers and public visibility. Innovation is your growth edge.' },
   { name: 'Ketu', glyph: '☋', sign: 'Leo', house: 4, degree: '3°44′', explanation: 'Detachment from ego-driven comfort. Inner home is built through letting go of needing recognition.' },
 ];
 
 export const aspects = [
-  'Jupiter trine Ascendant — expansive self-expression',
-  'Moon conjunct Sun — unified will and emotion (New Moon nature)',
-  'Saturn sextile Mercury — structured, reliable thinking',
+  'Jupiter trine Ascendant: expansive self-expression',
+  'Moon conjunct Sun: unified will and emotion (New Moon nature)',
+  'Saturn sextile Mercury: structured, reliable thinking',
 ];
 
 export const dashaTimeline: DashaPeriod[] = [
@@ -121,7 +121,7 @@ export const career = {
 };
 
 export const purpose = {
-  theme: 'The Refiner — bringing order, beauty, and healing to what you touch.',
+  theme: 'The Refiner: bringing order, beauty, and healing to what you touch.',
   phase: 'Expansion (early Jupiter Mahādasha)',
   gifts: ['Discernment', 'Aesthetic intelligence', 'Devotion'],
   lessons: ['Trusting intuition over perfectionism', 'Rest as worthiness'],

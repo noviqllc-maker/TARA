@@ -90,7 +90,7 @@ export default function Blueprint() {
                 <Text variant="serif" style={{ fontSize: 14 }}>House {h.house}</Text>
                 <Text variant="tiny" color={colors.muted} style={{ fontSize: 10 }}>{h.sign} · {h.lord}</Text>
               </View>
-              <Text variant="tiny" color={colors.goldSoft} style={{ fontSize: 11, marginTop: 3 }}>{h.occupants.length ? h.occupants.join(', ') : '—'}</Text>
+              <Text variant="tiny" color={colors.goldSoft} style={{ fontSize: 11, marginTop: 3 }}>{h.occupants.length ? h.occupants.join(', ') : '–'}</Text>
               <Text variant="tiny" color={colors.muted} style={{ fontSize: 10.5, marginTop: 3, lineHeight: 14 }}>{h.theme}</Text>
               {open ? <Text variant="tiny" color={colors.cream} style={{ fontSize: 12, lineHeight: 18, marginTop: 8 }}>{h.reading}</Text> : null}
             </Pressable>

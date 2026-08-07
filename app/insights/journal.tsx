@@ -102,7 +102,7 @@ export default function Journal() {
             </Pressable>
           ))}
         </View>
-        {replay ? <Text variant="tiny" style={{ marginTop: 10 }}>Thank you — Tara learns from this to personalize tomorrow.</Text> : null}
+        {replay ? <Text variant="tiny" style={{ marginTop: 10 }}>Thank you. Tara learns from this to personalize tomorrow.</Text> : null}
       </Card>
 
       <Disclaimer />

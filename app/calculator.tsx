@@ -95,7 +95,7 @@ export default function Calculator() {
         </View>
         <Text variant="h2" style={{ marginTop: 6 }}>Cast any birth chart</Text>
         <Text variant="tiny" style={{ marginTop: 8 }}>
-          Enter a birth date, time and place — for yourself or anyone — to compute a full sidereal
+          Enter a birth date, time and place, for yourself or anyone, to compute a full sidereal
           chart with navamsa, planetary aspects and dasha periods.
         </Text>
       </Animated.View>
@@ -235,7 +235,7 @@ function ChartResults({ name, chart }: { name: string; chart: BirthChart }) {
 
       {/* planets with rashi + navamsa */}
       <Card style={{ marginTop: spacing.lg }}>
-        <Eyebrow>Planets — Rāśi (D1) & Navāṁśa (D9)</Eyebrow>
+        <Eyebrow>Planets: Rāśi (D1) & Navāṁśa (D9)</Eyebrow>
         <View style={{ marginTop: 8 }}>
           {chart.planets.map((pl: PlanetPosition) => (
             <View key={pl.name} style={styles.planetRow}>
@@ -265,7 +265,7 @@ function ChartResults({ name, chart }: { name: string; chart: BirthChart }) {
       {/* antardasha of the running mahadasha */}
       {present?.antardashas?.length ? (
         <Card style={{ marginTop: spacing.lg }}>
-          <Eyebrow>{present.planet} Mahādasha — Antardashas</Eyebrow>
+          <Eyebrow>{present.planet} Mahādasha: Antardashas</Eyebrow>
           <View style={{ marginTop: 10 }}>
             {present.antardashas.map((a, i) => (
               <View key={`${a.planet}-${i}`} style={styles.planetRow}>

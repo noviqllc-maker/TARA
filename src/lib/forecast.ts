@@ -50,7 +50,7 @@ const GLYPH: Record<string, string> = {
 // (a "today" voice), intentionally different from the month-scale GRAHA table in yearAhead.
 const TONE: Record<string, { day: string; strength: number }> = {
   Sun:     { day: 'rewards showing up fully and being seen', strength: 63 },
-  Moon:    { day: 'moves with your moods — gentler, more inward', strength: 62 },
+  Moon:    { day: 'moves with your moods, gentler and more inward', strength: 62 },
   Mars:    { day: 'carries an edge of drive and heat', strength: 58 },
   Mercury: { day: 'favours words, plans and quick exchanges', strength: 67 },
   Jupiter: { day: 'leans generous, open and a little lucky', strength: 78 },
@@ -222,20 +222,20 @@ const benefit = (b?: string) => (b && BENEFIT[b]) || 'the areas it touches';
 
 function markText(e: FEvent): string {
   switch (e.kind) {
-    case 'dashaMaha': return `${e.lord} Mahādasha begins — a new multi-year chapter opens.`;
-    case 'dashaAntar': return `${e.lord} sub-period begins — the season's texture shifts.`;
+    case 'dashaMaha': return `${e.lord} Mahādasha begins: a new multi-year chapter opens.`;
+    case 'dashaAntar': return `${e.lord} sub-period begins: the season's texture shifts.`;
     case 'station': return e.dir === 'direct'
-      ? `${e.body} turns direct — a green light returns for ${benefit(e.body)}.`
-      : `${e.body} turns retrograde — revisit ${benefit(e.body)} before committing.`;
-    case 'ingress': return `${e.body} enters ${e.toSign} — fresh emphasis on your ${ord(e.house)} house of ${HOUSE_OF[e.house ?? 1] ?? 'daily life'}.`;
+      ? `${e.body} turns direct: a green light returns for ${benefit(e.body)}.`
+      : `${e.body} turns retrograde: revisit ${benefit(e.body)} before committing.`;
+    case 'ingress': return `${e.body} enters ${e.toSign}: fresh emphasis on your ${ord(e.house)} house of ${HOUSE_OF[e.house ?? 1] ?? 'daily life'}.`;
   }
 }
 
 // ---- month theme (deliberately NOT Year Ahead's vocabulary) --------------------
 function monthTenor(strength: number): string {
-  if (strength >= 68) return 'The next four weeks run broadly in your favour — the sky is mostly on your side.';
-  if (strength >= 54) return 'The next four weeks are mixed in the best way — real openings alongside a few spots to move carefully.';
-  return 'The next four weeks ask for a lighter touch — the pace is slower, better suited to tending than launching.';
+  if (strength >= 68) return 'The next four weeks run broadly in your favour. The sky is mostly on your side.';
+  if (strength >= 54) return 'The next four weeks are mixed in the best way: real openings alongside a few spots to move carefully.';
+  return 'The next four weeks ask for a lighter touch. The pace is slower, better suited to tending than launching.';
 }
 // Closers kept disjoint from yearAhead's DIRECTIVES.
 const MONTH_CLOSERS = [
@@ -258,7 +258,7 @@ function composeMonthTheme(strength: number, top: FEvent | null, mahaLord: strin
   }
   const chapter = lower(MAHA_MEANING[mahaLord]?.chapter ?? 'current chapter');
   const periodLabel = mahaLord === antarLord ? `${mahaLord}` : `${mahaLord}–${antarLord}`;
-  const backdrop = `Your ${periodLabel} period sets the longer background note beneath it all — you're still inside your ${chapter}.`;
+  const backdrop = `Your ${periodLabel} period sets the longer background note beneath it all. You're still inside your ${chapter}.`;
   const closer = MONTH_CLOSERS[hashStr(seed + 'close') % MONTH_CLOSERS.length];
   return [tenor, turning, backdrop, closer].filter(Boolean).join(' ');
 }
@@ -319,7 +319,7 @@ export function computeForecast(chart: BirthChart, from: Date = new Date()): For
 
   // Opportunities — favourable events + the strongest stretch.
   const opportunities: ForecastMark[] = [];
-  opportunities.push({ date: stretchLabel(strong), text: 'Your strongest stretch — good for initiative, asks and first moves.' });
+  opportunities.push({ date: stretchLabel(strong), text: 'Your strongest stretch: good for initiative, asks and first moves.' });
   for (const e of events.filter((x) => x.favourable && (x.kind === 'station' || x.kind === 'ingress')).slice(0, 2)) {
     opportunities.push({
       date: `From ${e.date}`,
@@ -332,11 +332,11 @@ export function computeForecast(chart: BirthChart, from: Date = new Date()): For
   // Watch — retrograde turns + any body already retrograde + the weakest stretch.
   const watch: ForecastMark[] = [];
   for (const e of events.filter((x) => x.kind === 'station' && x.dir === 'retrograde').slice(0, 2)) {
-    watch.push({ date: `From ${e.date}`, text: `${e.body} retrograde — hold big commitments on ${benefit(e.body)} lightly.` });
+    watch.push({ date: `From ${e.date}`, text: `${e.body} retrograde: hold big commitments on ${benefit(e.body)} lightly.` });
   }
   const startRetro = computeAllTransits(chart, today).filter((p) => p.retrograde && p.name !== 'Rahu' && p.name !== 'Ketu' && !events.some((e) => e.kind === 'station' && e.body === p.name));
-  if (startRetro[0]) watch.push({ date: 'Now', text: `${startRetro[0].name} is retrograde — a stretch to review rather than launch.` });
-  if (watch.length < 2) watch.push({ date: stretchLabel(weak), text: 'A quieter, lower-energy stretch — schedule rest and maintenance here.' });
+  if (startRetro[0]) watch.push({ date: 'Now', text: `${startRetro[0].name} is retrograde: a stretch to review rather than launch.` });
+  if (watch.length < 2) watch.push({ date: stretchLabel(weak), text: 'A quieter, lower-energy stretch: schedule rest and maintenance here.' });
 
   // Dasha lords at mid-window for the theme.
   const mid = addDays(today, 15);

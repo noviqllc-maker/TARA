@@ -50,7 +50,7 @@ export const NOTIFICATION_LINES = {
   planetary: {
     nakshatra: [
       'The Moon has entered a new nakshatra.',
-      'The sky changed overnight — so did your chart.',
+      'The sky changed overnight. So did your chart.',
     ],
     mercuryRetro: 'Mercury is slowing things down for a reason.',
     jupiter: 'Jupiter is opening a new door.',
@@ -173,12 +173,12 @@ export function pickNotification(ctx: NotificationContext, seed: string, prevTit
 const MIDDAY_LINES = [
   'Your strongest window opens soon.',
   'A good hour for bold moves is coming up.',
-  'The day’s energy is turning — mind your timing.',
+  'The day’s energy is turning. Mind your timing.',
   'Your power hours are near. Make them count.',
   'Midday check: the sky favors a focused push now.',
 ];
 const EVENING_LINES = [
-  'A minute to reflect — how did today’s energy land?',
+  'A minute to reflect: how did today’s energy land?',
   'How did today’s guidance play out? Take a moment.',
   'Before the day closes, check in with yourself.',
   'A quiet moment to journal how today felt.',
@@ -198,13 +198,13 @@ export type EveningCtx = { streak: number; doneToday: boolean };
 export function pickEvening(seed: string, ctx?: EveningCtx): NotifPick {
   // Already closed today → a gentle acknowledgment, no ask.
   if (ctx?.doneToday) {
-    return { title: 'Evening Reflection ✦', body: 'Day closed ✦ — see tomorrow’s line when you’re ready.' };
+    return { title: 'Evening Reflection ✦', body: 'Day closed ✦. See tomorrow’s line when you’re ready.' };
   }
   const n = ctx?.streak ?? 0;
   if (n >= 2) {
     const pool = [
       `Your ${n}-day streak is ready for tonight’s close.`,
-      `${n} evenings closed in a row — tonight makes ${n + 1}.`,
+      `${n} evenings closed in a row. Tonight makes ${n + 1}.`,
       `A quiet close keeps your ${n}-day rhythm alive.`,
     ];
     return { title: `Evening Reflection ✦ ${n}-day streak`, body: pickSeeded(pool, seed) };

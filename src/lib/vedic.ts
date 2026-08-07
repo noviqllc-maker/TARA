@@ -201,7 +201,7 @@ function explain(planet: string, sign: string, house: number): string {
     Rahu: 'A karmic hunger and worldly ambition pull here',
     Ketu: 'Detachment and past-life mastery sit here',
   };
-  return `${planetThemes[planet] || 'This planet operates here'}, in ${sign} — shaping your ${houseThemes[house]}.`;
+  return `${planetThemes[planet] || 'This planet operates here'}, in ${sign}, shaping your ${houseThemes[house]}.`;
 }
 
 const DASHA_THEMES: Record<string, string> = {
@@ -558,9 +558,9 @@ function deriveAspects(planets: PlanetPosition[], ascSign: string): string[] {
   const byName = (n: string) => planets.find((p) => p.name === n);
   const sun = byName('Sun'), moon = byName('Moon'), jup = byName('Jupiter'), sat = byName('Saturn');
   if (sun && moon && sun.signIndex === moon.signIndex)
-    out.push('Sun conjunct Moon — unified will and emotion (New Moon nature)');
-  if (jup) out.push(`Jupiter in ${jup.sign} (house ${jup.house}) — your growth and fortune expand here`);
-  if (sat) out.push(`Saturn in ${sat.sign} (house ${sat.house}) — where discipline builds lasting reward`);
-  if (moon) out.push(`Moon in ${moon.sign} — the emotional tone of your chart`);
+    out.push('Sun conjunct Moon: unified will and emotion (New Moon nature)');
+  if (jup) out.push(`Jupiter in ${jup.sign} (house ${jup.house}): your growth and fortune expand here`);
+  if (sat) out.push(`Saturn in ${sat.sign} (house ${sat.house}): where discipline builds lasting reward`);
+  if (moon) out.push(`Moon in ${moon.sign}: the emotional tone of your chart`);
   return out.slice(0, 4);
 }

@@ -38,7 +38,7 @@ export default function YearAhead() {
     <Screen>
       <SubHeader eyebrow={isPreview ? 'Preview · dev' : 'Year Ahead'} title="Your Year Ahead" />
       <Text variant="tiny" color={colors.muted} style={{ marginBottom: 16, lineHeight: 18 }}>
-        Your next 12 months, month by month — always current, computed fresh from your chart each time you open it.
+        Your next 12 months, month by month: always current, computed fresh from your chart each time you open it.
       </Text>
 
       {months.map((m, i) => (

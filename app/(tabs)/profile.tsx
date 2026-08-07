@@ -21,21 +21,21 @@ const SHOP_ITEMS: { id: ShopProductId; title: string; description: string; featu
   {
     id: 'yearaheadtarareport1',
     title: 'Year Ahead',
-    description: 'Your next 12 months, month by month — dasha periods, major transits, timing windows and a strength score for each. A living view that stays current, computed fresh from your chart every time you open it.',
+    description: 'Your next 12 months, month by month: dasha periods, major transits, timing windows and a strength score for each. A living view that stays current, computed fresh from your chart every time you open it.',
     features: 'Living 12-month view • Dasha & transits • Timing windows • Month strength',
     cta: 'Unlock Your Year',
   },
   {
     id: 'birthblueprinttara1',
     title: 'Soul Blueprint',
-    description: 'Your complete natal reading — core signature, all nine grahas by house and sign, the twelve houses, the notable yogas actually in your chart, and a navamsa lens. A permanent keepsake, computed from your birth chart.',
+    description: 'Your complete natal reading: core signature, all nine grahas by house and sign, the twelve houses, the notable yogas actually in your chart, and a navamsa lens. A permanent keepsake, computed from your birth chart.',
     features: 'Core signature • 9 grahas • 12 houses • Yogas • Navamsa',
     cta: 'Reveal My Blueprint',
   },
   {
     id: 'dosharemediestara1',
     title: 'Personal Remedies',
-    description: 'Traditional guidance drawn from your chart — remedies for the planetary period you’re living through now (mantra, day, colour, donation) plus your Sade Sati status, the chart conditions actually present, a natal strengthening set, and a weekly rhythm. Stays current with your dasha.',
+    description: 'Traditional guidance drawn from your chart: remedies for the planetary period you’re living through now (mantra, day, colour, donation) plus your Sade Sati status, the chart conditions actually present, a natal strengthening set, and a weekly rhythm. Stays current with your dasha.',
     features: 'Current dasha remedies • Sade Sati • Chart conditions • Gemstones • Weekly rhythm',
     cta: 'Get My Remedies',
   },
@@ -82,7 +82,7 @@ export default function Profile() {
     setBusyId(item.id);
     try {
       const ok = await purchaseShop(item.id);
-      if (ok) Alert.alert('Unlocked ✦', `${item.title} is now yours — restore it anytime on any device.`);
+      if (ok) Alert.alert('Unlocked ✦', `${item.title} is now yours. Restore it anytime on any device.`);
       // ok === false → user cancelled → stay silent
     } catch {
       Alert.alert('Purchase failed', 'Something went wrong and no charge was made. Please try again.');
@@ -122,17 +122,17 @@ export default function Profile() {
   };
 
   const facts: [string, string][] = [
-    ['Name', profile.name || '—'],
-    ['Birth Date', profile.birthDate || '—'],
-    ['Birth Time', profile.birthTime || '—'],
-    ['Birth Place', profile.birthPlace || '—'],
-    ['Sun Sign', chart?.sunSign ?? '—'],
-    ['Moon Sign', chart?.moonSign ?? '—'],
-    ['Rising Sign', chart?.ascendant.sign ?? '—'],
-    ['Nakshatra', chart ? `${chart.nakshatra} (pada ${chart.nakshatraPada})` : '—'],
-    ['Ruling Planet', chart?.rulingPlanet ?? '—'],
-    ['Life Path Number', profile.birthDate ? String(lifePathNumber(profile.birthDate)) : '—'],
-    ['Chinese Zodiac', profile.birthDate ? chineseZodiac(profile.birthDate) : '—'],
+    ['Name', profile.name || '–'],
+    ['Birth Date', profile.birthDate || '–'],
+    ['Birth Time', profile.birthTime || '–'],
+    ['Birth Place', profile.birthPlace || '–'],
+    ['Sun Sign', chart?.sunSign ?? '–'],
+    ['Moon Sign', chart?.moonSign ?? '–'],
+    ['Rising Sign', chart?.ascendant.sign ?? '–'],
+    ['Nakshatra', chart ? `${chart.nakshatra} (pada ${chart.nakshatraPada})` : '–'],
+    ['Ruling Planet', chart?.rulingPlanet ?? '–'],
+    ['Life Path Number', profile.birthDate ? String(lifePathNumber(profile.birthDate)) : '–'],
+    ['Chinese Zodiac', profile.birthDate ? chineseZodiac(profile.birthDate) : '–'],
   ];
 
   const doReset = () =>
@@ -210,7 +210,7 @@ export default function Profile() {
                     {/* Single manual retry — never an automatic re-fetch loop. */}
                     {priceUnavailable && (
                       <Pressable onPress={retryShop} style={styles.previewBtn}>
-                        <Text variant="tiny" color={colors.gold}>Prices unavailable — tap to retry</Text>
+                        <Text variant="tiny" color={colors.gold}>Prices unavailable: tap to retry</Text>
                       </Pressable>
                     )}
                   </>

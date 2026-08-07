@@ -73,7 +73,7 @@ export default function Mauna() {
             <Animated.View style={[styles.ring, aStyle]} />
             <Text style={styles.clock}>{fmt(left)}</Text>
             <Text variant="tiny" color={colors.mutedDim} style={{ marginTop: 18, textAlign: 'center', lineHeight: 18 }}>
-              Settle into stillness. No sound, nothing to do —{'\n'}simply keep the silence until it completes.
+              Settle into stillness. No sound, nothing to do.{'\n'}Simply keep the silence until it completes.
             </Text>
           </>
         )}

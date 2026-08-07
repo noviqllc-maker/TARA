@@ -58,6 +58,6 @@ export async function reconcileOnSignIn(userId: string): Promise<{ restored: str
       }
     }
   } catch { /* best effort — never block sign-in */ }
-  if (__DEV__) console.log('[Sync] reconcile — restored:', restored, '· migrated:', migrated);
+  if (__DEV__) console.log('[Sync] reconcile · restored:', restored, '· migrated:', migrated);
   return { restored, migrated };
 }

@@ -122,7 +122,7 @@ function Tomorrow({ line, onNext }: { line: string; onNext: () => void }) {
       <Text variant="eyebrow" color={colors.gold}>A glance at tomorrow</Text>
       <Text variant="serif" style={{ fontSize: 22, lineHeight: 32, marginTop: 14, textAlign: 'center' }}>{line}</Text>
       <Text variant="tiny" color={colors.mutedDim} style={{ marginTop: 14, textAlign: 'center' }}>
-        Just a glance — the full day unfolds tomorrow.
+        Just a glance. The full day unfolds tomorrow.
       </Text>
       <View style={{ alignSelf: 'stretch', paddingHorizontal: spacing.md, marginTop: 24 }}>
         <GoldButton label="Continue" onPress={onNext} />
@@ -152,7 +152,7 @@ function Breath({ onNext }: { onNext: () => void }) {
         <Text variant="tiny" color={colors.muted} style={{ position: 'absolute' }}>{left > 0 ? `${left}s` : 'ready'}</Text>
       </View>
       <Text variant="tiny" color={colors.mutedDim} style={{ textAlign: 'center', marginTop: 6 }}>
-        Let the breath follow the circle — in as it grows, out as it settles.
+        Let the breath follow the circle: in as it grows, out as it settles.
       </Text>
       <View style={{ alignSelf: 'stretch', paddingHorizontal: spacing.md, marginTop: 24 }}>
         <GoldButton label={left > 0 ? 'Continue' : 'Continue'} onPress={onNext} />
@@ -193,7 +193,7 @@ function MantraStep({ mantra, mini, setMini, onClose }: { mantra: ReturnType<typ
           </>
         )}
       </Pressable>
-      <Text variant="tiny" color={colors.mutedDim} style={{ marginTop: 8 }}>An optional 11 — or simply close the day.</Text>
+      <Text variant="tiny" color={colors.mutedDim} style={{ marginTop: 8 }}>An optional 11, or simply close the day.</Text>
 
       <View style={{ alignSelf: 'stretch', paddingHorizontal: spacing.md, marginTop: 22 }}>
         <GoldButton label="Close the day ✦" onPress={onClose} />

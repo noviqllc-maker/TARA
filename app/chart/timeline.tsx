@@ -33,7 +33,7 @@ export default function Timeline() {
       <SubHeader eyebrow="Life Timeline" title="Your Life Chapters" />
       <PremiumNudgeBar context="chart" style={{ marginBottom: 18 }} />
       <Text variant="tiny" style={{ marginBottom: 18 }}>
-        The major planetary chapters of your life, in plain language — calculated from your
+        The major planetary chapters of your life, in plain language, calculated from your
         Moon's exact position at birth (your Vimśottarī daśā).
       </Text>
 

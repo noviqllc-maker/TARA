@@ -72,12 +72,12 @@ const GRAHA_LEADS: Record<string, string[]> = {
 const GRAHA_HEADLINES: Record<string, string[]> = {
   Sun: ['Today rewards showing up as yourself.', 'Lead with clarity, not volume.', 'Let your intention be the light.'],
   Moon: ['Today rewards feeling over fixing.', 'Let the heart set the pace.', 'Softness is the strategy today.'],
-  Mars: ['Today rewards aimed effort over noise.', 'Move — but choose your direction.', 'Channel the fire, don’t scatter it.'],
+  Mars: ['Today rewards aimed effort over noise.', 'Move, but choose your direction.', 'Channel the fire, don’t scatter it.'],
   Mercury: ['Today rewards clear words over clever ones.', 'Let the mind organize, not spiral.', 'One clear thought moves everything.'],
   Jupiter: ['Today rewards thinking a little bigger.', 'Say yes to the wider horizon.', 'Growth favors the generous today.'],
   Venus: ['Today rewards warmth over winning.', 'Lead with connection, not correction.', 'Let ease do some of the work.'],
   Saturn: ['Today rewards patience over pressure.', 'Build slow, build once.', 'The long game is the winning one.'],
-  Rahu: ['Today rewards bold moves with a grounded heart.', 'Reach — but keep your feet on the earth.', 'Ambition works best when it’s anchored.'],
+  Rahu: ['Today rewards bold moves with a grounded heart.', 'Reach, but keep your feet on the earth.', 'Ambition works best when it’s anchored.'],
   Ketu: ['Today rewards release over reaching.', 'Let go, and let clarity arrive.', 'Less is genuinely more today.'],
 };
 

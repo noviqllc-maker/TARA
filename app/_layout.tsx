@@ -42,7 +42,7 @@ if (Platform.OS === 'ios') {
     }
   } else if (__DEV__) {
     console.warn(
-      '[RC] EXPO_PUBLIC_REVENUECAT_IOS_KEY is undefined — set it in .env and restart Metro ' +
+      '[RC] EXPO_PUBLIC_REVENUECAT_IOS_KEY is undefined. Set it in .env and restart Metro ' +
       '(npx expo start -c). Purchases are disabled until then.',
     );
   }

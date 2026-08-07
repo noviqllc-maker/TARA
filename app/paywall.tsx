@@ -201,7 +201,7 @@ export default function Paywall() {
               <GoldButton
                 label={busy
                   ? <ActivityIndicator color="#1a1018" />
-                  : `Start Premium — ${selectedPkg.product.priceString}/${effectiveSelected === 'annual' ? 'year' : 'month'}`}
+                  : `Start Premium: ${selectedPkg.product.priceString}/${effectiveSelected === 'annual' ? 'year' : 'month'}`}
                 onPress={onBuy}
                 disabled={busy}
               />

@@ -14,41 +14,42 @@
 export type HealthState = 'depleted' | 'high-output' | 'low-movement' | 'long-rest' | 'steady';
 export type DayLord = 'Sun' | 'Moon' | 'Mars' | 'Mercury' | 'Jupiter' | 'Venus' | 'Saturn';
 
-// A light, non-directional nod to the day's ruling graha. Two variants: an em-dash lead-in
-// [0] and a comma lead-in [1]. Composed in front of the state action below.
+// A light, non-directional nod to the day's ruling graha. Two variants: a full-stop lead-in
+// [0] (the action that follows is a new sentence) and a comma lead-in [1] (the action
+// continues in lower case). Composed in front of the state action below.
 const LORD_LEAD: Record<DayLord, [string, string]> = {
-  Sun:     ["The Sun's day leans toward warmth —", "On the Sun's day,"],
-  Moon:    ["The Moon's day favors gentleness —", "On the Moon's day,"],
-  Mars:    ["Mars's day carries drive —", "On Mars's day,"],
-  Mercury: ["Mercury's day likes a light touch —", "On Mercury's day,"],
-  Jupiter: ["Jupiter's day favors ease —", "On Jupiter's day,"],
-  Venus:   ["Venus's day invites comfort —", "On Venus's day,"],
-  Saturn:  ["Saturn's day favors rest that's earned slowly —", "On Saturn's day,"],
+  Sun:     ["The Sun's day leans toward warmth.", "On the Sun's day,"],
+  Moon:    ["The Moon's day favors gentleness.", "On the Moon's day,"],
+  Mars:    ["Mars's day carries drive.", "On Mars's day,"],
+  Mercury: ["Mercury's day likes a light touch.", "On Mercury's day,"],
+  Jupiter: ["Jupiter's day favors ease.", "On Jupiter's day,"],
+  Venus:   ["Venus's day invites comfort.", "On Venus's day,"],
+  Saturn:  ["Saturn's day favors rest that's earned slowly.", "On Saturn's day,"],
 };
 
 // The substance of each suggestion, per inferred state. Two variants each. These carry NO
-// reference to any metric or its meaning — they read as a kind invitation, not a readout.
-// The [0] variant follows an em-dash lead; the [1] variant follows a comma lead — both are
-// written to sit naturally after either, but pairing v0↔v0 / v1↔v1 keeps the seam clean.
+// reference to any metric or its meaning; they read as a kind invitation, not a readout.
+// The [0] variant is Capitalized — it follows the full-stop lord lead as a second sentence.
+// The [1] variant stays lower-case — it continues the comma lord lead. Pair v0/v0 and v1/v1.
 const STATE_ACTION: Record<HealthState, [string, string]> = {
   depleted: [
-    'a gentler pace and an earlier wind-down would suit the body well today.',
-    'let today ask a little less of you — rest, water, and an unhurried evening.',
+    'A gentler pace and an earlier wind-down would suit the body well today.',
+    'let today ask a little less of you: rest, water, and an unhurried evening.',
   ],
   'high-output': [
-    "there's momentum to spend, so move with it, then let the evening cool down slowly.",
+    "There's momentum to spend, so move with it, then let the evening cool down slowly.",
     'good energy to put toward something active, balanced by a calm wind-down later.',
   ],
   'low-movement': [
-    'a short walk or some easy movement would feel good woven into the day.',
-    'the body would welcome a little gentle movement — a walk, a stretch, some air.',
+    'A short walk or some easy movement would feel good woven into the day.',
+    'the body would welcome a little gentle movement: a walk, a stretch, some air.',
   ],
   'long-rest': [
-    'ease into the day slowly; a little light movement will help you find your footing.',
-    'no rush this morning — let the body wake gradually, with water and light.',
+    'Ease into the day slowly; a little light movement will help you find your footing.',
+    'no rush this morning, so let the body wake gradually, with water and light.',
   ],
   steady: [
-    'the body feels settled, so keep your usual rhythm of movement, water, and rest.',
+    'The body feels settled, so keep your usual rhythm of movement, water, and rest.',
     'a balanced day for steady movement, steady breath, and your normal wind-down.',
   ],
 };
@@ -60,8 +61,8 @@ const GENERIC_LORD: Record<DayLord, [string, string]> = {
   Moon:    ["The Moon's day favors rest, water, and a calm evening.", "On the Moon's day, let the pace stay gentle and unhurried."],
   Mars:    ["Mars's day favors active movement, balanced with a calm wind-down.", "On Mars's day, put some energy into motion, then let it settle."],
   Mercury: ["Mercury's day favors light movement and a few unhurried breaths.", "On Mercury's day, small breaks and a short walk keep the body easy."],
-  Jupiter: ["Jupiter's day favors ease — gentle movement and good hydration.", "On Jupiter's day, a relaxed rhythm and plenty of water suit you."],
-  Venus:   ["Venus's day favors comfort — a walk somewhere pleasant, unrushed.", "On Venus's day, let movement feel like ease rather than effort."],
+  Jupiter: ["Jupiter's day favors ease: gentle movement and good hydration.", "On Jupiter's day, a relaxed rhythm and plenty of water suit you."],
+  Venus:   ["Venus's day favors comfort: a walk somewhere pleasant, unrushed.", "On Venus's day, let movement feel like ease rather than effort."],
   Saturn:  ["Saturn's day favors rest that's earned slowly and an early wind-down.", "On Saturn's day, keep the pace steady and give sleep its full hour."],
 };
 
@@ -72,7 +73,7 @@ function hashStr(s: string): number {
   return Math.abs(h);
 }
 
-// State-based suggestion (real data present). One sentence, graha lead + state action.
+// State-based suggestion (real data present): graha lead + state action.
 export function composeSuggestion(state: HealthState, lord: DayLord, seed: string): string {
   const v = hashStr(`${seed}:body:${state}:${lord}`) % 2;
   return `${LORD_LEAD[lord][v]} ${STATE_ACTION[state][v]}`;

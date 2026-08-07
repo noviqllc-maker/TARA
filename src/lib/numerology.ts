@@ -22,7 +22,7 @@ const ZODIAC = [
 // Chinese zodiac animal from birth year (approximate — uses Gregorian year).
 export function chineseZodiac(birthDate: string): string {
   const year = parseInt(birthDate.slice(0, 4), 10);
-  if (!year) return '—';
+  if (!year) return '–';
   // 2020 was the Year of the Rat (index 0)
   const idx = ((year - 2020) % 12 + 12) % 12;
   return ZODIAC[idx];

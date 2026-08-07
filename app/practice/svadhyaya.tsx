@@ -28,7 +28,7 @@ export default function Svadhyaya() {
     <Screen>
       <SubHeader eyebrow="Practice · Svādhyāya" title="Today's Teaching" />
       <Text variant="tiny" color={colors.muted} style={{ marginBottom: spacing.lg, lineHeight: 18 }}>
-        A verse or a teaching for reflection — drawn fresh each day, in the spirit of {GRAHA_GLYPH[dayLord]} {dayLord}’s day.
+        A verse or a teaching for reflection, drawn fresh each day, in the spirit of {GRAHA_GLYPH[dayLord]} {dayLord}’s day.
       </Text>
 
       <Animated.View entering={FadeInDown.duration(400)}>

@@ -168,9 +168,9 @@ export function scoreNadi(aNak: number, bNak: number): number {
 
 // ---- §5 Rating bands ----
 function ratingBand(total: number): { rating: string; tone: string } {
-  if (total <= 17) return { rating: 'Challenging', tone: 'This match asks for conscious effort — strong bonds here are built, not gifted.' };
+  if (total <= 17) return { rating: 'Challenging', tone: 'This match asks for conscious effort. Strong bonds here are built, not gifted.' };
   if (total <= 24) return { rating: 'Acceptable', tone: 'A workable foundation with real room to grow together.' };
-  if (total <= 32) return { rating: 'Good', tone: 'Naturally harmonious — an easy, supportive connection.' };
+  if (total <= 32) return { rating: 'Good', tone: 'Naturally harmonious: an easy, supportive connection.' };
   return { rating: 'Excellent', tone: 'Rare and deeply aligned across mind, heart and spirit.' };
 }
 

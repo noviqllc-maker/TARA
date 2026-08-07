@@ -95,7 +95,7 @@ export default function SankalpaScreen() {
           <Card style={{ marginBottom: 14 }}>
             <Text variant="eyebrow" color={colors.gold}>Set a sankalpa under {window.label}</Text>
             <Text variant="tiny" color={colors.muted} style={{ marginTop: 8, lineHeight: 18 }}>
-              An auspicious window to name a short intention — a direction, not a demand. You're invited, never obliged.
+              An auspicious window to name a short intention: a direction, not a demand. You're invited, never obliged.
             </Text>
             <TextInput
               value={text} onChangeText={setText}
@@ -110,7 +110,7 @@ export default function SankalpaScreen() {
           <Card style={{ marginBottom: 14 }}>
             <Text variant="eyebrow" color={colors.gold}>No open window today</Text>
             <Text variant="tiny" color={colors.muted} style={{ marginTop: 8, lineHeight: 18 }}>
-              A sankalpa is traditionally set under an auspicious window.{nextWindow ? ` The next is ${nextWindow.name} — ${nextWindow.dateLabel} (in ${nextWindow.daysAway} day${nextWindow.daysAway === 1 ? '' : 's'}).` : ''} You're welcome to return then.
+              A sankalpa is traditionally set under an auspicious window.{nextWindow ? ` The next is ${nextWindow.name}, ${nextWindow.dateLabel} (in ${nextWindow.daysAway} day${nextWindow.daysAway === 1 ? '' : 's'}).` : ''} You're welcome to return then.
             </Text>
           </Card>
         )}
