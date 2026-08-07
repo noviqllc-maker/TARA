@@ -10,7 +10,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { useChart } from '@/hooks/useChart';
 import { useSubscription } from '@/hooks/useSubscription';
 import { ShopProductId } from '@/lib/products';
-import { PREMIUM_BENEFITS } from '@/lib/premium';
+import { PREMIUM_BENEFITS, PREMIUM_COPY } from '@/lib/premium';
 import { lifePathNumber, chineseZodiac } from '@/lib/numerology';
 import { colors, radius, spacing } from '@/theme';
 
@@ -245,7 +245,7 @@ export default function Profile() {
           <>
             <Text variant="serif" style={{ fontSize: 17, marginTop: 8 }}>Unlock Tara Premium</Text>
             <Text variant="body" color={colors.goldSoft} style={{ marginTop: 6, fontSize: 14 }}>
-              Everything Tara knows about you, in one place.
+              {PREMIUM_COPY.homeNudgeLine}
             </Text>
             {/* Same benefits as the paywall — single source of truth (PREMIUM_BENEFITS). */}
             <View style={{ marginTop: 12, gap: 8 }}>

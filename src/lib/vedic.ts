@@ -557,10 +557,13 @@ function deriveAspects(planets: PlanetPosition[], ascSign: string): string[] {
   const out: string[] = [];
   const byName = (n: string) => planets.find((p) => p.name === n);
   const sun = byName('Sun'), moon = byName('Moon'), jup = byName('Jupiter'), sat = byName('Saturn');
+  // These render as single-line bullets ("Chart Highlights"): term — one-line gloss. The
+  // em-dash is the label/gloss separator (a definition row), so it is kept here, unlike the
+  // prose copy the em-dash pass rewrote. See app/(tabs)/chart.tsx.
   if (sun && moon && sun.signIndex === moon.signIndex)
-    out.push('Sun conjunct Moon: unified will and emotion (New Moon nature)');
-  if (jup) out.push(`Jupiter in ${jup.sign} (house ${jup.house}): your growth and fortune expand here`);
-  if (sat) out.push(`Saturn in ${sat.sign} (house ${sat.house}): where discipline builds lasting reward`);
-  if (moon) out.push(`Moon in ${moon.sign}: the emotional tone of your chart`);
+    out.push('Sun conjunct Moon — unified will and emotion (New Moon nature)');
+  if (jup) out.push(`Jupiter in ${jup.sign} (house ${jup.house}) — your growth and fortune expand here`);
+  if (sat) out.push(`Saturn in ${sat.sign} (house ${sat.house}) — where discipline builds lasting reward`);
+  if (moon) out.push(`Moon in ${moon.sign} — the emotional tone of your chart`);
   return out.slice(0, 4);
 }
