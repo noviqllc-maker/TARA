@@ -14,6 +14,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '@/lib/supabase';
 import { BirthChart, computeTransitFactor, computeAllTransits } from '@/lib/vedic';
 import { computeTransits } from '@/lib/transits';
+import { powerHours } from '@/lib/panchanga';
 import { pickNotification, pickMidday, pickEvening, NotificationContext } from '@/data/notificationLines';
 import { loadEvening } from '@/lib/practice';
 
@@ -144,10 +145,33 @@ async function seedUser(): Promise<string> {
   catch { return 'anon'; }
 }
 
-// Cancel and re-schedule the next few days across the ENABLED slots (8 AM briefing,
-// 12 PM timing, 6 PM reflection). Morning uses the category-rotating engine line (titles
-// never repeat two days running); midday/evening use their own disjoint pools, so no line
-// repeats across slots in a day. Returns false (no-op) when permission isn't granted.
+// ---- recent-body no-repeat history (cross-day, cross-slot) ---------------------
+// We persist the recent window of bodies that have already fired, plus the still-pending
+// schedule (so the next refresh can roll fired entries into the window). Choosing new bodies
+// avoids everything in the window, so no body repeats within the last RECENT_WINDOW pushes.
+const RECENT_KEY = 'tara.notif.recentBodies.v1';
+const RECENT_WINDOW = 6;
+type NotifHistory = { recent: string[]; scheduled: { t: number; body: string }[] };
+
+async function loadNotifHistory(): Promise<NotifHistory> {
+  try {
+    const v = await AsyncStorage.getItem(RECENT_KEY);
+    if (!v) return { recent: [], scheduled: [] };
+    const p = JSON.parse(v);
+    return { recent: Array.isArray(p?.recent) ? p.recent : [], scheduled: Array.isArray(p?.scheduled) ? p.scheduled : [] };
+  } catch { return { recent: [], scheduled: [] }; }
+}
+async function saveNotifHistory(h: NotifHistory): Promise<void> {
+  try { await AsyncStorage.setItem(RECENT_KEY, JSON.stringify(h)); } catch {}
+}
+
+// Cancel and RE-SCHEDULE (not top-up) the next few days across the ENABLED slots (8 AM
+// briefing, 12 PM timing, 6 PM reflection). Because it cancels all pending and rebuilds from
+// source, copy/logic fixes propagate the same day (delivered notifications in the OS center
+// can't be edited and age out on their own). Jobs are scheduled in FIRE ORDER, and every body
+// is checked against the recent-6 window so nothing repeats across slots or days. Titles are
+// locked to their body's category (a shift body can only carry the Planetary Shift title).
+// Returns false (no-op) when permission isn't granted.
 export async function refreshDailyNotifications(chart: BirthChart | null, birthDate = ''): Promise<boolean> {
   if (!(await Notifications.getPermissionsAsync()).granted) return false;
   await Notifications.cancelAllScheduledNotificationsAsync();
@@ -160,34 +184,54 @@ export async function refreshDailyNotifications(chart: BirthChart | null, birthD
   // AppState 'active'; the evening screen also calls it right after a ritual completes).
   const eve = await loadEvening();
 
+  // Roll any previously-scheduled bodies whose fire time has passed into the recent window
+  // (they've been delivered), then avoid every body in that window when picking new ones.
+  const hist = await loadNotifHistory();
+  const fired = hist.scheduled.filter((s) => s.t <= now.getTime()).sort((a, b) => a.t - b.t).map((s) => s.body);
+  const recent = [...hist.recent, ...fired].slice(-RECENT_WINDOW);
+  const used = new Set<string>(recent);
+
+  // Collect every (slot, day) job, then order by fire time so the no-repeat window tracks the
+  // sequence the user actually receives.
+  type Job = { key: keyof NotifSlots; i: number; fireDate: Date; firstIsToday: boolean };
+  const jobs: Job[] = [];
   for (const { key, hour } of SLOT_DEFS) {
     if (!slots[key]) continue;
     let first = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour, 0, 0, 0);
     if (first.getTime() <= now.getTime()) first = new Date(first.getTime() + MS_DAY); // slot hour passed → start tomorrow
-    // Whether the nearest fire (i=0) lands TODAY — the only day "done today" can apply to.
     const firstIsToday = first.getFullYear() === now.getFullYear() && first.getMonth() === now.getMonth() && first.getDate() === now.getDate();
-
-    let prevTitle: string | undefined;
-    for (let i = 0; i < DAYS_AHEAD; i++) {
-      const fireDate = new Date(first.getTime() + i * MS_DAY);
-      const seed = `${uid}:${ymd(fireDate)}:${key}`;
-      let pick;
-      if (key === 'morning') {
-        pick = pickNotification(buildNotificationContext(chart, birthDate, fireDate), seed, prevTitle);
-      } else if (key === 'midday') {
-        pick = pickMidday(seed);
-      } else {
-        pick = pickEvening(seed, { streak: eve.streak, doneToday: i === 0 && firstIsToday && eve.doneToday });
-      }
-      prevTitle = pick.title;
-      const route = key === 'evening' ? EVENING_ROUTE : DAILY_ROUTE;
-      await Notifications.scheduleNotificationAsync({
-        identifier: `tara-${key}-${i}`,
-        content: { title: pick.title, body: pick.body, data: { route } },
-        trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: fireDate },
-      });
-    }
+    for (let i = 0; i < DAYS_AHEAD; i++) jobs.push({ key, i, fireDate: new Date(first.getTime() + i * MS_DAY), firstIsToday });
   }
+  jobs.sort((a, b) => a.fireDate.getTime() - b.fireDate.getTime());
+
+  const prevTitleBySlot: Partial<Record<string, string>> = {};
+  const scheduled: { t: number; body: string }[] = [];
+
+  for (const job of jobs) {
+    const seed = `${uid}:${ymd(job.fireDate)}:${job.key}`;
+    let pick;
+    if (job.key === 'morning') {
+      pick = pickNotification(buildNotificationContext(chart, birthDate, job.fireDate), seed, prevTitleBySlot.morning, used);
+      prevTitleBySlot.morning = pick.title;
+    } else if (job.key === 'midday') {
+      // Chart-derived timing: the day-lord horā window (e.g. "1 PM") headlines the midday pool.
+      const p = powerHours(job.fireDate);
+      const powerStart = p.window.split(/\s*[–-]\s*/)[0].trim(); // "1 PM – 2 PM" → "1 PM"
+      pick = pickMidday(seed, { powerStart, dayLord: p.lord }, used);
+    } else {
+      pick = pickEvening(seed, { streak: eve.streak, doneToday: job.i === 0 && job.firstIsToday && eve.doneToday }, used);
+    }
+    used.add(pick.body);
+    scheduled.push({ t: job.fireDate.getTime(), body: pick.body });
+    const route = job.key === 'evening' ? EVENING_ROUTE : DAILY_ROUTE;
+    await Notifications.scheduleNotificationAsync({
+      identifier: `tara-${job.key}-${job.i}`,
+      content: { title: pick.title, body: pick.body, data: { route } },
+      trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: job.fireDate },
+    });
+  }
+
+  await saveNotifHistory({ recent, scheduled });
   return true;
 }
 
