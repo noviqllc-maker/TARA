@@ -16,7 +16,6 @@ import { useTransits } from '@/hooks/useTransits';
 import { useDailyEnergy } from '@/hooks/useDailyEnergy';
 import { useHealth } from '@/hooks/useHealth';
 import { useDailyContent } from '@/hooks/useDailyContent';
-import { setAskDraft } from '@/lib/askDraft';
 import { computeCosmicEvents } from '@/lib/panchanga';
 import { todayObservance } from '@/lib/observances';
 import { computeTransitFactor, BirthChart } from '@/lib/vedic';
@@ -172,18 +171,6 @@ export default function Home() {
         <Text variant="serif" style={styles.guidanceHead}>{daily.message.headline}</Text>
         <Text style={styles.guidanceBody}>{daily.message.body}</Text>
         <GoldButton label="Ask About Today" onPress={() => router.push('/(tabs)/tara')} style={{ marginTop: 18 }} />
-        {/* Bridge: PREFILLS the question in Ask Tara (focused, not sent). The user's
-            explicit send press is the only thing that ever spends a credit. */}
-        <Pressable
-          onPress={() => {
-            setAskDraft(`About today's guidance, "${daily.message.headline}": why is this the theme for me today?`);
-            router.push('/(tabs)/tara');
-          }}
-          hitSlop={6}
-          style={{ marginTop: 14, alignSelf: 'center' }}
-        >
-          <Text variant="tiny" color={colors.gold} style={{ fontWeight: '600', fontSize: 13 }}>Why today? →</Text>
-        </Pressable>
       </Card>
 
       {/* Energy dashboard */}
