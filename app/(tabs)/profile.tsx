@@ -21,7 +21,7 @@ const SHOP_ITEMS: { id: ShopProductId; title: string; description: string; featu
   {
     id: 'yearaheadtarareport1',
     title: 'Year Ahead',
-    description: 'Your next 12 months, month by month: dasha periods, major transits, timing windows and a strength score for each. A living view that stays current, computed fresh from your chart every time you open it.',
+    description: 'Your next 12 months, month by month: dasha periods, major transits, timing windows and a strength score for each. A living view that stays current, computed fresh from your chart every time you open it. Yours forever with one purchase; no subscription needed.',
     features: 'Living 12-month view • Dasha & transits • Timing windows • Month strength',
     cta: 'Unlock Your Year',
   },

@@ -222,7 +222,7 @@ const benefit = (b?: string) => (b && BENEFIT[b]) || 'the areas it touches';
 
 function markText(e: FEvent): string {
   switch (e.kind) {
-    case 'dashaMaha': return `${e.lord} Mahādasha begins: a new multi-year chapter opens.`;
+    case 'dashaMaha': return `${e.lord} Mahādasha begins: a new life chapter opens.`;
     case 'dashaAntar': return `${e.lord} sub-period begins: the season's texture shifts.`;
     case 'station': return e.dir === 'direct'
       ? `${e.body} turns direct: a green light returns for ${benefit(e.body)}.`

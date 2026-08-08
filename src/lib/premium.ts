@@ -9,7 +9,7 @@
 // so it appears below. Removed in the truth-up: "Complete Life Chapters & dasha timeline",
 // "Deep compatibility reports", "Advanced Vedic chart analysis" — none were implemented.
 export const PREMIUM_BENEFITS = [
-  '100 Ask Tara questions every month',
+  'Ask Tara anything, all month (100 conversations)',
   'Weekly & Monthly Guidance: your forecast, always current',
   'The full Daily Insights: every layer of your day',
   'Health-aware daily guidance, tuned to your real rhythm',
