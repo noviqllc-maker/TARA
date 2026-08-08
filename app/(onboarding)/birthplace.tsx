@@ -46,12 +46,12 @@ export default function BirthPlaceScreen() {
     if (!geo) geo = fallbackGeo(); // never block the user; chart still computes
     update({ birthPlace: v.trim(), lat: geo.lat, lon: geo.lon, tzOffsetMinutes: geo.tzOffsetMinutes });
     setResolving(false);
-    router.push('/(onboarding)/wellness');
+    router.push('/(onboarding)/priority');
   };
 
   return (
     <OnboardingShell
-      step={4} total={5}
+      step={4} total={6}
       question="Where were you born?"
       helper={keyed ? 'Start typing your city and pick from the list.' : 'Type your city and country.'}
       disabled={!v.trim() || resolving}

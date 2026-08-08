@@ -50,7 +50,7 @@ export default function BirthTimeScreen() {
 
   return (
     <OnboardingShell
-      step={3} total={5}
+      step={3} total={6}
       question="What time were you born?"
       helper="Enter the hour and minute from your birth records."
       disabled={!valid}

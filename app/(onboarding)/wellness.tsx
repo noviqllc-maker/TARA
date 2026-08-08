@@ -52,7 +52,7 @@ export default function WellnessScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Animated.View entering={FadeInDown.duration(500)}>
-          <Eyebrow>Step 5 of 5</Eyebrow>
+          <Eyebrow>Step 6 of 6</Eyebrow>
           <Text variant="h1" style={{ marginTop: 12, marginBottom: 6 }}>
             Would you like Tara to understand your body rhythm too?
           </Text>

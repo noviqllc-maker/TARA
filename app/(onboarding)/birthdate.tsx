@@ -41,7 +41,7 @@ export default function BirthDateScreen() {
 
   return (
     <OnboardingShell
-      step={2} total={5}
+      step={2} total={6}
       question="When were you born?"
       helper="Tap to pick your date of birth."
       onContinue={() => { update({ birthDate: toYMD(date) }); router.push('/(onboarding)/birthtime'); }}

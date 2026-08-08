@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { pushKey } from '@/lib/sync';
+import { PriorityKey } from '@/data/priorities';
 
 export type Profile = {
   name: string;
@@ -12,6 +13,9 @@ export type Profile = {
   lon?: number;
   tzOffsetMinutes?: number;
   wellnessConnected: string[];
+  // The onboarding "what matters most right now" answer. Persists locally and, when signed
+  // in, syncs to Supabase inside the profile blob (no separate column or write needed).
+  userPriority?: PriorityKey;
   onboarded: boolean;
 };
 
