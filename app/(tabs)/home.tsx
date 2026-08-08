@@ -355,7 +355,7 @@ const styles = StyleSheet.create({
     marginTop: 12, paddingTop: 10, alignItems: 'center',
     borderTopWidth: 1, borderTopColor: colors.line,
   },
-  journalPrompt: { fontSize: 16, marginTop: 10, lineHeight: 25, fontStyle: 'italic', color: colors.cream },
+  journalPrompt: { fontSize: 16, marginTop: 10, lineHeight: 25, color: colors.cream },
   lifeGrid: { gap: 10, marginTop: 12, marginBottom: spacing.lg },
   areaCard: {
     padding: 16, backgroundColor: colors.card, borderColor: colors.line, borderWidth: 1, borderRadius: 16,

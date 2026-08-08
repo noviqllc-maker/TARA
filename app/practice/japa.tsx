@@ -5,7 +5,7 @@
 // to begin another. A second segment is the full nine-graha mantra library; the day-lord's
 // mantra is featured but any can be practised. No audio in this phase.
 import React, { useMemo, useState, useEffect } from 'react';
-import { View, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet, Text as RNText } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import Screen from '@/components/Screen';
 import SubHeader from '@/components/SubHeader';
@@ -77,7 +77,7 @@ export default function Japa() {
           <Pressable onPress={onTap} style={{ alignItems: 'center', alignSelf: 'stretch' }}>
           {/* Selected mantra */}
           <Text style={styles.devanagari}>{mantra.devanagari}</Text>
-          <Text variant="serif" style={{ fontSize: 17, marginTop: 4 }}>{mantra.translit}</Text>
+          <RNText style={{ fontSize: 16, marginTop: 4, letterSpacing: 0.3, color: colors.creamDim }}>{mantra.translit}</RNText>
           <Text variant="tiny" color={colors.muted} style={{ marginTop: 6, textAlign: 'center', lineHeight: 17, paddingHorizontal: spacing.lg }}>{mantra.meaning}</Text>
           <Text variant="tiny" color={colors.goldSoft} style={{ marginTop: 8, fontSize: 11.5 }}>
             {mantra.glyph} {mantra.graha}{graha === todayGraha ? " · today's mantra" : ''}
@@ -164,7 +164,7 @@ function MantraRow({ m, featured, onPress }: { m: GrahaMantra; featured: boolean
           )}
         </View>
         <Text style={{ fontSize: 22, color: colors.cream, marginTop: 8, lineHeight: 32 }}>{m.devanagari}</Text>
-        <Text variant="tiny" color={colors.goldSoft} style={{ marginTop: 2, fontSize: 12.5 }}>{m.translit}</Text>
+        <RNText style={{ marginTop: 2, fontSize: 12.5, letterSpacing: 0.3, color: colors.creamDim }}>{m.translit}</RNText>
         <Text variant="tiny" color={colors.muted} style={{ marginTop: 6, lineHeight: 17 }}>{m.meaning}</Text>
       </Card>
     </Pressable>

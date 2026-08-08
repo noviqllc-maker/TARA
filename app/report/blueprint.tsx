@@ -167,5 +167,5 @@ const styles = StyleSheet.create({
     marginTop: 4, marginBottom: spacing.lg, paddingTop: 16, paddingHorizontal: 16, paddingBottom: 18,
     borderRadius: 16, borderWidth: 1, borderColor: 'rgba(205,163,73,0.35)', backgroundColor: 'rgba(205,163,73,0.07)',
   },
-  takeawayLine: { fontFamily: fonts.serif, fontStyle: 'italic', fontSize: 18, lineHeight: 26, color: colors.goldSoft },
+  takeawayLine: { fontWeight: '500', fontSize: 16, lineHeight: 24, color: colors.cream },
 });

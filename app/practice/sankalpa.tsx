@@ -130,7 +130,7 @@ export default function SankalpaScreen() {
                 <Text variant="body" color={colors.cream} style={{ fontSize: 14.5, lineHeight: 22, marginTop: 8 }}>“{s.text}”</Text>
                 <Text variant="tiny" color={colors.mutedDim} style={{ marginTop: 6, fontSize: 11 }}>Set {s.setDate}</Text>
                 {s.reflectNote ? (
-                  <Text variant="tiny" color={colors.muted} style={{ marginTop: 8, fontSize: 12.5, lineHeight: 18, fontStyle: 'italic' }}>Reflection: {s.reflectNote}</Text>
+                  <Text variant="tiny" color={colors.muted} style={{ marginTop: 8, fontSize: 12.5, lineHeight: 18 }}>Reflection: {s.reflectNote}</Text>
                 ) : null}
                 {(s.state === 'active' || s.state === 'renewed') ? (
                   <View style={[styles.actions, { marginTop: 12 }]}>

@@ -3,7 +3,7 @@
 // (a Gītā śloka or a jyotiṣa concept card) beautifully, plus a browse list of previously
 // shown teachings. Selection + history are recomputed deterministically (see lib/svadhyaya).
 import React, { useMemo, useState } from 'react';
-import { View, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet, Text as RNText } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import Screen from '@/components/Screen';
 import SubHeader from '@/components/SubHeader';
@@ -80,7 +80,7 @@ function TeachingView({ teaching: t, featured }: { teaching: Teaching; featured?
       {t.type === 'shloka' ? (
         <>
           <Text style={styles.devanagari}>{t.devanagari}</Text>
-          <Text style={styles.iast}>{t.iast}</Text>
+          <RNText style={styles.iast}>{t.iast}</RNText>
           <View style={styles.divider} />
           <Text variant="tiny" color={colors.gold} style={{ fontSize: 10, letterSpacing: 0.4, marginBottom: 6 }}>A PLAIN RENDERING</Text>
           <Text variant="body" color={colors.cream} style={{ fontSize: 15, lineHeight: 24 }}>{t.rendering}</Text>
@@ -110,7 +110,9 @@ const styles = StyleSheet.create({
   grahaChip: { borderWidth: 1, borderColor: colors.line, borderRadius: radius.pill, paddingVertical: 3, paddingHorizontal: 9, marginLeft: 8 },
   // Devanāgarī: large and airy; the OS supplies the Devanāgarī face (Fraunces is Latin-only).
   devanagari: { fontSize: 23, color: colors.cream, marginTop: 16, lineHeight: 38 },
-  iast: { fontFamily: fonts.serif, fontStyle: 'italic', fontSize: 13.5, color: colors.goldSoft, marginTop: 12, lineHeight: 21 },
+  // Transliteration: system font (not Fraunces/Outfit) so the Vedic diacritics (ā ṛ ṣ ḥ ṁ)
+  // render cleanly and uniformly; non-italic, lightly letter-spaced, in a soft cream.
+  iast: { fontSize: 14, letterSpacing: 0.3, color: colors.creamDim, marginTop: 12, lineHeight: 22 },
   headline: { fontSize: 24, lineHeight: 32, marginTop: 14, marginBottom: 10 },
   divider: { height: 1, backgroundColor: colors.line, marginVertical: 16 },
   forToday: {

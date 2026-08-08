@@ -347,7 +347,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.xl, paddingTop: 16, paddingHorizontal: 16, paddingBottom: 18,
     borderRadius: 16, borderWidth: 1, borderColor: 'rgba(205,163,73,0.35)', backgroundColor: 'rgba(205,163,73,0.07)',
   },
-  takeawayLine: { fontFamily: fonts.serif, fontStyle: 'italic', fontSize: 18, lineHeight: 26, color: colors.goldSoft },
+  takeawayLine: { fontWeight: '500', fontSize: 16, lineHeight: 24, color: colors.cream },
   followChip: {
     flexDirection: 'row', alignItems: 'center', gap: 10, padding: 13,
     backgroundColor: colors.card, borderColor: colors.line, borderWidth: 1, borderRadius: radius.lg,

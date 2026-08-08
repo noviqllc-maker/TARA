@@ -145,6 +145,9 @@ export async function askTaraAnswer(
     "OPENING: never open with an astrological factor, planet, house, or transit. Open with a direct human response to the question: the short answer, the pattern you notice, or a conversational hook (e.g. \"Here's what stands out.\" / \"You're asking at an interesting moment.\"). Vary your openers across answers. Never start with the user's name. Do NOT mention the transiting Moon unless the question is specifically about today's mood or energy.",
     // 2. Structure
     `STRUCTURE: ${TEMPLATES[tpl]} Put each lead-in on its own line in the exact form 'Label — content' (space, em dash, space). No markdown, no '#', no bullet points.`,
+    // Punctuation: no em-dashes in prose (applies to the answer, the takeaway, and the
+    // follow-ups). The ONLY allowed em-dash is the 'Label — content' lead-in separator above.
+    'PUNCTUATION: do not use em-dashes (the "—" character) anywhere in your prose. Use a period, comma, or colon instead. The only exception is the required "Label — content" lead-in separator specified above, which must be kept exactly as written.',
     // Timing
     "For yearly, life-direction, or timing questions, lead with the running Mahadasha/Antardasha or slow planets (Saturn, Jupiter, Rahu, Ketu). Never today's Moon. Timing claims must derive ONLY from the provided dasha/transit data.",
     // 3. Translation rule

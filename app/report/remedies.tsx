@@ -2,7 +2,7 @@
 // "Personal Remedies" — natal-derived guidance with a LIVING layer (running dasha + Sade
 // Sati) that recomputes on open. Ownership-gated via `owns` (NOT isPremium). No AI.
 import React, { useMemo } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Text as RNText } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import Screen from '@/components/Screen';
 import SubHeader from '@/components/SubHeader';
@@ -99,7 +99,7 @@ function RemedyBlock({ title, rem }: { title: string; rem: GrahaRemedy }) {
   return (
     <View style={{ marginTop: 8 }}>
       <Text variant="serif" style={{ fontSize: 15 }}>{title}</Text>
-      <Text style={{ fontFamily: 'Fraunces_400Regular', fontStyle: 'italic', fontSize: 15, color: colors.goldSoft, marginTop: 6 }}>{rem.mantra}</Text>
+      <RNText style={styles.mantra}>{rem.mantra}</RNText>
       <Text variant="tiny" color={colors.muted} style={{ fontSize: 11.5, marginTop: 2 }}>{rem.mantraMeaning}</Text>
       <View style={styles.kvWrap}>
         <KV k="Day" v={rem.day} /><KV k="Colour" v={rem.color} />
@@ -114,7 +114,7 @@ function StrengthCard({ heading, why, rem }: { heading: string; why: string; rem
     <Card style={{ marginBottom: 10 }}>
       <Text variant="eyebrow" color={colors.gold}>{heading}</Text>
       <Text variant="tiny" color={colors.muted} style={{ marginTop: 4, fontSize: 12, lineHeight: 17 }}>{why}.</Text>
-      <Text style={{ fontFamily: 'Fraunces_400Regular', fontStyle: 'italic', fontSize: 15, color: colors.goldSoft, marginTop: 10 }}>{rem.mantra}</Text>
+      <RNText style={[styles.mantra, { marginTop: 10 }]}>{rem.mantra}</RNText>
       <Text variant="tiny" color={colors.muted} style={{ fontSize: 11.5, marginTop: 2 }}>{rem.mantraMeaning}</Text>
       <View style={styles.kvWrap}>
         <KV k="Colours" v={rem.color} /><KV k="Day" v={rem.day} />
@@ -151,6 +151,8 @@ function Msg({ title, body, cta, onCta }: { title: string; body: string; cta: st
 }
 
 const styles = StyleSheet.create({
+  // Mantra transliteration: system font (clean Vedic diacritics), non-italic, letter-spaced.
+  mantra: { fontSize: 15, letterSpacing: 0.3, color: colors.creamDim, marginTop: 6 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xl },
   kvWrap: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 4 },
   pill: { borderWidth: 1, borderRadius: radius.pill, paddingVertical: 2, paddingHorizontal: 8 },

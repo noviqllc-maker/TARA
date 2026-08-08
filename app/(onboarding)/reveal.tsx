@@ -184,7 +184,9 @@ const styles = StyleSheet.create({
   placeRow: { flexDirection: 'row', justifyContent: 'space-between', alignSelf: 'stretch', marginTop: 4 },
   placeCol: { flex: 1, alignItems: 'center', paddingHorizontal: 2 },
   placeLabel: { fontSize: 8.5, letterSpacing: 1.2, textAlign: 'center' },
-  placeValue: { fontFamily: fonts.serif, fontSize: 15, color: colors.cream, textAlign: 'center', marginTop: 6 },
+  // Outfit SemiBold non-italic: crisp at 15px where Fraunces read as scribble. The birth-star
+  // headline below stays serif (larger/gold) where the serif is legible.
+  placeValue: { fontFamily: fonts.sansSemi, fontSize: 15, color: colors.cream, textAlign: 'center', marginTop: 6 },
 
   birthStar: {
     alignItems: 'center', marginTop: 20, paddingVertical: 11, paddingHorizontal: 20,
