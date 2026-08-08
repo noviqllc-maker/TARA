@@ -53,7 +53,13 @@
         }
       ],
       "@react-native-community/datetimepicker",
-      "expo-apple-authentication"
+      "expo-apple-authentication",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Tara uses your current location to show today's cosmic timing (sunrise, power hour, Rāhukālam) for where you are now when you're traveling."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

@@ -16,7 +16,9 @@ import { useTransits } from '@/hooks/useTransits';
 import { useDailyEnergy } from '@/hooks/useDailyEnergy';
 import { useHealth } from '@/hooks/useHealth';
 import { useDailyContent } from '@/hooks/useDailyContent';
-import { computeCosmicEvents } from '@/lib/panchanga';
+import { computeCosmicEvents, CosmicEvents } from '@/lib/panchanga';
+import { useCurrentLocation } from '@/hooks/useCurrentLocation';
+import { isSameLocation } from '@/lib/locationService';
 import { todayObservance } from '@/lib/observances';
 import { computeTransitFactor, BirthChart } from '@/lib/vedic';
 import { Topic } from '@/lib/topic';
@@ -128,15 +130,21 @@ export default function Home() {
   // Today's Cosmic Events — deterministic, engine-computed, changes day to day (recompute
   // per calendar day + chart, matching the useTransits/useDailyEnergy pattern; no AI call).
   const dayKey = new Date().toDateString();
-  // Birth place (lat/lon/tz) drives the location-aware windows: sunrise/sunset, the day-lord
-  // horā power hour, Rāhukālam, and Abhijit Muhūrta. Undefined when the user hasn't set a
-  // place; those windows then degrade to null and their rows are simply omitted.
-  const location = profile.lat != null && profile.lon != null
+  // Cosmic Events are computed for the birth place (lat/lon/tz drive sunrise/sunset, the
+  // day-lord horā, Rāhukālam, and Abhijit). When the user is >10 km from their birth place we
+  // also compute a second set for where they physically are now.
+  const { current: currentLocation } = useCurrentLocation();
+  const birthLocation = profile.lat != null && profile.lon != null
     ? { lat: profile.lat, lon: profile.lon, tzOffsetMinutes: profile.tzOffsetMinutes }
     : undefined;
+  const showBothLocations = !!(birthLocation && currentLocation && !isSameLocation(birthLocation, currentLocation));
   const cosmic = useMemo(
-    () => computeCosmicEvents(chart, new Date(), location),
+    () => computeCosmicEvents(chart, new Date(), birthLocation),
     [chart, dayKey, profile.lat, profile.lon, profile.tzOffsetMinutes],
+  );
+  const cosmicCurrent = useMemo(
+    () => (showBothLocations && currentLocation ? computeCosmicEvents(chart, new Date(), currentLocation) : null),
+    [chart, dayKey, showBothLocations, currentLocation?.lat, currentLocation?.lon, currentLocation?.tzOffsetMinutes],
   );
   // Today's observance (Ekādaśī / Pūrṇimā / festival …), if one is active — surfaced as a
   // line on the cosmic-events card and echoed on the Practice card. Deterministic, no AI.
@@ -161,24 +169,45 @@ export default function Home() {
   ];
 
   // Today's Cosmic Events grid. The three timing rows (power hour / Abhijit / Rāhukālam) are
-  // only added when the birth place is set, so they never render as empty placeholders.
+  // only added when a location is set, so they never render as empty placeholders. buildCells
+  // is reused for both the birth-place card and the current-location card while traveling.
   type EventCell = { glyph: string; label: string; value: string; swatch?: string };
-  const cells: EventCell[] = [
-    { glyph: '☾', label: 'Moon', value: `${cosmic.moonSign} • ${cosmic.moonNakshatra}` },
-    { glyph: '◐', label: 'Tithi', value: cosmic.tithi },
-    { glyph: cosmic.dayLordGlyph, label: 'Planet of the day', value: cosmic.dayLord },
-    ...(cosmic.powerHours
-      ? [{ glyph: '⏱', label: 'Power hour', value: `${cosmic.powerHours.start} – ${cosmic.powerHours.end}` }]
+  const buildCells = (ev: CosmicEvents): EventCell[] => [
+    { glyph: '☾', label: 'Moon', value: `${ev.moonSign} • ${ev.moonNakshatra}` },
+    { glyph: '◐', label: 'Tithi', value: ev.tithi },
+    { glyph: ev.dayLordGlyph, label: 'Planet of the day', value: ev.dayLord },
+    ...(ev.powerHours
+      ? [{ glyph: '⏱', label: 'Power hour', value: `${ev.powerHours.start} – ${ev.powerHours.end}` }]
       : []),
-    ...(cosmic.abhijitMuhurta
-      ? [{ glyph: '☀', label: 'Abhijit (auspicious)', value: `${cosmic.abhijitMuhurta.start} – ${cosmic.abhijitMuhurta.end}` }]
+    ...(ev.abhijitMuhurta
+      ? [{ glyph: '☀', label: 'Abhijit (auspicious)', value: `${ev.abhijitMuhurta.start} – ${ev.abhijitMuhurta.end}` }]
       : []),
-    ...(cosmic.rahukalam
-      ? [{ glyph: '☊', label: 'Rāhukālam (avoid)', value: `${cosmic.rahukalam.start} – ${cosmic.rahukalam.end}` }]
+    ...(ev.rahukalam
+      ? [{ glyph: '☊', label: 'Rāhukālam (avoid)', value: `${ev.rahukalam.start} – ${ev.rahukalam.end}` }]
       : []),
-    { glyph: '●', label: 'Lucky color', value: cosmic.luckyColor, swatch: cosmic.luckyColorHex },
-    { glyph: '✦', label: 'Lucky number', value: String(cosmic.luckyNumber) },
+    { glyph: '●', label: 'Lucky color', value: ev.luckyColor, swatch: ev.luckyColorHex },
+    { glyph: '✦', label: 'Lucky number', value: String(ev.luckyNumber) },
   ];
+  const cells = buildCells(cosmic);
+  const currentCells = cosmicCurrent ? buildCells(cosmicCurrent) : null;
+
+  // One grid, reused for both location cards.
+  const renderGrid = (cellArr: EventCell[]) => (
+    <View style={styles.eventsGrid}>
+      {cellArr.map((c) => (
+        <View key={c.label} style={styles.eventCell}>
+          <Text style={{ fontSize: 16, color: colors.goldSoft, lineHeight: 22 }}>{c.glyph}</Text>
+          <View style={{ flex: 1 }}>
+            <Text color={colors.muted} style={{ fontSize: 10.5, letterSpacing: 0.3 }}>{c.label}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 3 }}>
+              {c.swatch ? <View style={[styles.swatch, { backgroundColor: c.swatch }]} /> : null}
+              <Text color={colors.cream} style={styles.eventValue} numberOfLines={1}>{c.value}</Text>
+            </View>
+          </View>
+        </View>
+      ))}
+    </View>
+  );
 
   // Japa streak, surfaced on the Daily Practice card. Refetches on focus so it stays live.
   const [japa, setJapa] = useState<JapaState | null>(null);
@@ -290,22 +319,9 @@ export default function Home() {
 
       {/* 6. Today's Cosmic Events — panchanga/day-lord almanac + a merged second group
              (Dasha, transit, Moon phase) absorbed from the old Cosmic Weather card */}
-      <Card style={{ marginBottom: spacing.lg }}>
-        <SectionLabel>Today's Cosmic Events</SectionLabel>
-        <View style={styles.eventsGrid}>
-          {cells.map((c) => (
-            <View key={c.label} style={styles.eventCell}>
-              <Text style={{ fontSize: 16, color: colors.goldSoft, lineHeight: 22 }}>{c.glyph}</Text>
-              <View style={{ flex: 1 }}>
-                <Text color={colors.muted} style={{ fontSize: 10.5, letterSpacing: 0.3 }}>{c.label}</Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 3 }}>
-                  {c.swatch ? <View style={[styles.swatch, { backgroundColor: c.swatch }]} /> : null}
-                  <Text color={colors.cream} style={styles.eventValue} numberOfLines={1}>{c.value}</Text>
-                </View>
-              </View>
-            </View>
-          ))}
-        </View>
+      <Card style={{ marginBottom: showBothLocations ? spacing.md : spacing.lg }}>
+        <SectionLabel>{showBothLocations ? 'Cosmic Events · Birth Place' : "Today's Cosmic Events"}</SectionLabel>
+        {renderGrid(cells)}
 
         {/* Merged second group (was "Current Cosmic Weather") — no duplicate values. */}
         <View style={styles.cosmicRows}>
@@ -328,6 +344,17 @@ export default function Home() {
           </Pressable>
         ) : null}
       </Card>
+
+      {/* 6b. Current-location Cosmic Events — only while traveling (>10 km from birth place) */}
+      {currentCells ? (
+        <Card style={{ marginBottom: spacing.lg }}>
+          <SectionLabel>Cosmic Events · Where You Are Now</SectionLabel>
+          <Text variant="tiny" color={colors.gold} style={{ fontSize: 11.5, marginTop: 2 }}>
+            ✈ Traveling? These reflect your current location.
+          </Text>
+          {renderGrid(currentCells)}
+        </Card>
+      ) : null}
 
       {/* 7. Journal Prompt */}
       <Card style={{ marginBottom: spacing.lg }}>
