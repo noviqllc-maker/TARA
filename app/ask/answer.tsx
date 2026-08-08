@@ -43,6 +43,11 @@ const LEAD_INS = new Set([
 // Renders the answer body. A line that begins with a known template label followed by
 // " — " gets a distinct gold lead-in; everything else is a serif paragraph. Template E
 // (plain prose) has no lead-ins, so it renders as paragraphs.
+// Safety net: strip any em-dash the model still slips into rendered prose (the system prompt
+// forbids them, but this guarantees none reach the reader). The 'Label — content' lead-in
+// delimiter is consumed by the split BEFORE this runs, so it is never affected.
+const noEmDash = (s: string) => s.replace(/\s*—\s*/g, ', ');
+
 function AnswerBody({ text }: { text: string }) {
   const lines = text.split(/\n+/).map((l) => l.trim()).filter(Boolean);
   return (
@@ -54,11 +59,11 @@ function AnswerBody({ text }: { text: string }) {
         if (label && LEAD_INS.has(label.toLowerCase())) {
           return (
             <Text key={i} variant="serif" style={styles.answer}>
-              <Text style={styles.leadIn}>{label}: </Text>{line.slice(sep + 3).trim()}
+              <Text style={styles.leadIn}>{label}: </Text>{noEmDash(line.slice(sep + 3).trim())}
             </Text>
           );
         }
-        return <Text key={i} variant="serif" style={styles.answer}>{line}</Text>;
+        return <Text key={i} variant="serif" style={styles.answer}>{noEmDash(line)}</Text>;
       })}
     </View>
   );
@@ -326,7 +331,7 @@ export default function AnswerView() {
           {ans?.takeaway ? (
             <View style={styles.takeawayBox}>
               <Text variant="eyebrow" color={colors.gold} style={{ marginBottom: 6 }}>Today's Takeaway</Text>
-              <Text style={styles.takeawayLine}>{ans.takeaway}</Text>
+              <Text style={styles.takeawayLine}>{noEmDash(ans.takeaway)}</Text>
             </View>
           ) : null}
 
@@ -337,7 +342,7 @@ export default function AnswerView() {
               <View style={{ gap: 8, marginTop: 10 }}>
                 {ans.followups.map((f) => (
                   <Pressable key={f} onPress={() => askFollowup(f)} style={styles.followChip}>
-                    <Text variant="body" style={{ fontSize: 13.5, flex: 1 }}>{f}</Text>
+                    <Text variant="body" style={{ fontSize: 13.5, flex: 1 }}>{noEmDash(f)}</Text>
                     <Text style={{ color: colors.gold, fontSize: 15 }}>↑</Text>
                   </Pressable>
                 ))}
