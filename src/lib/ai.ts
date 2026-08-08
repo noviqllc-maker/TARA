@@ -75,10 +75,16 @@ export async function askTara(
         context,
       }),
     });
-    if (!res.ok) return fallbackReply(history);
+    if (!res.ok) {
+      if (__DEV__) { const b = await res.text().catch(() => ''); console.warn('[askTara] edge non-OK → fallback.', res.status, b.slice(0, 400)); }
+      return fallbackReply(history);
+    }
     const data = await res.json();
-    return (data.text && String(data.text).trim()) || fallbackReply(history);
-  } catch {
+    const out = data.text && String(data.text).trim();
+    if (!out && __DEV__) console.warn('[askTara] empty text → fallback.');
+    return out || fallbackReply(history);
+  } catch (e) {
+    if (__DEV__) console.warn('[askTara] fetch threw → fallback:', String(e));
     return fallbackReply(history);
   }
 }
@@ -168,9 +174,13 @@ export async function askTaraAnswer(
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages: [{ role: 'user', content: userMsg }], context, system, maxTokens: 900 }),
+      body: JSON.stringify({ messages: [{ role: 'user', content: userMsg }], context, system, maxTokens: 1500 }),
     });
-    if (!res.ok) return offline();
+    if (!res.ok) {
+      // DEV diagnosis: surface WHY we fall back (edge 4xx/5xx → the short canned reply).
+      if (__DEV__) { const b = await res.text().catch(() => ''); console.warn('[askTaraAnswer] edge non-OK → offline fallback.', res.status, b.slice(0, 400)); }
+      return offline();
+    }
     const data = await res.json();
     const text = String(data?.text ?? '').trim();
     // DEV diagnosis: the raw model response at the parse site. TODO(remove-before-release).
@@ -181,7 +191,8 @@ export async function askTaraAnswer(
     // graceful message and refunds the credit.
     if (__DEV__) console.warn('[askTaraAnswer] unparseable response — rendering error state. raw:', text);
     return { answer: '', factors: [factorLabel], error: true };
-  } catch {
+  } catch (e) {
+    if (__DEV__) console.warn('[askTaraAnswer] fetch/parse threw → offline fallback:', String(e));
     return offline();
   }
 }
