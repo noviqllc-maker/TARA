@@ -3,13 +3,13 @@ import React from 'react';
 import { View, ScrollView } from 'react-native';
 import Ring from './Ring';
 import { Text } from './ui';
-import { todayEnergy, EnergyDomain } from '@/data/mock';
+import { EnergyDomain } from '@/data/mock';
 import { domainColors, colors } from '@/theme';
 
 export default function EnergyDashboard({
-  domains = todayEnergy,
+  domains,
   vedicDomains = [],
-}: { domains?: EnergyDomain[]; vedicDomains?: string[] }) {
+}: { domains: EnergyDomain[]; vedicDomains?: string[] }) {
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 14, paddingVertical: 4 }}>
       {domains.map((d: EnergyDomain) => {
