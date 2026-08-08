@@ -17,6 +17,7 @@ import { PremiumNudgeBar } from '@/components/PremiumNudge';
 import { computeChart } from '@/lib/vedic';
 import { searchPlaces, geocodePlace, hasPlacesKey, fallbackGeo, Place } from '@/lib/places';
 import { gunaMilan, personMoonFromChart, KOOTA_META, GunaResult } from '@/lib/compatibility';
+import { relationshipNarrative } from '@/lib/relationshipNarrative';
 import { colors, fonts, radius, spacing } from '@/theme';
 
 const pad = (s: string) => s.padStart(2, '0');
@@ -37,6 +38,26 @@ function List({ title, items, color }: { title: string; items: string[]; color: 
         {items.map((x) => <Text key={x} variant="tiny" color={colors.cream} style={{ fontSize: 13 }}>• {x}</Text>)}
       </View>
     </Card>
+  );
+}
+
+// The plain-language relationship narrative (tier + specific pairing dynamics), derived from
+// the Guṇa Milan result. Rendered under the koota breakdown.
+function NarrativeCard({ result }: { result: GunaResult }) {
+  const n = relationshipNarrative(result);
+  return (
+    <View style={{ marginTop: 16 }}>
+      <Eyebrow color={colors.gold}>Your Relationship: {n.title}</Eyebrow>
+      <Text variant="body" color={colors.cream} style={{ marginTop: 8, fontSize: 14, lineHeight: 22 }}>{n.summary}</Text>
+      {n.dynamics.length > 0 && (
+        <View style={{ marginTop: 12, gap: 8 }}>
+          <Text variant="eyebrow" color={colors.muted} style={{ fontSize: 10.5 }}>Dynamics to know</Text>
+          {n.dynamics.map((d, i) => (
+            <Text key={i} variant="tiny" color={colors.cream} style={{ fontSize: 12.5, lineHeight: 18 }}>• {d}</Text>
+          ))}
+        </View>
+      )}
+    </View>
   );
 }
 
@@ -299,6 +320,9 @@ export default function Love() {
                 </Pressable>
               </View>
             )}
+
+            {/* Plain-language narrative: tier + specific Yoni/Varna/Nadi dynamics. */}
+            <NarrativeCard result={result} />
 
             <Text variant="tiny" color={colors.mutedDim} style={{ marginTop: 14, fontSize: 10.5, lineHeight: 15 }}>
               Tara uses the classic Ashtakoota method ({youAre === 'bride' ? 'you as bride' : 'you as groom'}). Guna Milan conventions vary between astrologers; treat this as guidance, not a verdict.

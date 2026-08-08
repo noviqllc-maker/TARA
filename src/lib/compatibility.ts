@@ -25,20 +25,31 @@ export interface PersonMoon {
 export type KootaKey =
   | 'varna' | 'vashya' | 'tara' | 'yoni' | 'maitri' | 'gana' | 'bhakoot' | 'nadi';
 
+// Semantic pairing details (beyond the raw scores) that the relationship narrative reads:
+// the two Yoni animals + their relation, the two Varna names, the two Nadi values + whether
+// they clash, and the two Ganas. Bride = A, groom = B (same convention as gunaMilan).
+export interface GunaDetails {
+  yoni: { a: Animal; b: Animal; relation: 'same' | 'bitter' | 'neutral' };
+  varna: { a: string; b: string };
+  nadi: { a: Nadi; b: Nadi; same: boolean };
+  gana: { a: Gana; b: Gana };
+}
+
 export interface GunaResult {
   total: number;                       // 0–36
   breakdown: Record<KootaKey, number>; // individual koota scores
   doshas: { nadi: boolean; bhakoot: boolean };
   rating: string;                      // Challenging | Acceptable | Good | Excellent
   tone: string;                        // warm one-line description
+  details: GunaDetails;                // semantic pairing facts for the narrative
 }
 
 // ---- §3 Master nakshatra table (array index = nakshatra − 1) ----
-type Animal =
+export type Animal =
   | 'Horse' | 'Elephant' | 'Sheep' | 'Serpent' | 'Dog' | 'Cat' | 'Rat'
   | 'Cow' | 'Buffalo' | 'Tiger' | 'Deer' | 'Monkey' | 'Mongoose' | 'Lion';
-type Gana = 'Deva' | 'Manushya' | 'Rakshasa';
-type Nadi = 'Aadi' | 'Madhya' | 'Antya';
+export type Gana = 'Deva' | 'Manushya' | 'Rakshasa';
+export type Nadi = 'Aadi' | 'Madhya' | 'Antya';
 
 const NAK_YONI: Animal[] = [
   'Horse', 'Elephant', 'Sheep', 'Serpent', 'Serpent', 'Dog', 'Cat', 'Sheep', 'Cat', 'Rat',
@@ -60,6 +71,9 @@ const NAK_NADI: Nadi[] = [
 // Signs cycle Fire→Earth→Air→Water; ranks Kshatriya(3),Vaishya(2),Shudra(1),Brahmin(4).
 const VARNA_RANK = [3, 2, 1, 4];
 function varnaRank(rashi: number): number { return VARNA_RANK[(rashi - 1) % 4]; }
+// Same cycle → the varna NAME, for the relationship narrative.
+const VARNA_NAME = ['Kshatriya', 'Vaishya', 'Shudra', 'Brahmin'];
+export function varnaName(rashi: number): string { return VARNA_NAME[(rashi - 1) % 4]; }
 export function scoreVarna(brideRashi: number, groomRashi: number): number {
   return varnaRank(groomRashi) >= varnaRank(brideRashi) ? 1 : 0;
 }
@@ -189,12 +203,23 @@ export function gunaMilan(A: PersonMoon, B: PersonMoon): GunaResult {
   const total = varna + vashya + tara + yoni + maitri + gana + bhakoot + nadi;
   const band = ratingBand(total);
 
+  // Semantic details for the narrative (yoni animals, varna names, nadi values, ganas).
+  const yA = NAK_YONI[A.nakshatra - 1], yB = NAK_YONI[B.nakshatra - 1];
+  const nA = NAK_NADI[A.nakshatra - 1], nB = NAK_NADI[B.nakshatra - 1];
+  const details: GunaDetails = {
+    yoni: { a: yA, b: yB, relation: yA === yB ? 'same' : isBitterEnemy(yA, yB) ? 'bitter' : 'neutral' },
+    varna: { a: varnaName(A.rashi), b: varnaName(B.rashi) },
+    nadi: { a: nA, b: nB, same: nA === nB },
+    gana: { a: NAK_GANA[A.nakshatra - 1], b: NAK_GANA[B.nakshatra - 1] },
+  };
+
   return {
     total,
     breakdown: { varna, vashya, tara, yoni, maitri, gana, bhakoot, nadi },
     doshas: { nadi: nadi === 0, bhakoot: bhakoot === 0 },
     rating: band.rating,
     tone: band.tone,
+    details,
   };
 }
 
