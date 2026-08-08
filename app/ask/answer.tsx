@@ -28,7 +28,7 @@ const MEM_KEY = 'tara.chat.v1';       // shared with the Ask Tara screen
 const STORE_CAP = 200;                // keep in sync with the Ask Tara screen
 const FEEDBACK_KEY = 'tara.answer.feedback.v1';
 
-type UIState = 'loading' | 'ready' | 'nochart' | 'nocredits' | 'fairuse';
+type UIState = 'loading' | 'ready' | 'nochart' | 'nocredits' | 'fairuse' | 'error';
 
 // The known template lead-in labels (templates A–D). Matching against this whitelist —
 // rather than any "Label — …" pattern — avoids styling the em dashes the translation rule
@@ -70,7 +70,7 @@ export default function AnswerView() {
   const chart = useChart();
   const { profile } = useProfile();
   const { metrics } = useHealth();
-  const { authorize, refresh } = useCredits();
+  const { authorize, refresh, refund } = useCredits();
 
   // Classify the question's theme so the factor leads with the relevant graha/house
   // (career → 10th/Saturn/Sun, love → Venus/7th, …) instead of always the Moon.
@@ -116,6 +116,16 @@ export default function AnswerView() {
 
     const language = await getLanguage();
     const res = await askTaraAnswer(question, factor.label, profile.name || 'friend', chart, metrics, language, topic);
+    // Parse failure → the answer never came through. Refund the credit, keep the question,
+    // and show the graceful error state (never the raw model text). A retry re-authorizes,
+    // so the net cost stays one credit per delivered answer.
+    if (res.error) {
+      await refund();
+      authorizedRef.current = false;
+      setAskDraft(question);
+      setState('error');
+      return;
+    }
     setAns(res);
     setAskDraft(''); // answered → don't restore the question to the input
     setState('ready');
@@ -131,7 +141,10 @@ export default function AnswerView() {
         await AsyncStorage.setItem(MEM_KEY, JSON.stringify(next.slice(-STORE_CAP)));
       } catch {}
     }
-  }, [question, chart, factor, profile.name, metrics, authorize, topic]);
+  }, [question, chart, factor, profile.name, metrics, authorize, refund, topic]);
+
+  // Error-state retry: re-run (authorizedRef was reset, so it re-authorizes cleanly).
+  const onErrorRetry = useCallback(() => { run(); }, [run]);
 
   // Follow-up chip → PREFILL the Ask Tara input (never auto-send/spend). Mirrors the
   // Home/Insights bridge: stash the draft, then return to the tab which restores it.
@@ -247,6 +260,29 @@ export default function AnswerView() {
           {/* Overflow option — a credit pack works past the monthly cap (no trapped state). */}
           <Pressable onPress={() => router.push('/credits')} hitSlop={8} style={{ marginTop: 16 }}>
             <Text variant="tiny" color={colors.gold} style={{ fontWeight: '600' }}>Need more now? Get a credit pack →</Text>
+          </Pressable>
+        </View>
+      </Screen>
+    );
+  }
+
+  if (state === 'error') {
+    return (
+      <Screen scroll={false} contentStyle={{ flex: 1 }}>
+        <Pressable onPress={close} hitSlop={8} style={styles.closeX}>
+          <Text variant="body" color={colors.muted}>✕ Close</Text>
+        </Pressable>
+        <View style={styles.center}>
+          <Text variant="eyebrow" color={colors.gold} style={{ marginBottom: 10 }}>✦ Try once more</Text>
+          <Text variant="serif" style={{ fontSize: 22, textAlign: 'center' }}>Tara's answer didn't come through cleanly</Text>
+          <Text variant="tiny" color={colors.muted} style={{ marginTop: 8, marginBottom: 22, textAlign: 'center', lineHeight: 19 }}>
+            Ask again. This one won't use a credit.
+          </Text>
+          <View style={{ alignSelf: 'stretch', paddingHorizontal: spacing.xl }}>
+            <GoldButton label="Ask again" onPress={onErrorRetry} />
+          </View>
+          <Pressable onPress={close} hitSlop={8} style={{ marginTop: 16 }}>
+            <Text variant="tiny" color={colors.muted}>Close</Text>
           </Pressable>
         </View>
       </Screen>

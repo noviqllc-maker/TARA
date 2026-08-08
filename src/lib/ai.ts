@@ -93,6 +93,8 @@ export type TaraAnswer = {
   factors?: string[];    // 1–3 short factor labels the answer actually used (attribution)
   takeaway?: string;     // one memorable standalone line, rendered distinctly
   followups?: string[];  // 3 tailored next questions (rendered as prefill chips)
+  error?: boolean;       // true → the model response was unparseable; render the graceful
+                         // error state and refund the credit. NEVER accompanied by raw JSON.
 };
 
 // Five answer structures. The client detects "Label — content" lead-ins on their own
@@ -156,7 +158,8 @@ export async function askTaraAnswer(
     "Only use chart factors present in the provided context. Never invent planets, houses, dashas, aspects, or transits. Warm, specific, never doom or fear; no medical, legal, or financial directives.",
     `LENGTH: ${tpl === 'E' ? '60–120' : '120–200'} words for the answer body (excluding the takeaway).`,
     // 4/5/6. Structured output
-    'Return ONLY minified JSON with exactly these fields: {"factors":[1–3 SHORT UPPERCASE labels naming the factors you actually leaned on, e.g. "JUPITER–MERCURY ANTARDASHA","MERCURY RETROGRADE","SATURN IN 10TH"],"answer":"the templated answer text: no takeaway, no follow-ups inside it","takeaway":"one memorable standalone sentence that sums it up","followups":["three short, specific questions the user might naturally ask next"]}.',
+    'OUTPUT: respond with ONLY the JSON object and nothing else. No code fences (no ```), no "json" label, no preamble, no trailing text, nothing before the opening { or after the closing }. Escape every newline inside a string value as \\n (a JSON string may not contain a raw line break) and escape any double-quote inside a value as \\".',
+    'Use exactly these fields: {"factors":[1–3 SHORT UPPERCASE labels naming the factors you actually leaned on, e.g. "JUPITER–MERCURY ANTARDASHA","MERCURY RETROGRADE","SATURN IN 10TH"],"answer":"the templated answer text: no takeaway, no follow-ups inside it","takeaway":"one memorable standalone sentence that sums it up","followups":["three short, specific questions the user might naturally ask next"]}.',
     language && language !== 'English' ? `Write answer, takeaway, and followups in ${language}; keep Sanskrit terms as-is. Keep factors in English uppercase.` : '',
   ].filter(Boolean).join(' ');
   const userMsg = `Question: ${q}\n\n(Engine-detected strongest transit. Cite ONLY if genuinely relevant to this question: ${factorLabel})`;
@@ -170,31 +173,107 @@ export async function askTaraAnswer(
     if (!res.ok) return offline();
     const data = await res.json();
     const text = String(data?.text ?? '').trim();
-    return parseAnswer(text) ?? { answer: text || offline().answer, factors: [factorLabel] };
+    // DEV diagnosis: the raw model response at the parse site. TODO(remove-before-release).
+    if (__DEV__) console.log('[askTaraAnswer] raw model response:', JSON.stringify(text).slice(0, 2000));
+    const parsed = parseAnswer(text);
+    if (parsed) return { answer: parsed.answer, factors: parsed.factors ?? [factorLabel], takeaway: parsed.takeaway, followups: parsed.followups };
+    // Unrecoverable: DO NOT render the raw JSON. Signal an error so the screen shows a
+    // graceful message and refunds the credit.
+    if (__DEV__) console.warn('[askTaraAnswer] unparseable response — rendering error state. raw:', text);
+    return { answer: '', factors: [factorLabel], error: true };
   } catch {
     return offline();
   }
 }
 
-// Pull the structured answer from the model text; tolerant of ```json fences/preamble.
-function parseAnswer(text: string): TaraAnswer | null {
-  if (!text) return null;
-  const s = text.replace(/^```(?:json)?/i, '').replace(/```$/i, '').trim();
+// ---- robust answer parsing (defense in depth) ----------------------------------
+// Order: strip fences/prose → isolate the outer {...} → strict JSON.parse → repaired parse
+// (escape raw control chars inside strings) → regex-extract the "answer" field. Returns null
+// ONLY when nothing usable can be recovered (caller then renders the error state). The raw
+// model text is NEVER returned as the answer.
+const tryParse = (s: string): any => { try { return JSON.parse(s); } catch { return null; } };
+
+// Strip every ```json / ``` fence (models sometimes wrap or double-wrap the JSON).
+const stripFences = (t: string): string => t.replace(/```(?:json)?/gi, '').trim();
+
+// Escape raw newlines/tabs that appear INSIDE string values (the most common breakage:
+// template answers put real line breaks in the "answer" string). A small state machine so
+// structural whitespace between tokens is left untouched.
+function repairJson(j: string): string {
+  let out = '', inStr = false, esc = false;
+  for (const ch of j) {
+    if (esc) { out += ch; esc = false; continue; }
+    if (ch === '\\') { out += ch; esc = true; continue; }
+    if (ch === '"') { inStr = !inStr; out += ch; continue; }
+    if (inStr && (ch === '\n' || ch === '\r')) { out += '\\n'; continue; }
+    if (inStr && ch === '\t') { out += '\\t'; continue; }
+    out += ch;
+  }
+  return out;
+}
+
+const unescapeJson = (s: string): string =>
+  s.replace(/\\r/g, '').replace(/\\n/g, '\n').replace(/\\t/g, '\t').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+
+// Regex-extract one top-level string field's value (tolerant of raw or escaped newlines).
+function regexField(src: string, key: string): string | undefined {
+  const m = new RegExp(`"${key}"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"`).exec(src);
+  const v = m ? unescapeJson(m[1]).trim() : '';
+  return v || undefined;
+}
+function regexArray(src: string, key: string): string[] | undefined {
+  const m = new RegExp(`"${key}"\\s*:\\s*\\[([^\\]]*)\\]`).exec(src);
+  if (!m) return undefined;
+  const items = [...m[1].matchAll(/"((?:[^"\\]|\\.)*)"/g)].map((x) => unescapeJson(x[1]).trim()).filter(Boolean).slice(0, 3);
+  return items.length ? items : undefined;
+}
+
+function fromObject(o: any): TaraAnswer | null {
+  const answer = typeof o?.answer === 'string' ? o.answer.trim() : '';
+  if (!answer) return null;
+  const strArr = (v: any): string[] | undefined =>
+    Array.isArray(v) ? v.filter((x) => typeof x === 'string' && x.trim()).map((x) => x.trim()).slice(0, 3) : undefined;
+  return {
+    answer,
+    factors: strArr(o.factors),
+    takeaway: typeof o.takeaway === 'string' && o.takeaway.trim() ? o.takeaway.trim() : undefined,
+    followups: strArr(o.followups),
+  };
+}
+
+const regexEnvelope = (src: string): TaraAnswer | null => {
+  const ra = regexField(src, 'answer');
+  return ra ? { answer: ra, takeaway: regexField(src, 'takeaway'), followups: regexArray(src, 'followups'), factors: regexArray(src, 'factors') } : null;
+};
+
+export function parseAnswer(text: string): TaraAnswer | null {
+  if (!text || !text.trim()) return null;
+  const s = stripFences(text);
   const a = s.indexOf('{'), b = s.lastIndexOf('}');
-  if (a === -1 || b <= a) return null;
-  try {
-    const o = JSON.parse(s.slice(a, b + 1));
-    const answer = typeof o.answer === 'string' ? o.answer.trim() : '';
-    if (!answer) return null;
-    const strArr = (v: any): string[] | undefined =>
-      Array.isArray(v) ? v.filter((x) => typeof x === 'string' && x.trim()).map((x) => x.trim()).slice(0, 3) : undefined;
-    return {
-      answer,
-      factors: strArr(o.factors),
-      takeaway: typeof o.takeaway === 'string' && o.takeaway.trim() ? o.takeaway.trim() : undefined,
-      followups: strArr(o.followups),
-    };
-  } catch { return null; }
+
+  // No object markers at all → genuine plain prose (e.g. a template-E answer sans envelope).
+  if (a === -1) return { answer: s };
+
+  const closed = b > a ? s.slice(a, b + 1) : null;
+
+  // (b) A complete {...} block → strict parse, then a repaired re-parse.
+  if (closed) {
+    const o = tryParse(closed) ?? tryParse(repairJson(closed));
+    if (o && typeof o === 'object') {
+      const built = fromObject(o);
+      if (built) return built;
+      // Parsed as an object but no usable answer field → regex, else error. NEVER raw JSON.
+      return regexEnvelope(closed);
+    }
+  }
+
+  // Envelope-shaped but unparseable (bad chars) OR truncated (no closing brace) →
+  // (d) regex-extract the answer field from what we have.
+  const candidate = closed ?? s.slice(a);
+  if (/"answer"\s*:/.test(candidate)) return regexEnvelope(candidate);
+
+  // A stray '{' inside otherwise-plain prose → treat the whole text as the answer.
+  return { answer: s };
 }
 
 // Offline / not-yet-deployed fallback so the chat never dead-ends.

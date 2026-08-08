@@ -17,6 +17,7 @@ type CreditsState = {
   products: Record<string, any>;             // productId -> StoreProduct (priceString)
   refresh: () => Promise<number | null>;     // re-read the server balance / monthly remaining
   authorize: () => Promise<AuthResult>;      // atomic server gate (credit decrement OR premium increment)
+  refund: () => Promise<void>;               // undo one authorization (parse failure / undelivered answer)
   buy: (productId: CreditProductId) => Promise<BuyResult>; // purchase → wait for server grant
   amountFor: (productId: string) => number;
 };
@@ -131,6 +132,21 @@ export function CreditsProvider({ children }: { children: React.ReactNode }) {
     return 'ok';
   }, []);
 
+  // Refund one authorization when the answer never came through (parse failure). Undoes the
+  // right resource: premium → the monthly counter; free → one credit. Best-effort; on any
+  // error the local balance simply isn't bumped (the caller's copy still says "no credit").
+  const refund = useCallback(async (): Promise<void> => {
+    try {
+      if (isPremiumRef.current) {
+        const { data } = await supabase.rpc('refund_premium_ask');
+        if (typeof data === 'number') setPremiumRemaining(data);
+      } else {
+        const { data } = await supabase.rpc('refund_credit');
+        if (typeof data === 'number' && data >= 0) setBalance(data);
+      }
+    } catch {}
+  }, []);
+
   // Buy a pack: StoreKit finishes the consumable, then we wait for the SERVER to grant
   // the credits (RevenueCat webhook is async; the credits edge function is also invoked
   // as an idempotent fast-path). Poll the balance up to ~10s and report the outcome.
@@ -161,7 +177,7 @@ export function CreditsProvider({ children }: { children: React.ReactNode }) {
   const amountFor = useCallback((productId: string) => CREDIT_AMOUNTS[productId as CreditProductId] ?? 0, []);
 
   return (
-    <Ctx.Provider value={{ balance, premiumRemaining, isPremium, loading, products, refresh, authorize, buy, amountFor }}>
+    <Ctx.Provider value={{ balance, premiumRemaining, isPremium, loading, products, refresh, authorize, refund, buy, amountFor }}>
       {children}
     </Ctx.Provider>
   );
