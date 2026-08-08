@@ -128,7 +128,16 @@ export default function Home() {
   // Today's Cosmic Events — deterministic, engine-computed, changes day to day (recompute
   // per calendar day + chart, matching the useTransits/useDailyEnergy pattern; no AI call).
   const dayKey = new Date().toDateString();
-  const cosmic = useMemo(() => computeCosmicEvents(chart, new Date()), [chart, dayKey]);
+  // Birth place (lat/lon/tz) drives the location-aware windows: sunrise/sunset, the day-lord
+  // horā power hour, Rāhukālam, and Abhijit Muhūrta. Undefined when the user hasn't set a
+  // place; those windows then degrade to null and their rows are simply omitted.
+  const location = profile.lat != null && profile.lon != null
+    ? { lat: profile.lat, lon: profile.lon, tzOffsetMinutes: profile.tzOffsetMinutes }
+    : undefined;
+  const cosmic = useMemo(
+    () => computeCosmicEvents(chart, new Date(), location),
+    [chart, dayKey, profile.lat, profile.lon, profile.tzOffsetMinutes],
+  );
   // Today's observance (Ekādaśī / Pūrṇimā / festival …), if one is active — surfaced as a
   // line on the cosmic-events card and echoed on the Practice card. Deterministic, no AI.
   const observance = useMemo(() => todayObservance(new Date()), [dayKey]);
@@ -149,6 +158,26 @@ export default function Home() {
     ['Dasha', chart?.currentDasha ?? '–'],
     ['Transit', transits.transitText],
     ['Moon Phase', transits.moonPhase],
+  ];
+
+  // Today's Cosmic Events grid. The three timing rows (power hour / Abhijit / Rāhukālam) are
+  // only added when the birth place is set, so they never render as empty placeholders.
+  type EventCell = { glyph: string; label: string; value: string; swatch?: string };
+  const cells: EventCell[] = [
+    { glyph: '☾', label: 'Moon', value: `${cosmic.moonSign} • ${cosmic.moonNakshatra}` },
+    { glyph: '◐', label: 'Tithi', value: cosmic.tithi },
+    { glyph: cosmic.dayLordGlyph, label: 'Planet of the day', value: cosmic.dayLord },
+    ...(cosmic.powerHours
+      ? [{ glyph: '⏱', label: 'Power hour', value: `${cosmic.powerHours.start} – ${cosmic.powerHours.end}` }]
+      : []),
+    ...(cosmic.abhijitMuhurta
+      ? [{ glyph: '☀', label: 'Abhijit (auspicious)', value: `${cosmic.abhijitMuhurta.start} – ${cosmic.abhijitMuhurta.end}` }]
+      : []),
+    ...(cosmic.rahukalam
+      ? [{ glyph: '☊', label: 'Rāhukālam (avoid)', value: `${cosmic.rahukalam.start} – ${cosmic.rahukalam.end}` }]
+      : []),
+    { glyph: '●', label: 'Lucky color', value: cosmic.luckyColor, swatch: cosmic.luckyColorHex },
+    { glyph: '✦', label: 'Lucky number', value: String(cosmic.luckyNumber) },
   ];
 
   // Japa streak, surfaced on the Daily Practice card. Refetches on focus so it stays live.
@@ -264,14 +293,7 @@ export default function Home() {
       <Card style={{ marginBottom: spacing.lg }}>
         <SectionLabel>Today's Cosmic Events</SectionLabel>
         <View style={styles.eventsGrid}>
-          {[
-            { glyph: '☾', label: 'Moon', value: `${cosmic.moonSign} • ${cosmic.moonNakshatra}` },
-            { glyph: '◐', label: 'Tithi', value: cosmic.tithi },
-            { glyph: cosmic.dayLordGlyph, label: 'Planet of the day', value: cosmic.dayLord },
-            { glyph: '⏱', label: 'Power hours', value: cosmic.power.window },
-            { glyph: '●', label: 'Lucky color', value: cosmic.luckyColor, swatch: cosmic.luckyColorHex },
-            { glyph: '✦', label: 'Lucky number', value: String(cosmic.luckyNumber) },
-          ].map((c) => (
+          {cells.map((c) => (
             <View key={c.label} style={styles.eventCell}>
               <Text style={{ fontSize: 16, color: colors.goldSoft, lineHeight: 22 }}>{c.glyph}</Text>
               <View style={{ flex: 1 }}>

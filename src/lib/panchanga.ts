@@ -8,6 +8,7 @@
 
 import { BirthChart } from '@/lib/vedic';
 import { computeTransits } from '@/lib/transits';
+import { getSunriseSunset, getHoraWindows, getRahukalam, getAbhijitMuhurta } from '@/lib/astronomy';
 
 export type DayLord =
   | 'Sun' | 'Moon' | 'Mars' | 'Mercury' | 'Jupiter' | 'Venus' | 'Saturn';
@@ -59,6 +60,9 @@ export function varaLord(date: Date): { vara: string; lord: DayLord } {
   return { vara: v.vara, lord: v.lord };
 }
 
+// A localized clock window ("HH:MM" to "HH:MM") with a one-line meaning.
+export type TimeWindow = { start: string; end: string; description: string };
+
 export type CosmicEvents = {
   moonSign: string;
   moonNakshatra: string;
@@ -67,18 +71,57 @@ export type CosmicEvents = {
   vara: string;           // Sanskrit weekday
   dayLord: DayLord;       // planet of the day
   dayLordGlyph: string;
-  power: { lord: DayLord; window: string };
   luckyColor: string;
   luckyColorHex: string;
   luckyNumber: number;
+  // Location-aware solar timing. Null when the birth place is unknown (no lat/lon) or in
+  // polar day/night; consumers fall back gracefully rather than showing a faked window.
+  sunrise: string | null;   // "HH:MM" local to the birth place
+  sunset: string | null;
+  powerHours: (TimeWindow & { lord: DayLord; windowMinutes: number }) | null;
+  rahukalam: TimeWindow | null;
+  abhijitMuhurta: TimeWindow | null;
 };
 
-export function computeCosmicEvents(chart: BirthChart | null, date: Date = new Date()): CosmicEvents {
+export type CosmicLocation = { lat: number; lon: number; tzOffsetMinutes?: number };
+
+export function computeCosmicEvents(
+  chart: BirthChart | null,
+  date: Date = new Date(),
+  location?: CosmicLocation,
+): CosmicEvents {
   const t = computeTransits(date, chart);
   // computeTransits packs panchanga as "<paksha> · <tithi>"; split it back out.
   const [paksha, tithi] = t.panchanga.split(' · ');
   const vw = VARA[date.getDay()];
   const info = DAY_LORD_INFO[vw.lord];
+
+  // Location-aware windows only when we have real coordinates; otherwise leave them null so
+  // the UI degrades gracefully instead of presenting a location-agnostic guess as precise.
+  let sunrise: string | null = null;
+  let sunset: string | null = null;
+  let powerWindow: CosmicEvents['powerHours'] = null;
+  let rahukalam: TimeWindow | null = null;
+  let abhijitMuhurta: TimeWindow | null = null;
+  if (location) {
+    const { lat, lon, tzOffsetMinutes } = location;
+    const ss = getSunriseSunset(date, lat, lon);
+    sunrise = ss.sunrise ? fmtLocal(ss.sunrise, tzOffsetMinutes) : null;
+    sunset = ss.sunset ? fmtLocal(ss.sunset, tzOffsetMinutes) : null;
+    const hora = getHoraWindows(date, lat, lon, vw.lord, tzOffsetMinutes);
+    if (hora) {
+      powerWindow = {
+        lord: vw.lord,
+        start: hora.start,
+        end: hora.end,
+        windowMinutes: hora.windowMinutes,
+        description: `${vw.lord}'s horā`,
+      };
+    }
+    rahukalam = getRahukalam(date, lat, lon, vw.lord, tzOffsetMinutes);
+    abhijitMuhurta = getAbhijitMuhurta(date, lat, lon, tzOffsetMinutes);
+  }
+
   return {
     moonSign: t.moonSign,
     moonNakshatra: t.moonNakshatra,
@@ -87,9 +130,22 @@ export function computeCosmicEvents(chart: BirthChart | null, date: Date = new D
     vara: vw.vara,
     dayLord: vw.lord,
     dayLordGlyph: vw.glyph,
-    power: powerHours(date),
     luckyColor: info.color,
     luckyColorHex: info.hex,
     luckyNumber: info.number,
+    sunrise,
+    sunset,
+    powerHours: powerWindow,
+    rahukalam,
+    abhijitMuhurta,
   };
+}
+
+// Format an absolute instant as "HH:MM" at the birth place's timezone (minutes east of
+// UTC). Mirrors astronomy.fmtHM; kept here so the panchanga module owns its own display.
+function fmtLocal(instant: Date, tzOffsetMinutes?: number): string {
+  const two = (n: number) => (n < 10 ? `0${n}` : `${n}`);
+  if (tzOffsetMinutes == null) return `${two(instant.getHours())}:${two(instant.getMinutes())}`;
+  const shifted = new Date(instant.getTime() + tzOffsetMinutes * 60_000);
+  return `${two(shifted.getUTCHours())}:${two(shifted.getUTCMinutes())}`;
 }
