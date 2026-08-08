@@ -1,15 +1,19 @@
 // app/insights/career.tsx
+// "Your Work Energy" — the reading is now derived from the chart (10th/2nd houses, running
+// Mahādasha, Jupiter/Saturn transits) via composeCareer. The score ring stays driven by the
+// chart-based daily energy. Graceful fallback when there is no birth chart yet.
 import React from 'react';
 import { View } from 'react-native';
 import { router } from 'expo-router';
 import Screen from '@/components/Screen';
-import { Text, Card, Eyebrow, GhostButton } from '@/components/ui';
+import { Text, Card, Eyebrow, GhostButton, GoldButton } from '@/components/ui';
 import SubHeader from '@/components/SubHeader';
 import { PremiumNudgeBar } from '@/components/PremiumNudge';
 import Ring from '@/components/Ring';
 import Disclaimer from '@/components/Disclaimer';
-import { career } from '@/data/mock';
+import { useChart } from '@/hooks/useChart';
 import { useDailyEnergy } from '@/hooks/useDailyEnergy';
+import { composeCareer } from '@/lib/composeCareer';
 import { colors, spacing } from '@/theme';
 
 function List({ title, items, color }: { title: string; items: string[]; color: string }) {
@@ -23,9 +27,32 @@ function List({ title, items, color }: { title: string; items: string[]; color: 
   );
 }
 
+function CareerPrompt() {
+  return (
+    <Screen>
+      <SubHeader eyebrow="Career & Money" title="Your Work Energy" />
+      <Card solid glow style={{ alignItems: 'center', marginTop: spacing.lg }}>
+        <Text style={{ fontSize: 24, color: colors.gold }}>✦</Text>
+        <Text variant="serif" style={{ fontSize: 19, marginTop: 8, textAlign: 'center' }}>Add your birth details</Text>
+        <Text variant="tiny" color={colors.muted} style={{ marginTop: 8, textAlign: 'center', lineHeight: 19 }}>
+          Your work and money reading is drawn from your 10th house of career, your 2nd house of wealth, and the life chapter you are living now. Add your date, time, and place of birth to see it.
+        </Text>
+        <View style={{ alignSelf: 'stretch', marginTop: 18 }}>
+          <GoldButton label="Add birth details" onPress={() => router.push('/(tabs)/profile')} />
+        </View>
+      </Card>
+      <Disclaimer />
+    </Screen>
+  );
+}
+
 export default function Career() {
+  const chart = useChart();
   const energy = useDailyEnergy();
-  const careerScore = energy.snapshot.find((s) => s.label === 'Career')?.value ?? career.energy;
+  const career = composeCareer(chart);
+  if (!career) return <CareerPrompt />;
+
+  const careerScore = energy.snapshot.find((s) => s.label === 'Career')?.value ?? 50;
   return (
     <Screen>
       <SubHeader eyebrow="Career & Money" title="Your Work Energy" />

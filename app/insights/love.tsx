@@ -9,7 +9,7 @@ import SubHeader from '@/components/SubHeader';
 import Ring from '@/components/Ring';
 import Field from '@/components/Field';
 import Disclaimer from '@/components/Disclaimer';
-import { love } from '@/data/mock';
+import { composeLove } from '@/lib/composeLove';
 import { useDailyEnergy } from '@/hooks/useDailyEnergy';
 import { useChart } from '@/hooks/useChart';
 import { useProfile } from '@/hooks/useProfile';
@@ -63,9 +63,10 @@ function NarrativeCard({ result }: { result: GunaResult }) {
 
 export default function Love() {
   const energy = useDailyEnergy();
-  const loveScore = energy.snapshot.find((s) => s.label === 'Love')?.value ?? love.score;
+  const loveScore = energy.snapshot.find((s) => s.label === 'Love')?.value ?? 50;
 
   const userChart = useChart();
+  const loveContent = composeLove(userChart); // top reading, derived from Venus/Moon/7th house
   const { profile } = useProfile();
   const keyed = hasPlacesKey();
 
@@ -153,19 +154,36 @@ export default function Love() {
       <SubHeader eyebrow="Love & Relationships" title="Your Connection Energy" />
       <PremiumNudgeBar context="life_love" style={{ marginBottom: spacing.lg }} />
 
-      <Card solid glow style={{ alignItems: 'center', marginBottom: spacing.lg }}>
-        <Ring value={loveScore} label="Harmony" color={colors.rose} />
-        <Text variant="tiny" style={{ marginTop: 10, textAlign: 'center' }}>{love.influence}</Text>
-      </Card>
+      {loveContent ? (
+        <>
+          <Card solid glow style={{ alignItems: 'center', marginBottom: spacing.lg }}>
+            <Ring value={loveScore} label="Harmony" color={colors.rose} />
+            <Text variant="tiny" style={{ marginTop: 10, textAlign: 'center' }}>{loveContent.influence}</Text>
+          </Card>
 
-      <List title="Strengths" items={love.strengths} color={colors.sage} />
-      <List title="Challenges" items={love.challenges} color={colors.rose} />
-      <List title="Growth Opportunities" items={love.growth} color={colors.goldSoft} />
+          <List title="Strengths" items={loveContent.strengths} color={colors.sage} />
+          <List title="Challenges" items={loveContent.challenges} color={colors.rose} />
+          <List title="Growth Opportunities" items={loveContent.growth} color={colors.goldSoft} />
 
-      <Card style={{ marginBottom: spacing.lg }}>
-        <Eyebrow>Personalized Advice</Eyebrow>
-        <Text variant="serif" style={{ fontSize: 15.5, marginTop: 8 }}>{love.advice}</Text>
-      </Card>
+          <Card style={{ marginBottom: spacing.lg }}>
+            <Eyebrow>Personalized Advice</Eyebrow>
+            <Text variant="serif" style={{ fontSize: 15.5, marginTop: 8 }}>{loveContent.advice}</Text>
+          </Card>
+        </>
+      ) : (
+        // No birth chart yet: the personal reading needs it. The Guṇa Milan calculator below
+        // stays available (it self-guards on the user's own Moon).
+        <Card solid glow style={{ alignItems: 'center', marginBottom: spacing.lg }}>
+          <Text style={{ fontSize: 24, color: colors.gold }}>✦</Text>
+          <Text variant="serif" style={{ fontSize: 18, marginTop: 8, textAlign: 'center' }}>Add your birth details</Text>
+          <Text variant="tiny" color={colors.muted} style={{ marginTop: 8, textAlign: 'center', lineHeight: 19 }}>
+            Your relationship reading is drawn from your Venus, your Moon, and your 7th house of partnership. Add your birth details to see it.
+          </Text>
+          <View style={{ alignSelf: 'stretch', marginTop: 16 }}>
+            <GoldButton label="Add birth details" onPress={() => router.push('/(tabs)/profile')} />
+          </View>
+        </Card>
+      )}
 
       {/* ---- Guna Milan compatibility ---- */}
       <Card style={{ marginBottom: spacing.lg, gap: 16 }}>

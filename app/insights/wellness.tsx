@@ -9,11 +9,15 @@ import { PremiumNudgeBar } from '@/components/PremiumNudge';
 import Ring from '@/components/Ring';
 import Disclaimer from '@/components/Disclaimer';
 import { useHealth } from '@/hooks/useHealth';
-import { wellness as mockExtra } from '@/data/mock';
+import { useChart } from '@/hooks/useChart';
+import { composeWellness } from '@/lib/composeWellness';
 import { colors, fonts, spacing } from '@/theme';
 
 export default function Wellness() {
   const { metrics, connected, available, loading, connectAppleHealth, refresh } = useHealth();
+  // Spiritual tone + habits + practices come from the chart (day-lord, 12th house); the health
+  // rings above stay driven by real metrics. Null when there is no birth chart yet.
+  const wellnessContent = composeWellness(useChart());
   const live = metrics.source === 'apple-health';
 
   const onConnect = async () => {
@@ -96,19 +100,30 @@ export default function Wellness() {
         <View style={{ marginTop: 10, gap: 8 }}>
           <Text variant="tiny">Body: <Text color={colors.goldSoft}>{metrics.recovery < 55 ? 'Restoration & hydration' : 'Steady movement'}</Text></Text>
           <Text variant="tiny">Mind: <Text color={colors.goldSoft}>{metrics.sleep < 60 ? 'Single-tasking' : 'Focused output'}</Text></Text>
-          <Text variant="tiny">Spiritual: <Text color={colors.goldSoft}>{mockExtra.spiritualAlignment}</Text></Text>
+          <Text variant="tiny">Spiritual: <Text color={colors.goldSoft}>{wellnessContent?.spiritualAlignment ?? 'Add birth details'}</Text></Text>
         </View>
       </Card>
 
-      <Card style={{ marginTop: 12 }}>
-        <Eyebrow>Recommended Habits</Eyebrow>
-        <View style={styles.chips}>{mockExtra.habits.map((h) => <Chip key={h}>{h}</Chip>)}</View>
-      </Card>
+      {wellnessContent ? (
+        <>
+          <Card style={{ marginTop: 12 }}>
+            <Eyebrow>Recommended Habits</Eyebrow>
+            <View style={styles.chips}>{wellnessContent.habits.map((h) => <Chip key={h}>{h}</Chip>)}</View>
+          </Card>
 
-      <Card style={{ marginTop: 12 }}>
-        <Eyebrow>Recommended Practices</Eyebrow>
-        <View style={styles.chips}>{mockExtra.practices.map((p) => <Chip key={p}>{p}</Chip>)}</View>
-      </Card>
+          <Card style={{ marginTop: 12 }}>
+            <Eyebrow>Recommended Practices</Eyebrow>
+            <View style={styles.chips}>{wellnessContent.practices.map((p) => <Chip key={p}>{p}</Chip>)}</View>
+          </Card>
+        </>
+      ) : (
+        <Card style={{ marginTop: 12 }}>
+          <Eyebrow>Recommended Habits & Practices</Eyebrow>
+          <Text variant="tiny" color={colors.muted} style={{ marginTop: 8, lineHeight: 18 }}>
+            Add your birth details to see habits and practices tuned to your chart and today’s day-lord.
+          </Text>
+        </Card>
+      )}
 
       <View style={{ height: 16 }} />
       <GhostButton label="Open Mood Journal →" onPress={() => router.push('/insights/journal')} />
