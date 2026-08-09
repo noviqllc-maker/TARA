@@ -19,6 +19,8 @@ import { computeChart } from '@/lib/vedic';
 import { searchPlaces, geocodePlace, hasPlacesKey, fallbackGeo, Place } from '@/lib/places';
 import { gunaMilan, personMoonFromChart, KOOTA_META, GunaResult } from '@/lib/compatibility';
 import { relationshipNarrative } from '@/lib/relationshipNarrative';
+import { composeCompatibilityDeep, CompatibilityAnalysis } from '@/lib/compatibilityDeep';
+import { CompatibilityDeepView } from '@/components/CompatibilityDeepView';
 import { colors, fonts, radius, spacing } from '@/theme';
 
 const pad = (s: string) => s.padStart(2, '0');
@@ -93,9 +95,10 @@ export default function Love() {
 
   const [calculating, setCalculating] = useState(false);
   const [result, setResult] = useState<GunaResult | null>(null);
+  const [deep, setDeep] = useState<CompatibilityAnalysis | null>(null);
 
   // Any edit invalidates a shown result — spec: no stale result.
-  const dirty = () => { if (result) setResult(null); };
+  const dirty = () => { if (result) setResult(null); if (deep) setDeep(null); };
 
   // Places autocomplete
   useEffect(() => {
@@ -143,9 +146,14 @@ export default function Love() {
       const A = youAre === 'bride' ? userMoon : partnerMoon;
       const B = youAre === 'bride' ? partnerMoon : userMoon;
       A.role = 'bride'; B.role = 'groom';
-      setResult(gunaMilan(A, B));
+      const g = gunaMilan(A, B);
+      setResult(g);
+      // Deep 12-section analysis from both full charts (no AI). Guarded so a failure here
+      // never blocks the Guna Milan score above.
+      try { setDeep(composeCompatibilityDeep(userChart, partnerChart, g.total)); } catch { setDeep(null); }
     } catch {
       setResult(null);
+      setDeep(null);
     }
     setCalculating(false);
   };
@@ -345,6 +353,9 @@ export default function Love() {
 
             {/* Plain-language narrative: tier + specific Yoni/Varna/Nadi dynamics. */}
             <NarrativeCard result={result} />
+
+            {/* Full 12-section deep analysis from both charts (collapsible cards). */}
+            {deep ? <CompatibilityDeepView analysis={deep} /> : null}
 
             <Text variant="tiny" color={colors.mutedDim} style={{ marginTop: 14, fontSize: 10.5, lineHeight: 15 }}>
               Tara uses the classic Ashtakoota method ({youAre === 'bride' ? 'you as bride' : 'you as groom'}). Guna Milan conventions vary between astrologers; treat this as guidance, not a verdict.
