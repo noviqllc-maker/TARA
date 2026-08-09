@@ -13,6 +13,8 @@ import { Text, Card, Eyebrow, GoldButton, GhostButton } from '@/components/ui';
 import Disclaimer from '@/components/Disclaimer';
 import { searchPlaces, geocodePlace, hasPlacesKey, fallbackGeo, Place } from '@/lib/places';
 import { computeChart, BirthChart, PlanetPosition } from '@/lib/vedic';
+import { ChartAnalysisSections } from '@/components/ChartAnalysisSections';
+import { setOverrideChart } from '@/lib/askOverrideChart';
 import { colors, spacing, radius } from '@/theme';
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -203,6 +205,13 @@ export default function Calculator() {
 
 function ChartResults({ name, chart }: { name: string; chart: BirthChart }) {
   const present = chart.dasha.find((d) => d.phase === 'present');
+  const [q, setQ] = useState('');
+  const onAsk = () => {
+    // Hand the entered chart to the gated Ask Tara answer view (consume-once), so the answer
+    // reads THIS chart rather than the signed-in user's.
+    setOverrideChart({ chart, name: name || 'this chart' });
+    router.push({ pathname: '/ask/answer', params: { q: q.trim(), src: 'calc' } });
+  };
   return (
     <Animated.View entering={FadeIn.duration(400)} style={{ marginTop: spacing.xl }}>
       <Eyebrow color={colors.lav}>{name ? `${name}'s Chart` : 'Result'}</Eyebrow>
@@ -283,6 +292,21 @@ function ChartResults({ name, chart }: { name: string; chart: BirthChart }) {
           </View>
         </Card>
       ) : null}
+
+      {/* Personalized deterministic analysis (no AI): 6 sections from the entered chart. */}
+      <ChartAnalysisSections chart={chart} />
+
+      {/* Ask Tara about THIS chart (routes through the normal gated answer view). */}
+      <Card style={{ marginTop: spacing.lg }}>
+        <Eyebrow color={colors.gold}>Ask Tara about this chart</Eyebrow>
+        <Text variant="tiny" style={{ marginTop: 6 }}>
+          Ask a question and Tara reads it against {name ? `${name}'s` : 'this'} chart.
+        </Text>
+        <View style={{ marginTop: 12 }}>
+          <Field placeholder="e.g. What career suits this chart?" value={q} onChangeText={setQ} />
+        </View>
+        <GoldButton label="Ask Tara →" onPress={onAsk} disabled={!q.trim()} style={{ marginTop: 12 }} />
+      </Card>
 
       <GhostButton
         label="View full Dasha timeline →"

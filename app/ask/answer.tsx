@@ -18,6 +18,7 @@ import { useCredits } from '@/hooks/useCredits';
 import { computeTransitFactor, TransitFactor } from '@/lib/vedic';
 import { classifyTopic } from '@/lib/topic';
 import { askTaraAnswer, ChatMessage, TaraAnswer } from '@/lib/ai';
+import { takeOverrideChart } from '@/lib/askOverrideChart';
 import { getLanguage } from '@/lib/language';
 import { getRememberChat } from '@/lib/privacy';
 import { setAskDraft } from '@/lib/askDraft';
@@ -70,9 +71,13 @@ function AnswerBody({ text }: { text: string }) {
 }
 
 export default function AnswerView() {
-  const { q } = useLocalSearchParams<{ q?: string }>();
+  const { q, src } = useLocalSearchParams<{ q?: string; src?: string }>();
   const question = (q ?? '').trim();
-  const chart = useChart();
+  const userChart = useChart();
+  // From the Vedic Calculator (src=calc): answer about the ENTERED chart instead of the
+  // signed-in user's. Consume-once on mount so it never leaks into a later, unrelated ask.
+  const [override] = useState(() => (src === 'calc' ? takeOverrideChart() : null));
+  const chart = override?.chart ?? userChart;
   const { profile } = useProfile();
   const { metrics } = useHealth();
   const { authorize, refresh, refund } = useCredits();
@@ -120,7 +125,8 @@ export default function AnswerView() {
     }
 
     const language = await getLanguage();
-    const res = await askTaraAnswer(question, factor.label, profile.name || 'friend', chart, metrics, language, topic);
+    // For an entered (calculator) chart, don't send the signed-in user's health metrics.
+    const res = await askTaraAnswer(question, factor.label, override?.name || profile.name || 'friend', chart, override ? null : metrics, language, topic);
     // Parse failure → the answer never came through. Refund the credit, keep the question,
     // and show the graceful error state (never the raw model text). A retry re-authorizes,
     // so the net cost stays one credit per delivered answer.
