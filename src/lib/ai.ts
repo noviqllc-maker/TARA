@@ -8,6 +8,7 @@ import { BirthChart, computeAllTransits } from '@/lib/vedic';
 import { HealthMetrics } from '@/lib/health';
 import { computeTransits } from '@/lib/transits';
 import { varaLord } from '@/lib/panchanga';
+import { detectCategory, buildCategoryPrompt } from '@/lib/askTaraCategory';
 
 export type ChatMessage = { role: 'user' | 'assistant'; content: string };
 
@@ -33,8 +34,16 @@ function buildContext(name: string, chart: BirthChart | null, health?: HealthMet
     : '';
 
   if (chart) {
-    // Natal snapshot (sign + house of every graha).
-    const natal = chart.planets.map((pl) => `${pl.name} in ${pl.sign} (house ${pl.house})`).join(', ');
+    // Natal snapshot (sign + house + D9 Navamsa of every graha). D9 is included so the
+    // category guidance can genuinely lean on it (love/purpose) instead of inventing it.
+    const natal = chart.planets.map((pl) => `${pl.name} in ${pl.sign} (house ${pl.house}, D9 ${pl.navamsaSign})`).join(', ');
+    // Atmakaraka: the soul significator = the graha (Sun..Saturn) at the highest degree
+    // within its sign. Surfaced so purpose questions can cite it truthfully.
+    const GRAHAS = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+    const ak = [...chart.planets]
+      .filter((p) => GRAHAS.includes(p.name))
+      .sort((a, b) => (b.longitude % 30) - (a.longitude % 30))[0]?.name;
+    const akLine = ak ? ` Atmakaraka (soul planet): ${ak}.` : '';
     // FULL current transit table for THIS user — every graha's live sign, the natal
     // house it's transiting, and retrograde (not just the Moon).
     const tr = computeAllTransits(chart, today);
@@ -45,7 +54,7 @@ function buildContext(name: string, chart: BirthChart | null, health?: HealthMet
     const dashaLine = `Dasha: ${chart.currentDasha}; Antardasha: ${chart.currentAntardasha}.`;
     // A few significant natal aspects (already human-readable from the engine).
     const aspLine = chart.aspects?.length ? ` Natal aspects: ${chart.aspects.slice(0, 4).join('; ')}.` : '';
-    return `Today's date: ${dateStr}. User: ${name}. Lagna ${chart.ascendant.sign}, Moon ${chart.moonSign}, Sun ${chart.sunSign}, Nakshatra ${chart.nakshatra} pada ${chart.nakshatraPada}. ${dashaLine} Natal planets: ${natal}. Current transits: ${transitTable}.${retroLine}${aspLine} ${sky} ${w}`;
+    return `Today's date: ${dateStr}. User: ${name}. Lagna ${chart.ascendant.sign}, Moon ${chart.moonSign}, Sun ${chart.sunSign}, Nakshatra ${chart.nakshatra} pada ${chart.nakshatraPada}. ${dashaLine}${akLine} Natal planets: ${natal}. Current transits: ${transitTable}.${retroLine}${aspLine} ${sky} ${w}`;
   }
   return `Today's date: ${dateStr}. User: ${name}. (Birth chart not yet available.) ${sky} ${w}`;
 }
@@ -147,8 +156,13 @@ export async function askTaraAnswer(
 
   const context = buildContext(name, chart, health);
   const tpl = pickTemplate(q, topic);
+  // Classify the question and prepend category-specific prioritization, so the WHY leads with
+  // the right chart factors (10th for career, 7th/Venus for love, etc.) instead of defaulting
+  // to today's transit. Placed early so Claude weights it before the general rules.
+  const categoryGuidance = buildCategoryPrompt(detectCategory(q));
   const system = [
     "You are Tara, a warm, grounded guide who happens to use Vedic astrology. You speak like a trusted friend who reads charts, not an astrologer lecturing about one.",
+    categoryGuidance,
     // 1. Opener
     "OPENING: never open with an astrological factor, planet, house, or transit. Open with a direct human response to the question: the short answer, the pattern you notice, or a conversational hook (e.g. \"Here's what stands out.\" / \"You're asking at an interesting moment.\"). Vary your openers across answers. Never start with the user's name. Do NOT mention the transiting Moon unless the question is specifically about today's mood or energy.",
     // 2. Structure
