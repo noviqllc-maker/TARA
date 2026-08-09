@@ -190,18 +190,28 @@ function explain(planet: string, sign: string, house: number): string {
     11: 'gains, networks, and aspirations',
     12: 'release, spirituality, and the unseen',
   };
-  const planetThemes: Record<string, string> = {
-    Sun: 'Your core identity and vitality express here',
-    Moon: 'Your emotional nature and mind are anchored here',
-    Mars: 'Your drive, courage, and energy focus here',
-    Mercury: 'Your intellect and communication operate here',
-    Jupiter: 'Growth, wisdom, and good fortune expand here',
-    Venus: 'Love, beauty, and harmony flow here',
-    Saturn: 'Discipline, patience, and lasting structure build here',
-    Rahu: 'A karmic hunger and worldly ambition pull here',
-    Ketu: 'Detachment and past-life mastery sit here',
+  // Benefit-led opening: what this placement gives you, before the mechanics.
+  const planetGift: Record<string, string> = {
+    Sun: 'You lead best when you act from your true self.',
+    Moon: 'You feel your way through life, and your instincts run deep.',
+    Mars: 'You move things forward with courage and drive.',
+    Mercury: 'You think quickly and connect ideas with ease.',
+    Jupiter: 'You grow through generosity, learning, and faith in the bigger picture.',
+    Venus: 'You draw people, beauty, and ease toward you naturally.',
+    Saturn: 'You build things that last, through patience and steady effort.',
+    Rahu: 'You are pulled toward the bold and unfamiliar, and that hunger takes you far.',
+    Ketu: 'You find depth by releasing what others cling to.',
   };
-  return `${planetThemes[planet] || 'This planet operates here'}, in ${sign}, shaping your ${houseThemes[house]}.`;
+  const signTone: Record<string, string> = {
+    Aries: 'bold, pioneering', Taurus: 'grounded, sensory', Gemini: 'curious, quick',
+    Cancer: 'tender, protective', Leo: 'warm, expressive', Virgo: 'precise, useful',
+    Libra: 'balanced, relational', Scorpio: 'intense, deep', Sagittarius: 'expansive, free',
+    Capricorn: 'disciplined, ambitious', Aquarius: 'inventive, independent', Pisces: 'dreamy, compassionate',
+  };
+  const gift = planetGift[planet] || 'This planet has its own quiet work here.';
+  const tone = signTone[sign] || 'distinct';
+  // Why-first: the gift, then where it lives (house) and the flavor it takes (sign).
+  return `${gift} Here that lives in your ${houseThemes[house]}, taking on ${sign}'s ${tone} quality.`;
 }
 
 const DASHA_THEMES: Record<string, string> = {
@@ -559,11 +569,18 @@ function deriveAspects(planets: PlanetPosition[], ascSign: string): string[] {
   const sun = byName('Sun'), moon = byName('Moon'), jup = byName('Jupiter'), sat = byName('Saturn');
   // These render as single-line bullets ("Chart Highlights"): term — one-line gloss. The
   // em-dash is the label/gloss separator (a definition row), so it is kept here, unlike the
-  // prose copy the em-dash pass rewrote. See app/(tabs)/chart.tsx.
+  // prose copy the em-dash pass rewrote. See app/(tabs)/chart.tsx. The gloss is benefit-led
+  // and tied to the real house so it stays true wherever the planet actually sits.
+  const houseShort: Record<number, string> = {
+    1: 'sense of self', 2: 'finances and values', 3: 'communication and effort',
+    4: 'home and roots', 5: 'creativity and joy', 6: 'daily work and health',
+    7: 'partnerships', 8: 'deep changes', 9: 'beliefs and journeys',
+    10: 'career and public life', 11: 'networks and gains', 12: 'inner life and solitude',
+  };
   if (sun && moon && sun.signIndex === moon.signIndex)
-    out.push('Sun conjunct Moon — unified will and emotion (New Moon nature)');
-  if (jup) out.push(`Jupiter in ${jup.sign} (house ${jup.house}) — your growth and fortune expand here`);
-  if (sat) out.push(`Saturn in ${sat.sign} (house ${sat.house}) — where discipline builds lasting reward`);
-  if (moon) out.push(`Moon in ${moon.sign} — the emotional tone of your chart`);
+    out.push('Sun conjunct Moon — your will and emotions pull as one (New Moon nature)');
+  if (jup) out.push(`Jupiter in ${jup.sign} (house ${jup.house}) — growth and fortune come through your ${houseShort[jup.house]}`);
+  if (sat) out.push(`Saturn in ${sat.sign} (house ${sat.house}) — lasting rewards are built through your ${houseShort[sat.house]}`);
+  if (moon) out.push(`Moon in ${moon.sign} — this sets the emotional tone you lead your days with`);
   return out.slice(0, 4);
 }

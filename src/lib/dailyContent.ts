@@ -144,7 +144,8 @@ function composeBody(rng: Rng, { house, mechanism, leadPool }: CardInput): strin
   const lead = rng.pick(leadPool);
   const lean = house ? lower(houseTheme(house).lean) : 'steady, mindful action';
   const advice = rng.pick([`Lean into ${lean}`, `Give your energy to ${lean}`, `Let today favor ${lean}`]);
-  return `${lead} ${advice}, because ${mechanism}.`;
+  // Why-first: the guidance up front, then an explicit "Why?" naming the real transit driver.
+  return `${lead} ${advice}.\n\nWhy? ${cap(mechanism)}.`;
 }
 
 // ---- public types --------------------------------------------------------------
@@ -191,7 +192,7 @@ const noonOf = (date: Date) => new Date(date.getFullYear(), date.getMonth(), dat
 function noChartContent(rng: Rng, date: Date): DailyContent {
   const t = computeTransits(noonOf(date), null);
   const graha = 'Moon';
-  const body = `${rng.pick(GRAHA_LEADS.Moon)} ${rng.pick(['Lean into rest and reflection', 'Give your energy to quiet care'])}, because the Moon sits in ${t.moonNakshatra}.`;
+  const body = `${rng.pick(GRAHA_LEADS.Moon)} ${rng.pick(['Lean into rest and reflection', 'Give your energy to quiet care'])}.\n\nWhy? The Moon sits in ${t.moonNakshatra}.`;
   return {
     message: { headline: rng.pick(GRAHA_HEADLINES.Moon), body },
     cosmicLine: composeCosmicLine(rng, 'Moon'),
@@ -310,7 +311,7 @@ export function composeDailyContent(chart: BirthChart | null, date: Date, seed: 
   };
 
   // ---- overview + avoid/lean/mantra/journal ------------------------------------
-  const weatherSummary = `The Moon moves through ${t.moonSign} in ${moonNak}, ${t.panchanga}, on ${events.vara} (day of ${events.dayLord}). You’re in your ${lower(MAHA_MEANING[mahaLord]?.chapter ?? 'current chapter')}${antarLord ? `, with the ${antarLord} sub-period active` : ''}.`;
+  const weatherSummary = `Today's mood: your emotions move through ${t.moonSign}, in ${moonNak} (${t.panchanga}, on ${events.vara}, day of ${events.dayLord}).\n\nWhy? You're in your ${lower(MAHA_MEANING[mahaLord]?.chapter ?? 'current chapter')}${antarLord ? `, with the ${antarLord} sub-period active` : ''}.`;
   const mh = houseTheme(moonHouse);
   const dayMantra = MANTRAS[events.dayLord] ?? MANTRAS.Moon;
 

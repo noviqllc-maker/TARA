@@ -22,6 +22,7 @@ import { isSameLocation } from '@/lib/locationService';
 import { todayObservance } from '@/lib/observances';
 import { computeTransitFactor, BirthChart } from '@/lib/vedic';
 import { Topic } from '@/lib/topic';
+import { PriorityKey, priorityLabel } from '@/data/priorities';
 import { loadJapa, JapaState } from '@/lib/practice';
 import { greeting, todayLong } from '@/data/mock';
 import { colors, spacing } from '@/theme';
@@ -34,13 +35,24 @@ const QUICK = [
   { label: 'Shop', route: '/(tabs)/profile', params: { scrollTo: 'shop' } },
 ];
 
-// Life areas, each mapped to the topic that biases its daily teaser factor. Love leads.
+// Life areas, each mapped to the topic that biases its daily teaser factor. Default order;
+// reordered at render time to lead with the user's onboarding priority.
 const LIFE_AREAS: { label: string; route: string; topic: Topic }[] = [
   { label: 'Love & Relationships', route: '/insights/love', topic: 'love' },
   { label: 'Career & Money', route: '/insights/career', topic: 'career' },
   { label: 'Health & Wellness', route: '/insights/wellness', topic: 'health' },
   { label: 'Life Purpose', route: '/insights/purpose', topic: 'spiritual' },
 ];
+
+// Which of the four real life areas each onboarding priority leads with. The eight priorities
+// collapse onto the four areas the app actually has (money/business -> Career, family -> Love,
+// learning -> Life Purpose). All areas stay visible; only their order changes.
+const PRIORITY_TOPIC: Record<PriorityKey, Topic> = {
+  career: 'career', money: 'career', business: 'career',
+  love: 'love', family: 'love',
+  health: 'health',
+  purpose: 'spiritual', learning: 'spiritual',
+};
 
 // ---- daily life-area teaser (deterministic, seeded by user+date+domain) ---------
 // A one-line read composed from the domain's strongest transiting graha (topic-biased, the
@@ -154,10 +166,20 @@ export default function Home() {
   // "Monday • July 20" — title case, dot separator (not all caps).
   const dateLine = todayLong().replace(', ', ' • ');
 
+  // Reorder the life areas to lead with the user's onboarding priority (all stay visible).
+  const priority = profile.userPriority;
+  const primaryTopic = priority ? PRIORITY_TOPIC[priority] : null;
+  const orderedAreas = useMemo(
+    () => (primaryTopic
+      ? [...LIFE_AREAS].sort((a, b) => Number(b.topic === primaryTopic) - Number(a.topic === primaryTopic))
+      : LIFE_AREAS),
+    [primaryTopic],
+  );
+
   // Per-domain daily teasers, seeded (user + date + domain), recomputed per calendar day.
   const areaTeasers = useMemo(
-    () => LIFE_AREAS.map((a) => lifeAreaTeaser(chart, new Date(), a.topic, `${uid}:${dayKey}:${a.topic}`)),
-    [chart, uid, dayKey],
+    () => orderedAreas.map((a) => lifeAreaTeaser(chart, new Date(), a.topic, `${uid}:${dayKey}:${a.topic}`)),
+    [chart, uid, dayKey, orderedAreas],
   );
 
   // The Cosmic Weather rows that AREN'T already in the events grid (nakshatra & tithi are),
@@ -219,6 +241,12 @@ export default function Home() {
         <Text color={colors.gold} style={styles.dateLine}>{dateLine}</Text>
         <Text variant="serif" style={styles.hero}>{greeting()},</Text>
         <Text variant="serif" style={[styles.hero, styles.heroName]}>{profile.name || 'friend'}</Text>
+        {/* Honest priority acknowledgment (no uncomputed "energy is high" claim). */}
+        {primaryTopic ? (
+          <Text variant="tiny" color={colors.goldSoft} style={styles.focusLine}>
+            ✦ Leading with {priorityLabel(priority)} today
+          </Text>
+        ) : null}
         {/* Dynamic cosmic line — deterministic, from the day's strongest real factor. */}
         {daily.cosmicLine ? <Text style={styles.cosmicLine}>{daily.cosmicLine}</Text> : null}
       </Animated.View>
@@ -268,7 +296,7 @@ export default function Home() {
       {/* 4. Your Life Areas — promoted; each row carries a daily teaser (Love leads) */}
       <SectionLabel>Your Life Areas</SectionLabel>
       <View style={styles.lifeGrid}>
-        {LIFE_AREAS.map((s, i) => (
+        {orderedAreas.map((s, i) => (
           <Pressable key={s.label} style={styles.areaCard} onPress={() => router.push(s.route as any)}>
             <View style={styles.areaTop}>
               <Text variant="serif" style={{ fontSize: 15 }}>{s.label}</Text>
@@ -393,6 +421,7 @@ const styles = StyleSheet.create({
   hero: { fontSize: 48, fontWeight: '600', letterSpacing: -0.5, lineHeight: 52, color: colors.cream },
   heroName: { color: colors.gold },
   cosmicLine: { fontSize: 16, lineHeight: 22, color: colors.goldSoft, marginTop: 12, marginBottom: spacing.lg },
+  focusLine: { fontSize: 12.5, letterSpacing: 0.2, marginTop: 10 },
   // Section labels (title case, gold, 14px medium — no all caps)
   sectionLabel: { fontSize: 14, fontWeight: '500', letterSpacing: 0.1, marginBottom: 2 },
   // Guidance hero card
