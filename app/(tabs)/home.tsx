@@ -19,6 +19,7 @@ import { useDailyContent } from '@/hooks/useDailyContent';
 import { computeCosmicEvents, CosmicEvents } from '@/lib/panchanga';
 import { useCurrentLocation } from '@/hooks/useCurrentLocation';
 import { isSameLocation } from '@/lib/locationService';
+import { GlossaryTooltip } from '@/components/GlossaryTooltip';
 import { todayObservance } from '@/lib/observances';
 import { computeTransitFactor, BirthChart } from '@/lib/vedic';
 import { Topic } from '@/lib/topic';
@@ -193,19 +194,19 @@ export default function Home() {
   // Today's Cosmic Events grid. The three timing rows (power hour / Abhijit / Rāhukālam) are
   // only added when a location is set, so they never render as empty placeholders. buildCells
   // is reused for both the birth-place card and the current-location card while traveling.
-  type EventCell = { glyph: string; label: string; value: string; swatch?: string };
+  type EventCell = { glyph: string; label: string; value: string; swatch?: string; term?: string };
   const buildCells = (ev: CosmicEvents): EventCell[] => [
-    { glyph: '☾', label: 'Moon', value: `${ev.moonSign} • ${ev.moonNakshatra}` },
-    { glyph: '◐', label: 'Tithi', value: ev.tithi },
-    { glyph: ev.dayLordGlyph, label: 'Planet of the day', value: ev.dayLord },
+    { glyph: '☾', label: 'Moon', value: `${ev.moonSign} • ${ev.moonNakshatra}`, term: 'nakshatra' },
+    { glyph: '◐', label: 'Tithi', value: ev.tithi, term: 'tithi' },
+    { glyph: ev.dayLordGlyph, label: 'Planet of the day', value: ev.dayLord, term: 'vara' },
     ...(ev.powerHours
-      ? [{ glyph: '⏱', label: 'Power hour', value: `${ev.powerHours.start} – ${ev.powerHours.end}` }]
+      ? [{ glyph: '⏱', label: 'Power hour', value: `${ev.powerHours.start} – ${ev.powerHours.end}`, term: 'hora' }]
       : []),
     ...(ev.abhijitMuhurta
-      ? [{ glyph: '☀', label: 'Abhijit (auspicious)', value: `${ev.abhijitMuhurta.start} – ${ev.abhijitMuhurta.end}` }]
+      ? [{ glyph: '☀', label: 'Abhijit (auspicious)', value: `${ev.abhijitMuhurta.start} – ${ev.abhijitMuhurta.end}`, term: 'abhijit' }]
       : []),
     ...(ev.rahukalam
-      ? [{ glyph: '☊', label: 'Rāhukālam (avoid)', value: `${ev.rahukalam.start} – ${ev.rahukalam.end}` }]
+      ? [{ glyph: '☊', label: 'Rāhukālam (avoid)', value: `${ev.rahukalam.start} – ${ev.rahukalam.end}`, term: 'rahukalam' }]
       : []),
     { glyph: '●', label: 'Lucky color', value: ev.luckyColor, swatch: ev.luckyColorHex },
     { glyph: '✦', label: 'Lucky number', value: String(ev.luckyNumber) },
@@ -220,7 +221,10 @@ export default function Home() {
         <View key={c.label} style={styles.eventCell}>
           <Text style={{ fontSize: 16, color: colors.goldSoft, lineHeight: 22 }}>{c.glyph}</Text>
           <View style={{ flex: 1 }}>
-            <Text color={colors.muted} style={{ fontSize: 10.5, letterSpacing: 0.3 }}>{c.label}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+              <Text color={colors.muted} style={{ fontSize: 10.5, letterSpacing: 0.3 }}>{c.label}</Text>
+              {c.term ? <GlossaryTooltip term={c.term} /> : null}
+            </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 3 }}>
               {c.swatch ? <View style={[styles.swatch, { backgroundColor: c.swatch }]} /> : null}
               <Text color={colors.cream} style={styles.eventValue} numberOfLines={1}>{c.value}</Text>

@@ -8,6 +8,7 @@ import { View, StyleSheet } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import Screen from '@/components/Screen';
 import { Text, Card } from '@/components/ui';
+import { GlossaryTooltip } from '@/components/GlossaryTooltip';
 import SubHeader from '@/components/SubHeader';
 import { PremiumNudgeBar } from '@/components/PremiumNudge';
 import Disclaimer from '@/components/Disclaimer';
@@ -32,10 +33,14 @@ export default function Timeline() {
     <Screen>
       <SubHeader eyebrow="Life Timeline" title="Your Life Chapters" />
       <PremiumNudgeBar context="chart" style={{ marginBottom: 18 }} />
-      <Text variant="tiny" style={{ marginBottom: 18 }}>
+      <Text variant="tiny" style={{ marginBottom: 6 }}>
         The major planetary chapters of your life, in plain language, calculated from your
         Moon's exact position at birth (your Vimśottarī daśā).
       </Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 18 }}>
+        <Text variant="tiny" color={colors.goldSoft}>What is a Mahādaśā?</Text>
+        <GlossaryTooltip term="mahadasha" />
+      </View>
 
       {dasha.length === 0 ? (
         <Card><Text variant="tiny">Complete onboarding to see your timeline.</Text></Card>

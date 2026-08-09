@@ -5,6 +5,7 @@ import { router } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Screen from '@/components/Screen';
 import { Text, Card, Eyebrow, GoldButton, GhostButton } from '@/components/ui';
+import { GlossaryTooltip } from '@/components/GlossaryTooltip';
 import SubHeader from '@/components/SubHeader';
 import Ring from '@/components/Ring';
 import Field from '@/components/Field';
@@ -188,7 +189,10 @@ export default function Love() {
       {/* ---- Guna Milan compatibility ---- */}
       <Card style={{ marginBottom: spacing.lg, gap: 16 }}>
         <View>
-          <Eyebrow>Compatibility · Guṇa Milan</Eyebrow>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            <Eyebrow>Compatibility · Guṇa Milan</Eyebrow>
+            <GlossaryTooltip term="guna_milan" />
+          </View>
           <Text variant="tiny" style={{ marginTop: 6 }}>
             Enter your partner's birth details for a real Ashtakoota (36-point) match, computed from both Moons.
           </Text>

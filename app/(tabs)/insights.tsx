@@ -14,6 +14,7 @@ import { router } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import Screen from '@/components/Screen';
 import { Text, Card, Eyebrow } from '@/components/ui';
+import { GlossaryTooltip } from '@/components/GlossaryTooltip';
 import { PremiumSheet } from '@/components/PremiumNudge';
 import Disclaimer from '@/components/Disclaimer';
 import { useDailyContent } from '@/hooks/useDailyContent';
@@ -109,6 +110,10 @@ export default function Insights() {
 
       {/* FREE — the overall weather headline. */}
       <Card solid glow style={{ marginBottom: spacing.lg }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 8 }}>
+          <Eyebrow color={colors.gold}>Today's Panchāṅga</Eyebrow>
+          <GlossaryTooltip term="panchanga" />
+        </View>
         <Text variant="serif" style={{ fontSize: 16.5, lineHeight: 25 }}>{daily.weatherSummary}</Text>
       </Card>
 
@@ -205,7 +210,10 @@ export default function Insights() {
 
       {/* FREE — Mantra of the Day. */}
       <Card solid style={{ marginTop: spacing.lg }}>
-        <Eyebrow>Mantra of the Day</Eyebrow>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+          <Eyebrow>Mantra of the Day</Eyebrow>
+          <GlossaryTooltip term="mantra" />
+        </View>
         <Text variant="tiny" color={colors.muted} style={{ marginTop: 4, fontSize: 11 }}>Today's mantra · {daily.mantraGraha}</Text>
         <Text variant="serif" style={{ fontSize: 19, marginTop: 8, color: colors.goldSoft }}>{daily.mantra}</Text>
         <Text variant="tiny" style={{ marginTop: 6 }}>{daily.mantraNote}</Text>

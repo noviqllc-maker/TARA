@@ -7,15 +7,18 @@ import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import Screen from '@/components/Screen';
 import { Text, Card, Eyebrow, GhostButton } from '@/components/ui';
 import Disclaimer from '@/components/Disclaimer';
+import { GlossaryTooltip } from '@/components/GlossaryTooltip';
 import { useProfile } from '@/hooks/useProfile';
 import { useChart } from '@/hooks/useChart';
 import { PlanetPosition, BirthChart } from '@/lib/vedic';
-import { colors, fonts, spacing } from '@/theme';
+import { getExplanation } from '@/data/glossary';
+import { colors, fonts, radius, spacing } from '@/theme';
 
 export default function Chart() {
   const { profile } = useProfile();
   const chart = useChart();
   const [selected, setSelected] = useState<PlanetPosition | null>(null);
+  const [chartMode, setChartMode] = useState<'beginner' | 'advanced'>('beginner');
 
   if (!chart) {
     return (
@@ -41,19 +44,25 @@ export default function Chart() {
       {/* North-Indian diamond chart with ascendant marker */}
       <Card solid style={{ alignItems: 'center', marginBottom: spacing.lg }}>
         <NorthIndianChart chart={chart} />
-        <Text variant="tiny" color={colors.muted}>Ascendant (Lagna): {chart.ascendant.sign} {chart.ascendant.degree}</Text>
+        <View style={styles.inlineRow}>
+          <Text variant="tiny" color={colors.muted}>Ascendant (Lagna): {chart.ascendant.sign} {chart.ascendant.degree}</Text>
+          <GlossaryTooltip term="lagna" />
+        </View>
       </Card>
 
-      {/* Key signs — now REAL */}
+      {/* Key signs — now REAL. Each carries a ⓘ that explains the term in plain English. */}
       <View style={styles.grid}>
-        {[
-          ['Sun Sign', chart.sunSign],
-          ['Moon Sign', chart.moonSign],
-          ['Rising', chart.ascendant.sign],
-          ['Nakshatra', `${chart.nakshatra} (${chart.nakshatraPada})`],
-        ].map(([k, v]) => (
+        {([
+          ['Sun Sign', chart.sunSign, 'sun'],
+          ['Moon Sign', chart.moonSign, 'moon'],
+          ['Rising', chart.ascendant.sign, 'ascendant'],
+          ['Nakshatra', `${chart.nakshatra} (${chart.nakshatraPada})`, 'nakshatra'],
+        ] as const).map(([k, v, term]) => (
           <Card key={k} style={styles.gridCard}>
-            <Text variant="eyebrow" color={colors.muted} style={{ fontSize: 9.5 }}>{k}</Text>
+            <View style={styles.inlineRow}>
+              <Text variant="eyebrow" color={colors.muted} style={{ fontSize: 9.5 }}>{k}</Text>
+              <GlossaryTooltip term={term} />
+            </View>
             <Text variant="serif" style={{ fontSize: 15, marginTop: 5 }}>{v}</Text>
           </Card>
         ))}
@@ -62,7 +71,10 @@ export default function Chart() {
       {/* Current dasha banner */}
       {chart.currentDasha ? (
         <Card solid glow style={{ marginTop: spacing.lg }}>
-          <Eyebrow color={colors.gold}>Current Period</Eyebrow>
+          <View style={styles.inlineRow}>
+            <Eyebrow color={colors.gold}>Current Period</Eyebrow>
+            <GlossaryTooltip term="mahadasha" />
+          </View>
           <Text variant="serif" style={{ fontSize: 18, marginTop: 6 }}>{chart.currentDasha}</Text>
           {chart.currentAntardasha ? (
             <Text variant="tiny" color={colors.goldSoft} style={{ marginTop: 4 }}>{chart.currentAntardasha}</Text>
@@ -70,19 +82,63 @@ export default function Chart() {
         </Card>
       ) : null}
 
-      {/* Planetary positions — REAL */}
+      {/* Planetary positions — Beginner (plain meaning) / Advanced (degree, house, Navāṁśa) */}
       <Card style={{ marginTop: spacing.lg }}>
-        <Eyebrow>Planetary Positions</Eyebrow>
-        <Text variant="tiny" style={{ marginTop: 4, marginBottom: 8 }}>Tap a planet for its meaning.</Text>
-        {chart.planets.map((pl) => (
-          <Pressable key={pl.name} style={styles.planetRow} onPress={() => setSelected(pl)}>
-            <Text variant="serif" style={{ fontSize: 15 }}>{pl.glyph}  {pl.name}{pl.retrograde ? ' ℞' : ''}</Text>
-            <View style={{ alignItems: 'flex-end' }}>
-              <Text variant="tiny" color={colors.goldSoft}>{pl.sign} · {pl.degree} · H{pl.house}</Text>
-              <Text variant="tiny" color={colors.muted} style={{ fontSize: 10.5, marginTop: 2 }}>Navāṁśa (D9): {pl.navamsaSign}</Text>
+        <View style={styles.inlineRow}>
+          <Eyebrow>Planetary Positions</Eyebrow>
+          <View style={styles.modeToggle}>
+            {(['beginner', 'advanced'] as const).map((m) => (
+              <Pressable
+                key={m}
+                onPress={() => { setChartMode(m); if (m === 'beginner') setSelected(null); }}
+                accessibilityRole="button"
+                accessibilityState={{ selected: chartMode === m }}
+                style={[styles.modeBtn, chartMode === m && styles.modeBtnOn]}
+              >
+                <Text
+                  variant="tiny"
+                  color={chartMode === m ? colors.bg : colors.muted}
+                  style={{ fontSize: 11.5, fontWeight: '600' }}
+                >
+                  {m === 'beginner' ? 'Beginner' : 'Advanced'}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+
+        {chartMode === 'beginner' ? (
+          <>
+            <Text variant="tiny" style={{ marginTop: 4, marginBottom: 8 }}>Each planet, in plain language.</Text>
+            {chart.planets.map((pl) => (
+              <View key={pl.name} style={styles.planetCol}>
+                <View style={styles.inlineRow}>
+                  <Text variant="serif" style={{ fontSize: 15 }}>{pl.glyph}  {pl.name}</Text>
+                  <Text variant="tiny" color={colors.goldSoft}>{pl.sign}</Text>
+                </View>
+                <Text variant="tiny" color={colors.muted} style={{ fontSize: 11.5, marginTop: 3, lineHeight: 16 }}>
+                  {getExplanation(pl.name)}
+                </Text>
+              </View>
+            ))}
+          </>
+        ) : (
+          <>
+            <View style={[styles.inlineRow, { marginTop: 4, marginBottom: 8 }]}>
+              <Text variant="tiny">Full detail: degree, house, and Navāṁśa.</Text>
+              <GlossaryTooltip term="navamsa" />
             </View>
-          </Pressable>
-        ))}
+            {chart.planets.map((pl) => (
+              <Pressable key={pl.name} style={styles.planetRow} onPress={() => setSelected(pl)}>
+                <Text variant="serif" style={{ fontSize: 15 }}>{pl.glyph}  {pl.name}{pl.retrograde ? ' ℞' : ''}</Text>
+                <View style={{ alignItems: 'flex-end' }}>
+                  <Text variant="tiny" color={colors.goldSoft}>{pl.sign} · {pl.degree} · H{pl.house}</Text>
+                  <Text variant="tiny" color={colors.muted} style={{ fontSize: 10.5, marginTop: 2 }}>Navāṁśa (D9): {pl.navamsaSign}</Text>
+                </View>
+              </Pressable>
+            ))}
+          </>
+        )}
       </Card>
 
       {selected && (
@@ -110,7 +166,10 @@ export default function Chart() {
       {/* Graha Drishti — planetary aspects */}
       {chart.drishti.length > 0 && (
         <Card style={{ marginTop: spacing.lg }}>
-          <Eyebrow>Graha Drishti</Eyebrow>
+          <View style={styles.inlineRow}>
+            <Eyebrow>Graha Drishti</Eyebrow>
+            <GlossaryTooltip term="graha_drishti" />
+          </View>
           <View style={{ marginTop: 10, gap: 7 }}>
             {chart.drishti.map((a, i) => (
               <Text key={`${a.from}-${a.house}-${i}`} variant="tiny" color={colors.cream} style={{ fontSize: 13 }}>
@@ -212,4 +271,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: 'rgba(205,163,73,0.1)',
   },
+  planetCol: {
+    paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: 'rgba(205,163,73,0.1)',
+  },
+  // A label and its ⓘ (or a small trailing control) on one baseline.
+  inlineRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  modeToggle: {
+    flexDirection: 'row', marginLeft: 'auto', backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: radius.pill, padding: 2,
+  },
+  modeBtn: { paddingVertical: 5, paddingHorizontal: 12, borderRadius: radius.pill },
+  modeBtnOn: { backgroundColor: colors.gold },
 });
