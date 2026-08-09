@@ -17,7 +17,8 @@
       "bundleIdentifier": "org.tarawellness.app",
       "usesAppleSignIn": true,
       "infoPlist": {
-        "NSUserTrackingUsageDescription": "Tara does not track you across apps."
+        "NSUserTrackingUsageDescription": "Tara does not track you across apps.",
+        "NSLocationWhenInUseUsageDescription": "Tara uses your current location to show auspicious times and cosmic events personalized to where you are right now."
       }
     },
     "android": {
@@ -57,7 +58,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Tara uses your current location to show today's cosmic timing (sunrise, power hour, Rāhukālam) for where you are now when you're traveling."
+          "locationWhenInUsePermission": "Tara uses your current location to show auspicious times and cosmic events personalized to where you are right now."
         }
       ]
     ],

@@ -3,9 +3,8 @@
 // compute a full sidereal chart (planets, navamsa, drishti, dasha + antardasha).
 // Independent of the saved profile, so it doubles as a chart tool for anyone.
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Pressable, Platform, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import Screen from '@/components/Screen';
 import Field from '@/components/Field';
@@ -14,18 +13,12 @@ import Disclaimer from '@/components/Disclaimer';
 import { searchPlaces, geocodePlace, hasPlacesKey, fallbackGeo, Place } from '@/lib/places';
 import { computeChart, BirthChart, PlanetPosition } from '@/lib/vedic';
 import { ChartAnalysisSections } from '@/components/ChartAnalysisSections';
+import TimePickerField from '@/components/TimePickerField';
 import { setOverrideChart } from '@/lib/askOverrideChart';
 import { colors, spacing, radius } from '@/theme';
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-function timeLabel(d: Date) {
-  let h = d.getHours();
-  const m = d.getMinutes().toString().padStart(2, '0');
-  const ap = h >= 12 ? 'PM' : 'AM';
-  h = h % 12 || 12;
-  return `${h}:${m} ${ap}`;
-}
 function timeValue(d: Date) {
   return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
 }
@@ -35,7 +28,6 @@ export default function Calculator() {
   const [name, setName] = useState('');
   const [date, setDate] = useState('');
   const [time, setTime] = useState(() => { const d = new Date(); d.setHours(6, 0, 0, 0); return d; });
-  const [showPicker, setShowPicker] = useState(Platform.OS === 'ios');
 
   const [place, setPlace] = useState('');
   const [picked, setPicked] = useState<Place | null>(null);
@@ -125,30 +117,7 @@ export default function Calculator() {
 
         <View>
           <Text variant="eyebrow" color={colors.muted} style={{ marginBottom: 8 }}>Birth time</Text>
-          <Pressable
-            onPress={() => setShowPicker(true)}
-            style={{
-              backgroundColor: 'rgba(255,255,255,0.04)', borderColor: colors.line, borderWidth: 1,
-              borderRadius: radius.md, paddingVertical: 14, alignItems: 'center',
-            }}
-          >
-            <Text variant="serif" style={{ fontSize: 22 }}>{timeLabel(time)}</Text>
-          </Pressable>
-          {showPicker && (
-            <View style={{ alignItems: 'center', marginTop: 4 }}>
-              <DateTimePicker
-                value={time}
-                mode="time"
-                display={Platform.OS === 'ios' ? 'spinner' : 'clock'}
-                themeVariant="dark"
-                textColor={colors.cream}
-                onChange={(_, d) => {
-                  if (Platform.OS === 'android') setShowPicker(false);
-                  if (d) { setTime(d); setChart(null); }
-                }}
-              />
-            </View>
-          )}
+          <TimePickerField value={time} onChange={(d) => { setTime(d); setChart(null); }} />
         </View>
 
         <View>

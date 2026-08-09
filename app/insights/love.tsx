@@ -1,9 +1,9 @@
 // app/insights/love.tsx
 import React, { useEffect, useRef, useState } from 'react';
-import { View, TextInput, Pressable, Platform, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, TextInput, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import Screen from '@/components/Screen';
+import TimePickerField from '@/components/TimePickerField';
 import { Text, Card, Eyebrow, GoldButton, GhostButton } from '@/components/ui';
 import { GlossaryTooltip } from '@/components/GlossaryTooltip';
 import SubHeader from '@/components/SubHeader';
@@ -25,13 +25,6 @@ import { colors, fonts, radius, spacing } from '@/theme';
 
 const pad = (s: string) => s.padStart(2, '0');
 const fmtTime = (d: Date) => `${pad(String(d.getHours()))}:${pad(String(d.getMinutes()))}`;
-function timeLabel(d: Date) {
-  let h = d.getHours();
-  const m = pad(String(d.getMinutes()));
-  const ap = h >= 12 ? 'PM' : 'AM';
-  h = h % 12 || 12;
-  return `${h}:${m} ${ap}`;
-}
 
 function List({ title, items, color }: { title: string; items: string[]; color: string }) {
   return (
@@ -82,7 +75,6 @@ export default function Love() {
   const yearRef = useRef<TextInput>(null);
 
   const [time, setTime] = useState(() => { const d = new Date(); d.setHours(6, 0, 0, 0); return d; });
-  const [showPicker, setShowPicker] = useState(false);
 
   const [placeText, setPlaceText] = useState('');
   const [picked, setPicked] = useState<Place | null>(null);
@@ -234,19 +226,7 @@ export default function Love() {
 
         <View>
           <Text variant="eyebrow" color={colors.muted} style={styles.label}>Birth Time</Text>
-          <Pressable onPress={() => setShowPicker((s) => !s)} style={styles.timeChip}>
-            <Text variant="serif" style={{ fontSize: 20 }}>{timeLabel(time)}</Text>
-          </Pressable>
-          {showPicker && (
-            <View style={{ alignItems: 'center', marginTop: 4 }}>
-              <DateTimePicker
-                value={time} mode="time"
-                display={Platform.OS === 'ios' ? 'spinner' : 'clock'}
-                themeVariant="dark" textColor={colors.cream}
-                onChange={(_, d) => { dirty(); if (Platform.OS === 'android') setShowPicker(false); if (d) setTime(d); }}
-              />
-            </View>
-          )}
+          <TimePickerField value={time} onChange={(d) => { dirty(); setTime(d); }} />
         </View>
 
         <View>
@@ -385,10 +365,6 @@ const styles = StyleSheet.create({
     width: '100%', backgroundColor: 'rgba(255,255,255,0.04)', borderColor: colors.line, borderWidth: 1,
     borderRadius: radius.md, paddingVertical: 14, paddingHorizontal: 12,
     color: colors.cream, fontFamily: fonts.sans, fontSize: 18, textAlign: 'center',
-  },
-  timeChip: {
-    backgroundColor: 'rgba(255,255,255,0.04)', borderColor: colors.line, borderWidth: 1,
-    borderRadius: radius.md, paddingVertical: 14, alignItems: 'center',
   },
   results: { marginTop: 10, borderColor: colors.line, borderWidth: 1, borderRadius: radius.md, overflow: 'hidden' },
   roleChip: {
