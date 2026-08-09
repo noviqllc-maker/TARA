@@ -11,6 +11,7 @@ import { Text, Eyebrow, Card, GoldButton } from '@/components/ui';
 import { ChatMessage } from '@/lib/ai';
 import { taraQuestions, QuestionCategory, chartTodayPrompts } from '@/data/taraQuestions';
 import { useChart } from '@/hooks/useChart';
+import { useProfile } from '@/hooks/useProfile';
 import { useCredits } from '@/hooks/useCredits';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { getRememberChat } from '@/lib/privacy';
@@ -21,9 +22,17 @@ import Markdown from 'react-native-markdown-display';
 const MEM_KEY = 'tara.chat.v1';
 const STORE_CAP = 200;       // most-recent messages persisted on-device (bounds storage)
 
+// Maps each onboarding priority to the closest Ask Tara question theme, so a user's chosen
+// areas surface first among the suggestion chips (a subtle seed, not a filter: all themes stay).
+const PRIORITY_CATEGORY: Record<string, QuestionCategory['key']> = {
+  career: 'Career', business: 'Career', money: 'Money',
+  love: 'Love', family: 'Love', health: 'Mind', purpose: 'Destiny', learning: 'Mind',
+};
+
 export default function AskTara() {
   const insets = useSafeAreaInsets();
   const chart = useChart();
+  const { profile } = useProfile();
   // Question credits are server-authoritative; the balance here just mirrors the server.
   // Premium users see monthly fair-use remaining instead of a credit count.
   const { balance, premiumRemaining, isPremium, refresh } = useCredits();
@@ -69,12 +78,22 @@ export default function AskTara() {
   // the five life themes. Selecting a chip swaps the question list below — all rendered
   // the same way. Falls back to the first available chip if the selection isn't present
   // (e.g. 'ForYou' before the chart has loaded).
+  // The five life-theme chips, reordered so the user's chosen priorities lead (all remain).
+  const orderedQuestions = useMemo(() => {
+    const prefs = profile.userPriorities ?? [];
+    if (!prefs.length) return taraQuestions;
+    const wanted: QuestionCategory['key'][] = [];
+    for (const p of prefs) { const k = PRIORITY_CATEGORY[p]; if (k && !wanted.includes(k)) wanted.push(k); }
+    const preferred = wanted.map((k) => taraQuestions.find((c) => c.key === k)).filter(Boolean) as QuestionCategory[];
+    const rest = taraQuestions.filter((c) => !wanted.includes(c.key));
+    return [...preferred, ...rest];
+  }, [profile.userPriorities]);
   const chips = useMemo(
     () =>
       todayPrompts.length > 0
-        ? [{ key: 'ForYou' as const, label: 'For You', icon: '✦', color: colors.gold, questions: todayPrompts }, ...taraQuestions]
-        : taraQuestions,
-    [todayPrompts],
+        ? [{ key: 'ForYou' as const, label: 'For You', icon: '✦', color: colors.gold, questions: todayPrompts }, ...orderedQuestions]
+        : orderedQuestions,
+    [todayPrompts, orderedQuestions],
   );
   const activeChip = chips.find((c) => c.key === category) ?? chips[0];
 

@@ -1,6 +1,7 @@
 // src/data/priorities.ts
-// The onboarding "What matters most right now?" answer. Stored on the profile as
-// userPriority and later used to weight which life area Tara leads with. One value only.
+// The onboarding "What matters most right now?" answers. Stored on the profile as
+// userPriorities (up to 3, in the order chosen). The chart drives the daily experience;
+// these are only tie-breakers for card order and seeds for suggested questions.
 
 export type PriorityKey =
   | 'career' | 'love' | 'family' | 'business'

@@ -23,9 +23,9 @@ import { GlossaryTooltip } from '@/components/GlossaryTooltip';
 import { todayObservance } from '@/lib/observances';
 import { computeTransitFactor, BirthChart } from '@/lib/vedic';
 import { Topic } from '@/lib/topic';
-import { PriorityKey, priorityLabel } from '@/data/priorities';
+import { PriorityKey } from '@/data/priorities';
 import { loadJapa, JapaState } from '@/lib/practice';
-import { greeting, todayLong } from '@/data/mock';
+import { greeting, todayLong, EnergyDomain } from '@/data/mock';
 import { colors, spacing } from '@/theme';
 
 // Quick actions — non-tab destinations only (Ask Tara & Birth Chart live in the tab bar).
@@ -167,15 +167,25 @@ export default function Home() {
   // "Monday • July 20" — title case, dot separator (not all caps).
   const dateLine = todayLong().replace(', ', ' • ');
 
-  // Reorder the life areas to lead with the user's onboarding priority (all stay visible).
-  const priority = profile.userPriority;
-  const primaryTopic = priority ? PRIORITY_TOPIC[priority] : null;
-  const orderedAreas = useMemo(
-    () => (primaryTopic
-      ? [...LIFE_AREAS].sort((a, b) => Number(b.topic === primaryTopic) - Number(a.topic === primaryTopic))
-      : LIFE_AREAS),
-    [primaryTopic],
-  );
+  // Astrology first: order the life areas by today's real energy for each (from the chart +
+  // transits). Preferences are only a tie-breaker: if the user's top preference is within 5
+  // points of the strongest area today, it leads; otherwise the chart's order stands. The
+  // chart always decides the day; preferences never override it.
+  const TOPIC_DOMAIN: Record<string, EnergyDomain['key']> = { love: 'Relationships', career: 'Career', health: 'Body', spiritual: 'Spiritual' };
+  const prefs = profile.userPriorities ?? [];
+  const orderedAreas = useMemo(() => {
+    const scoreOf = (topic: string) => energy.domains.find((d) => d.key === TOPIC_DOMAIN[topic])?.score ?? 50;
+    const sorted = [...LIFE_AREAS].sort((a, b) => scoreOf(b.topic) - scoreOf(a.topic));
+    const prefTopic = prefs.length ? PRIORITY_TOPIC[prefs[0]] : null;
+    if (prefTopic && sorted[0].topic !== prefTopic) {
+      const gap = scoreOf(sorted[0].topic) - scoreOf(prefTopic);
+      if (gap <= 5) {
+        const pref = LIFE_AREAS.find((a) => a.topic === prefTopic);
+        if (pref) return [pref, ...sorted.filter((a) => a.topic !== prefTopic)];
+      }
+    }
+    return sorted;
+  }, [energy.domains, prefs.join(',')]);
 
   // Per-domain daily teasers, seeded (user + date + domain), recomputed per calendar day.
   const areaTeasers = useMemo(
@@ -245,12 +255,6 @@ export default function Home() {
         <Text color={colors.gold} style={styles.dateLine}>{dateLine}</Text>
         <Text variant="serif" style={styles.hero}>{greeting()},</Text>
         <Text variant="serif" style={[styles.hero, styles.heroName]}>{profile.name || 'friend'}</Text>
-        {/* Honest priority acknowledgment (no uncomputed "energy is high" claim). */}
-        {primaryTopic ? (
-          <Text variant="tiny" color={colors.goldSoft} style={styles.focusLine}>
-            ✦ Leading with {priorityLabel(priority)} today
-          </Text>
-        ) : null}
         {/* Dynamic cosmic line — deterministic, from the day's strongest real factor. */}
         {daily.cosmicLine ? <Text style={styles.cosmicLine}>{daily.cosmicLine}</Text> : null}
       </Animated.View>
@@ -425,7 +429,6 @@ const styles = StyleSheet.create({
   hero: { fontSize: 48, fontWeight: '600', letterSpacing: -0.5, lineHeight: 52, color: colors.cream },
   heroName: { color: colors.gold },
   cosmicLine: { fontSize: 16, lineHeight: 22, color: colors.goldSoft, marginTop: 12, marginBottom: spacing.lg },
-  focusLine: { fontSize: 12.5, letterSpacing: 0.2, marginTop: 10 },
   // Section labels (title case, gold, 14px medium — no all caps)
   sectionLabel: { fontSize: 14, fontWeight: '500', letterSpacing: 0.1, marginBottom: 2 },
   // Guidance hero card

@@ -13,9 +13,10 @@ export type Profile = {
   lon?: number;
   tzOffsetMinutes?: number;
   wellnessConnected: string[];
-  // The onboarding "what matters most right now" answer. Persists locally and, when signed
-  // in, syncs to Supabase inside the profile blob (no separate column or write needed).
-  userPriority?: PriorityKey;
+  // The onboarding "what matters most right now" answer: up to 3 areas, in the order chosen.
+  // The chart still drives the daily experience; these only tune tie-breaks and suggestions.
+  // Persists locally and, when signed in, syncs to Supabase inside the profile blob.
+  userPriorities?: PriorityKey[];
   onboarded: boolean;
 };
 
