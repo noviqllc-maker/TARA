@@ -229,6 +229,46 @@ export function pickMidday(seed: string, ctx?: MiddayCtx, avoid?: Set<string>): 
   return { title: 'Timing Window', body: pickAvoiding(pool, seed, avoid) };
 }
 
+// Preference-flavored midday pools. Used ONLY when the user picked a life area AND today's
+// chart energy actually supports it (see notifications.ts). Same timing/afternoon character
+// as MIDDAY_STATIC, so the slot keeps its identity; no fake claims, no "you chose X" framing.
+const AREA_MIDDAY: Record<string, string[]> = {
+  career: [
+    'Your sharpest work window is this afternoon. Use it well.',
+    'A focused push on one work thing now travels far.',
+    'Good timing for a deliberate move at work today.',
+  ],
+  money: [
+    'A clear-headed hour for money decisions is near.',
+    'Good timing to review one financial choice this afternoon.',
+    'Steady beats rushed for money moves today.',
+  ],
+  love: [
+    'A warm window for connection opens this afternoon.',
+    'Good timing to nurture a relationship that matters.',
+    'This afternoon favors presence over problem-solving.',
+  ],
+  health: [
+    'A good window to move your body opens this afternoon.',
+    'Give your energy a mindful outlet this afternoon.',
+    'A short reset now pays off by tonight.',
+  ],
+  purpose: [
+    'A reflective window this afternoon favors the bigger picture.',
+    'Good timing to reconnect with what actually matters.',
+    'Step back this afternoon and your direction sharpens.',
+  ],
+  learning: [
+    'A sharp window for focus and study opens this afternoon.',
+    'Good timing to learn one new thing today.',
+    'The mind is quick this afternoon. Use the window.',
+  ],
+};
+export function pickMiddayArea(seed: string, area: string, avoid?: Set<string>): NotifPick {
+  const pool = AREA_MIDDAY[area] ?? MIDDAY_STATIC;
+  return { title: 'Timing Window', body: pickAvoiding(pool, seed, avoid) };
+}
+
 // Evening = reflection / journal-prompt flavored. Streak-aware when the caller passes local
 // practice state. VOICE RULES (hard): never loss-framed — no "don't lose/break", no "streak
 // ends", no countdown or guilt. The number is the hook; the invitation is the verb; only

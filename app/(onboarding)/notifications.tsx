@@ -44,7 +44,7 @@ export default function NotificationsPrimer() {
   const onTurnOn = async () => {
     setBusy(true);
     await markNotificationPrimerSeen();
-    await enableDailyNotifications(chart, profile.birthDate); // requests permission + schedules if granted
+    await enableDailyNotifications(chart, profile.birthDate, profile.userPriorities ?? []); // requests permission + schedules if granted
     setBusy(false);
     finishOnboarding();
   };

@@ -13,7 +13,7 @@ export default function NotificationRefresher() {
 
   useEffect(() => {
     if (!ready) return;
-    const run = () => { refreshDailyNotifications(chart, profile.birthDate).catch(() => {}); };
+    const run = () => { refreshDailyNotifications(chart, profile.birthDate, profile.userPriorities ?? []).catch(() => {}); };
     run();
     const sub = AppState.addEventListener('change', (s) => { if (s === 'active') run(); });
     return () => sub.remove();

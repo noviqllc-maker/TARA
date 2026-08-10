@@ -48,7 +48,7 @@ export default function Evening() {
       // Reschedule so today's 6 PM push reflects the just-closed day (→ acknowledgment, not
       // an ask) even if the app isn't re-foregrounded before 6 PM. Best-effort, no-op if
       // notifications aren't permitted.
-      refreshDailyNotifications(chart, profile.birthDate).catch(() => {});
+      refreshDailyNotifications(chart, profile.birthDate, profile.userPriorities ?? []).catch(() => {});
     });
   };
 

@@ -15,8 +15,11 @@ import { supabase } from '@/lib/supabase';
 import { BirthChart, computeTransitFactor, computeAllTransits } from '@/lib/vedic';
 import { computeTransits } from '@/lib/transits';
 import { powerHours } from '@/lib/panchanga';
-import { pickNotification, pickMidday, pickEvening, NotificationContext } from '@/data/notificationLines';
+import { pickNotification, pickMidday, pickMiddayArea, pickEvening, NotificationContext } from '@/data/notificationLines';
 import { loadEvening } from '@/lib/practice';
+import { computeDailyEnergy } from '@/lib/energy';
+import { mockMetrics } from '@/lib/health';
+import { EnergyDomain } from '@/data/mock';
 
 export type NotifRoute = '/(tabs)/home' | '/(tabs)/tara' | '/practice/evening';
 
@@ -47,6 +50,21 @@ export async function setNotifSlots(slots: NotifSlots): Promise<void> {
   try { await AsyncStorage.setItem(SLOTS_KEY, JSON.stringify(slots)); } catch {}
 }
 const SLOW_GRAHAS = ['Jupiter', 'Saturn', 'Rahu', 'Ketu', 'Mars'];
+
+// Preference-weighted afternoon: each onboarding priority maps to the daily-energy domain that
+// scores its "chart support" today, and to the midday copy pool that voices it. The afternoon
+// leads with a preference ONLY when its domain scores at/above PREF_THRESHOLD; else it stays a
+// plain timing-window line. This keeps the chart in charge (astrology gates the preference).
+const PREF_DOMAIN: Record<string, EnergyDomain['key']> = {
+  career: 'Career', business: 'Career', money: 'Career',
+  love: 'Relationships', family: 'Relationships',
+  health: 'Body', purpose: 'Spiritual', learning: 'Mind',
+};
+const PREF_AREA: Record<string, string> = {
+  career: 'career', business: 'career', money: 'money',
+  love: 'love', family: 'love', health: 'health', purpose: 'purpose', learning: 'learning',
+};
+const PREF_THRESHOLD = 55;
 
 // Show banners even in the foreground (otherwise iOS suppresses them).
 Notifications.setNotificationHandler({
@@ -172,9 +190,26 @@ async function saveNotifHistory(h: NotifHistory): Promise<void> {
 // is checked against the recent-6 window so nothing repeats across slots or days. Titles are
 // locked to their body's category (a shift body can only carry the Planetary Shift title).
 // Returns false (no-op) when permission isn't granted.
-export async function refreshDailyNotifications(chart: BirthChart | null, birthDate = ''): Promise<boolean> {
+export async function refreshDailyNotifications(chart: BirthChart | null, birthDate = '', preferences: string[] = []): Promise<boolean> {
   if (!(await Notifications.getPermissionsAsync()).granted) return false;
   await Notifications.cancelAllScheduledNotificationsAsync();
+
+  // Today's per-domain energy for a given fire date (chart-derived, deterministic; uses the
+  // neutral health fallback so it matches what a non-Apple-Health user sees). Cached per day.
+  const domainCache = new Map<string, Record<string, number>>();
+  const domainScoresFor = (d: Date): Record<string, number> => {
+    if (!chart) return {};
+    const k = ymd(d);
+    const hit = domainCache.get(k);
+    if (hit) return hit;
+    let scores: Record<string, number> = {};
+    try {
+      const e = computeDailyEnergy({ chart, health: mockMetrics(), transits: computeTransits(d, chart), date: d });
+      scores = Object.fromEntries(e.domains.map((x) => [x.key, x.score]));
+    } catch {}
+    domainCache.set(k, scores);
+    return scores;
+  };
 
   const slots = await getNotifSlots();
   const uid = await seedUser();
@@ -217,7 +252,19 @@ export async function refreshDailyNotifications(chart: BirthChart | null, birthD
       // Chart-derived timing: the day-lord horā window (e.g. "1 PM") headlines the midday pool.
       const p = powerHours(job.fireDate);
       const powerStart = p.window.split(/\s*[–-]\s*/)[0].trim(); // "1 PM – 2 PM" → "1 PM"
-      pick = pickMidday(seed, { powerStart, dayLord: p.lord }, used);
+      // Preference-weighted afternoon: lead with the user's best-supported area today (>= the
+      // energy threshold); otherwise keep the plain timing-window line. The chart decides.
+      let areaPick = null as ReturnType<typeof pickMiddayArea> | null;
+      if (chart && preferences.length) {
+        const scores = domainScoresFor(job.fireDate);
+        const top = preferences
+          .map((pref) => ({ area: PREF_AREA[pref], score: scores[PREF_DOMAIN[pref]] ?? 0 }))
+          .filter((r) => r.area)
+          .sort((a, b) => b.score - a.score)
+          .find((r) => r.score >= PREF_THRESHOLD);
+        if (top) areaPick = pickMiddayArea(seed, top.area, used);
+      }
+      pick = areaPick ?? pickMidday(seed, { powerStart, dayLord: p.lord }, used);
     } else {
       pick = pickEvening(seed, { streak: eve.streak, doneToday: job.i === 0 && job.firstIsToday && eve.doneToday }, used);
     }
@@ -236,9 +283,9 @@ export async function refreshDailyNotifications(chart: BirthChart | null, birthD
 }
 
 // Request permission and schedule (used by the primer + the settings toggle).
-export async function enableDailyNotifications(chart: BirthChart | null, birthDate = ''): Promise<boolean> {
+export async function enableDailyNotifications(chart: BirthChart | null, birthDate = '', preferences: string[] = []): Promise<boolean> {
   if (!(await requestNotificationPermission())) return false;
-  return refreshDailyNotifications(chart, birthDate);
+  return refreshDailyNotifications(chart, birthDate, preferences);
 }
 
 export async function cancelDailyNotifications(): Promise<void> {

@@ -49,7 +49,7 @@ export default function NotificationsSettings() {
       // If every slot is off, turn them all on so "on" actually delivers something.
       let s = slots;
       if (!s.morning && !s.midday && !s.evening) { s = { morning: true, midday: true, evening: true }; setSlots(s); await setNotifSlots(s); }
-      const ok = await enableDailyNotifications(chart, profile.birthDate);
+      const ok = await enableDailyNotifications(chart, profile.birthDate, profile.userPriorities ?? []);
       setEnabled(ok);
       setBusy(false);
       if (!ok) promptOpenSettings();
@@ -67,7 +67,7 @@ export default function NotificationsSettings() {
     await setNotifSlots(next);
     if (!enabled) return;
     setBusy(true);
-    await refreshDailyNotifications(chart, profile.birthDate);
+    await refreshDailyNotifications(chart, profile.birthDate, profile.userPriorities ?? []);
     setEnabled(await hasScheduledNotifications().catch(() => false));
     setBusy(false);
   };
