@@ -235,9 +235,9 @@ export function composeDailyContent(chart: BirthChart | null, date: Date, seed: 
     : `${factor.transiting} is moving through your ${ord(factor.house ?? null)} house`;
 
   // ---- candidate insight sections (a larger pool; 5-6 are chosen per day) -------
-  type Cand = { key: string; label: string; color: string; question: string; graha: string; text: string };
+  type Cand = { key: string; label: string; color: string; question: string; graha: string; house?: number | null; text: string };
   const cands: Cand[] = [];
-  const add = (c: Omit<Cand, 'text'>, input: CardInput) => cands.push({ ...c, text: composeBody(rng, input) });
+  const add = (c: Omit<Cand, 'text' | 'house'>, input: CardInput) => cands.push({ ...c, house: input.house ?? null, text: composeBody(rng, input) });
 
   add({ key: 'emotional', label: 'Emotional Energy', color: colors.rose, question: 'Why does my emotional energy feel this way today?', graha: 'Moon' },
     { graha: 'Moon', house: moonHouse, mechanism: `the Moon is transiting your ${ord(moonHouse)} house`, leadPool: GRAHA_LEADS.Moon });
@@ -264,7 +264,7 @@ export function composeDailyContent(chart: BirthChart | null, date: Date, seed: 
 
   // Dasha focus (Mahadasha lord).
   cands.push({
-    key: 'dasha', label: 'Your Chapter', color: colors.gold, question: 'What is my current life chapter asking of me?', graha: mahaLord,
+    key: 'dasha', label: 'Your Chapter', color: colors.gold, question: 'What is my current life chapter asking of me?', graha: mahaLord, house: null,
     text: `${rng.pick(GRAHA_LEADS[mahaLord] ?? GRAHA_LEADS.Jupiter)} This is your ${lower(MAHA_MEANING[mahaLord]?.chapter ?? 'current chapter')}, because your ${mahaLord} Mahādasha is running.`,
   });
 
@@ -274,7 +274,7 @@ export function composeDailyContent(chart: BirthChart | null, date: Date, seed: 
 
   // Nakshatra note.
   cands.push({
-    key: 'nakshatra', label: 'Moon’s Nakshatra', color: colors.saffron, question: 'What does my Moon’s nakshatra mean today?', graha: nakshatraLord(moonNak),
+    key: 'nakshatra', label: 'Moon’s Nakshatra', color: colors.saffron, question: 'What does my Moon’s nakshatra mean today?', graha: nakshatraLord(moonNak), house: null,
     text: `${NAKSHATRA_QUALITY[moonNak] ?? 'A quiet lunar tone colors the day.'} ${rng.pick(['Let it guide your pace', 'Work with it, not against it'])}, because the Moon sits in ${moonNak}.`,
   });
 
@@ -282,25 +282,36 @@ export function composeDailyContent(chart: BirthChart | null, date: Date, seed: 
   if (retros.length) {
     const g = retros[0];
     cands.push({
-      key: 'retrograde', label: 'Retrograde Watch', color: colors.terra, question: 'How is the retrograde affecting me right now?', graha: g,
+      key: 'retrograde', label: 'Retrograde Watch', color: colors.terra, question: 'How is the retrograde affecting me right now?', graha: g, house: null,
       text: `${rng.pick(GRAHA_LEADS[g] ?? GRAHA_LEADS.Saturn)} A day to revisit and refine rather than launch, because ${g} is retrograde.`,
     });
   }
 
   // ---- choose 5-6, rotating by day and varying the graha cited -----------------
+  // Seed the used set with the Home guidance's driver so the Insights cards NEVER re-lead with
+  // the same planet the "Today's Guidance" card already covered (this drops the redundant
+  // Transit Spotlight, which was computed from the identical driver + mechanism). House-lean
+  // dedup then stops two cards on the same house repeating the identical "favor X" advice, so
+  // every card answers a genuinely different question.
   const shuffled = rng.shuffle(cands);
   const chosen: Cand[] = [];
-  const usedGrahas = new Set<string>();
+  const usedGrahas = new Set<string>([factor.transiting]);
+  const usedHouses = new Set<number>();
+  if (factor.house != null) usedHouses.add(factor.house); // Home already gave this house's advice
   for (const c of shuffled) {
     if (chosen.length >= 6) break;
-    if (usedGrahas.has(c.graha)) continue; // don't repeat one planet across the day
+    if (usedGrahas.has(c.graha)) continue;              // don't repeat one planet across the day
+    if (c.house != null && usedHouses.has(c.house)) continue; // don't repeat a house's advice
     chosen.push(c);
     usedGrahas.add(c.graha);
+    if (c.house != null) usedHouses.add(c.house);
   }
-  // If graha-variety left us short of 5, backfill from the rest.
+  // If the variety guards left us short of 5, backfill from the rest (still never the driver).
   for (const c of shuffled) {
     if (chosen.length >= 5) break;
-    if (!chosen.includes(c)) chosen.push(c);
+    if (chosen.includes(c) || usedGrahas.has(c.graha)) continue;
+    chosen.push(c);
+    usedGrahas.add(c.graha);
   }
 
   // ---- Tara's Message (headline + 2-sentence body from the strongest factor) ---
