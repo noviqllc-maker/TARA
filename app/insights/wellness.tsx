@@ -11,13 +11,21 @@ import Disclaimer from '@/components/Disclaimer';
 import { useHealth } from '@/hooks/useHealth';
 import { useChart } from '@/hooks/useChart';
 import { composeWellness } from '@/lib/composeWellness';
+import { composeHealthAction, HealthAction } from '@/lib/composeHealthAction';
 import { colors, fonts, spacing } from '@/theme';
+
+const RISK_COLOR: Record<HealthAction['riskLevel'], string> = {
+  low: colors.sage, medium: colors.goldSoft, high: colors.terra,
+};
 
 export default function Wellness() {
   const { metrics, connected, available, loading, connectAppleHealth, refresh } = useHealth();
   // Spiritual tone + habits + practices come from the chart (day-lord, 12th house); the health
   // rings above stay driven by real metrics. Null when there is no birth chart yet.
-  const wellnessContent = composeWellness(useChart());
+  const chart = useChart();
+  const wellnessContent = composeWellness(chart);
+  // Six concrete daily pointers (day-lord, transit Moon, natal Mars/Venus/Saturn, horā, risk).
+  const healthAction = composeHealthAction(chart);
   const live = metrics.source === 'apple-health';
 
   const onConnect = async () => {
@@ -124,6 +132,37 @@ export default function Wellness() {
           </Text>
         </Card>
       )}
+
+      {/* Six concrete, chart-derived pointers for the day. */}
+      {healthAction ? (
+        <Card style={{ marginTop: 12 }}>
+          <Eyebrow>Today's Wellness Guidance</Eyebrow>
+          <View style={{ marginTop: 10, gap: 12 }}>
+            {([
+              ["Today's action", healthAction.todaysAction],
+              ['Avoid today', healthAction.avoidToday],
+              ['Best hour', healthAction.bestHour],
+              ['Biggest opportunity', healthAction.biggestOpportunity],
+              ['One decision to make', healthAction.oneDecisionToMake],
+            ] as const).map(([label, value]) => (
+              <View key={label}>
+                <Text variant="eyebrow" color={colors.muted} style={{ fontSize: 10, letterSpacing: 0.4 }}>{label}</Text>
+                <Text variant="tiny" color={colors.cream} style={{ fontSize: 13, lineHeight: 19, marginTop: 3 }}>{value}</Text>
+              </View>
+            ))}
+            <View>
+              <Text variant="eyebrow" color={colors.muted} style={{ fontSize: 10, letterSpacing: 0.4 }}>Risk level</Text>
+              <Text
+                variant="tiny"
+                color={RISK_COLOR[healthAction.riskLevel]}
+                style={{ fontSize: 13, fontWeight: '600', marginTop: 3, textTransform: 'capitalize' }}
+              >
+                {healthAction.riskLevel}
+              </Text>
+            </View>
+          </View>
+        </Card>
+      ) : null}
 
       <View style={{ height: 16 }} />
       <GhostButton label="Open Mood Journal →" onPress={() => router.push('/insights/journal')} />
