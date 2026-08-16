@@ -3,11 +3,12 @@ import React, { useState } from 'react';
 import { View, Pressable, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import Svg, { Rect, Line, Text as SvgText } from 'react-native-svg';
-import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import Screen from '@/components/Screen';
 import { Text, Card, Eyebrow, GhostButton } from '@/components/ui';
 import Disclaimer from '@/components/Disclaimer';
 import { GlossaryTooltip } from '@/components/GlossaryTooltip';
+import PlanetDetailModal from '@/components/PlanetDetailModal';
 import { useProfile } from '@/hooks/useProfile';
 import { useChart } from '@/hooks/useChart';
 import { PlanetPosition, BirthChart } from '@/lib/vedic';
@@ -109,31 +110,37 @@ export default function Chart() {
 
         {chartMode === 'beginner' ? (
           <>
-            <Text variant="tiny" style={{ marginTop: 4, marginBottom: 8 }}>Each planet, in plain language.</Text>
+            <Text variant="tiny" style={{ marginTop: 4, marginBottom: 8 }}>Each planet, in plain language. Tap any for its full reading.</Text>
             {chart.planets.map((pl) => (
-              <View key={pl.name} style={styles.planetCol}>
-                <View style={styles.inlineRow}>
+              <Pressable key={pl.name} style={styles.planetCol} onPress={() => setSelected(pl)}>
+                <View style={[styles.inlineRow, { justifyContent: 'space-between' }]}>
                   <Text variant="serif" style={{ fontSize: 15 }}>{pl.glyph}  {pl.name}</Text>
-                  <Text variant="tiny" color={colors.goldSoft}>{pl.sign}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Text variant="tiny" color={colors.goldSoft}>{pl.sign}</Text>
+                    <Text style={{ color: colors.gold, fontSize: 16 }}>›</Text>
+                  </View>
                 </View>
                 <Text variant="tiny" color={colors.muted} style={{ fontSize: 11.5, marginTop: 3, lineHeight: 16 }}>
                   {getExplanation(pl.name)}
                 </Text>
-              </View>
+              </Pressable>
             ))}
           </>
         ) : (
           <>
             <View style={[styles.inlineRow, { marginTop: 4, marginBottom: 8 }]}>
-              <Text variant="tiny">Full detail: degree, house, and Navāṁśa.</Text>
+              <Text variant="tiny">Full detail: degree, house, Navāṁśa. Tap a planet for its 8 life areas.</Text>
               <GlossaryTooltip term="navamsa" />
             </View>
             {chart.planets.map((pl) => (
               <Pressable key={pl.name} style={styles.planetRow} onPress={() => setSelected(pl)}>
                 <Text variant="serif" style={{ fontSize: 15 }}>{pl.glyph}  {pl.name}{pl.retrograde ? ' ℞' : ''}</Text>
-                <View style={{ alignItems: 'flex-end' }}>
-                  <Text variant="tiny" color={colors.goldSoft}>{pl.sign} · {pl.degree} · H{pl.house}</Text>
-                  <Text variant="tiny" color={colors.muted} style={{ fontSize: 10.5, marginTop: 2 }}>Navāṁśa (D9): {pl.navamsaSign}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <Text variant="tiny" color={colors.goldSoft}>{pl.sign} · {pl.degree} · H{pl.house}</Text>
+                    <Text variant="tiny" color={colors.muted} style={{ fontSize: 10.5, marginTop: 2 }}>Navāṁśa (D9): {pl.navamsaSign}</Text>
+                  </View>
+                  <Text style={{ color: colors.gold, fontSize: 16 }}>›</Text>
                 </View>
               </Pressable>
             ))}
@@ -141,17 +148,8 @@ export default function Chart() {
         )}
       </Card>
 
-      {selected && (
-        <Animated.View entering={FadeIn.duration(350)}>
-          <Card solid glow style={{ marginTop: spacing.lg }}>
-            <Eyebrow color={colors.lav}>{selected.glyph} {selected.name} in {selected.sign}</Eyebrow>
-            <Text variant="serif" style={{ fontSize: 15.5, marginTop: 10, lineHeight: 23 }}>{selected.explanation}</Text>
-            <Pressable onPress={() => setSelected(null)} style={{ marginTop: 12 }}>
-              <Text variant="tiny" color={colors.gold}>Close</Text>
-            </Pressable>
-          </Card>
-        </Animated.View>
-      )}
+      {/* Tap-a-planet detail sheet: 8 chart-specific life areas for the selected planet. */}
+      <PlanetDetailModal planet={selected} chart={chart} onClose={() => setSelected(null)} />
 
       {/* Aspects — derived from real chart */}
       <Card style={{ marginTop: spacing.lg }}>
