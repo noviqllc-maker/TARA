@@ -40,12 +40,14 @@ export default function TimePickerField({
         />
       )}
 
-      {/* iOS: spinner inside a bottom-sheet Modal, outside the scroll surface. */}
+      {/* iOS: spinner inside a bottom-sheet Modal, outside the scroll surface. The backdrop
+          Pressable sits BEHIND the sheet (absolute fill); the sheet is a plain View so nothing
+          wraps the spinner and steals its pan gesture (that froze the wheels before). */}
       {Platform.OS === 'ios' && (
         <Modal visible={open} transparent animationType="slide" onRequestClose={() => setOpen(false)}>
-          {/* tap outside to cancel; taps on the sheet are swallowed */}
-          <Pressable style={styles.backdrop} onPress={() => setOpen(false)}>
-            <Pressable style={styles.sheet} onPress={() => {}}>
+          <View style={styles.backdrop}>
+            <Pressable style={StyleSheet.absoluteFill} onPress={() => setOpen(false)} accessibilityLabel="Dismiss" />
+            <View style={styles.sheet}>
               <View style={styles.header}>
                 <Pressable onPress={() => setOpen(false)} hitSlop={10}>
                   <Text variant="tiny" color={colors.muted} style={{ fontSize: 15 }}>Cancel</Text>
@@ -64,8 +66,8 @@ export default function TimePickerField({
                 onChange={(_, d) => { if (d) setDraft(d); }}
                 style={{ alignSelf: 'stretch' }}
               />
-            </Pressable>
-          </Pressable>
+            </View>
+          </View>
         </Modal>
       )}
     </>
