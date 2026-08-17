@@ -18,7 +18,6 @@ import { useHealth } from '@/hooks/useHealth';
 import { useDailyContent } from '@/hooks/useDailyContent';
 import { computeCosmicEvents, CosmicEvents } from '@/lib/panchanga';
 import { useCurrentLocation } from '@/hooks/useCurrentLocation';
-import { isSameLocation } from '@/lib/locationService';
 import { GlossaryTooltip } from '@/components/GlossaryTooltip';
 import { todayObservance } from '@/lib/observances';
 import { computeTransitFactor, BirthChart } from '@/lib/vedic';
@@ -143,21 +142,17 @@ export default function Home() {
   // Today's Cosmic Events — deterministic, engine-computed, changes day to day (recompute
   // per calendar day + chart, matching the useTransits/useDailyEnergy pattern; no AI call).
   const dayKey = new Date().toDateString();
-  // Cosmic Events are computed for the birth place (lat/lon/tz drive sunrise/sunset, the
-  // day-lord horā, Rāhukālam, and Abhijit). When the user is >10 km from their birth place we
-  // also compute a second set for where they physically are now.
+  // Cosmic Events (sunrise/sunset, day-lord horā, Rāhukālam, Abhijit) are location-aware. We
+  // use the user's CURRENT location when it's available, falling back to their birth place, so
+  // the single card always reflects where they actually are without a birth/current split.
   const { current: currentLocation } = useCurrentLocation();
   const birthLocation = profile.lat != null && profile.lon != null
     ? { lat: profile.lat, lon: profile.lon, tzOffsetMinutes: profile.tzOffsetMinutes }
     : undefined;
-  const showBothLocations = !!(birthLocation && currentLocation && !isSameLocation(birthLocation, currentLocation));
+  const cosmicLocation = currentLocation ?? birthLocation;
   const cosmic = useMemo(
-    () => computeCosmicEvents(chart, new Date(), birthLocation),
-    [chart, dayKey, profile.lat, profile.lon, profile.tzOffsetMinutes],
-  );
-  const cosmicCurrent = useMemo(
-    () => (showBothLocations && currentLocation ? computeCosmicEvents(chart, new Date(), currentLocation) : null),
-    [chart, dayKey, showBothLocations, currentLocation?.lat, currentLocation?.lon, currentLocation?.tzOffsetMinutes],
+    () => computeCosmicEvents(chart, new Date(), cosmicLocation),
+    [chart, dayKey, cosmicLocation?.lat, cosmicLocation?.lon, cosmicLocation?.tzOffsetMinutes],
   );
   // Today's observance (Ekādaśī / Pūrṇimā / festival …), if one is active — surfaced as a
   // line on the cosmic-events card and echoed on the Practice card. Deterministic, no AI.
@@ -222,9 +217,8 @@ export default function Home() {
     { glyph: '✦', label: 'Lucky number', value: String(ev.luckyNumber) },
   ];
   const cells = buildCells(cosmic);
-  const currentCells = cosmicCurrent ? buildCells(cosmicCurrent) : null;
 
-  // One grid, reused for both location cards.
+  // One grid renderer for the cosmic-events card.
   const renderGrid = (cellArr: EventCell[]) => (
     <View style={styles.eventsGrid}>
       {cellArr.map((c) => (
@@ -355,8 +349,8 @@ export default function Home() {
 
       {/* 6. Today's Cosmic Events — panchanga/day-lord almanac + a merged second group
              (Dasha, transit, Moon phase) absorbed from the old Cosmic Weather card */}
-      <Card style={{ marginBottom: showBothLocations ? spacing.md : spacing.lg }}>
-        <SectionLabel>{showBothLocations ? 'Cosmic Events · Birth Place' : "Today's Cosmic Events"}</SectionLabel>
+      <Card style={{ marginBottom: spacing.lg }}>
+        <SectionLabel>Today's Cosmic Events</SectionLabel>
         {renderGrid(cells)}
 
         {/* Merged second group (was "Current Cosmic Weather") — no duplicate values. */}
@@ -380,17 +374,6 @@ export default function Home() {
           </Pressable>
         ) : null}
       </Card>
-
-      {/* 6b. Current-location Cosmic Events — only while traveling (>10 km from birth place) */}
-      {currentCells ? (
-        <Card style={{ marginBottom: spacing.lg }}>
-          <SectionLabel>Cosmic Events · Where You Are Now</SectionLabel>
-          <Text variant="tiny" color={colors.gold} style={{ fontSize: 11.5, marginTop: 2 }}>
-            ✈ Traveling? These reflect your current location.
-          </Text>
-          {renderGrid(currentCells)}
-        </Card>
-      ) : null}
 
       {/* 7. Journal Prompt */}
       <Card style={{ marginBottom: spacing.lg }}>
