@@ -13,7 +13,7 @@ import Disclaimer from '@/components/Disclaimer';
 import { searchPlaces, geocodePlace, hasPlacesKey, fallbackGeo, Place } from '@/lib/places';
 import { computeChart, BirthChart, PlanetPosition } from '@/lib/vedic';
 import { ChartAnalysisSections } from '@/components/ChartAnalysisSections';
-import TimePickerField from '@/components/TimePickerField';
+import TimeTextInput from '@/components/TimeTextInput';
 import { setOverrideChart } from '@/lib/askOverrideChart';
 import { colors, spacing, radius } from '@/theme';
 
@@ -117,7 +117,7 @@ export default function Calculator() {
 
         <View>
           <Text variant="eyebrow" color={colors.muted} style={{ marginBottom: 8 }}>Birth time</Text>
-          <TimePickerField value={time} onChange={(d) => { setTime(d); setChart(null); }} />
+          <TimeTextInput value={time} onChange={(d) => { setTime(d); setChart(null); }} />
         </View>
 
         <View>

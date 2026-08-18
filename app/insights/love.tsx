@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { View, TextInput, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import Screen from '@/components/Screen';
-import TimePickerField from '@/components/TimePickerField';
+import TimeTextInput from '@/components/TimeTextInput';
 import { Text, Card, Eyebrow, GoldButton, GhostButton } from '@/components/ui';
 import { GlossaryTooltip } from '@/components/GlossaryTooltip';
 import SubHeader from '@/components/SubHeader';
@@ -226,7 +226,7 @@ export default function Love() {
 
         <View>
           <Text variant="eyebrow" color={colors.muted} style={styles.label}>Birth Time</Text>
-          <TimePickerField value={time} onChange={(d) => { dirty(); setTime(d); }} />
+          <TimeTextInput value={time} onChange={(d) => { dirty(); setTime(d); }} />
         </View>
 
         <View>
