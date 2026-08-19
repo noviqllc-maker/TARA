@@ -164,6 +164,23 @@ export default function Profile() {
       <View onLayout={(e) => { shopY.current = e.nativeEvent.layout.y; maybeScrollToShop(); }}>
         <Eyebrow>Shop</Eyebrow>
         <View style={{ gap: 12, marginTop: 12 }}>
+          {/* Premium subscription promo (free users only). Reports below are separate
+              one-time purchases; this card never claims they are included. Price lives on
+              the paywall, from RevenueCat. */}
+          {!isPremium ? (
+            <Card solid glow>
+              <Eyebrow color={colors.gold}>Tara Premium</Eyebrow>
+              <Text variant="serif" style={{ fontSize: 16.5, marginTop: 6 }}>Your chart, explained every day</Text>
+              <Text variant="tiny" color={colors.muted} style={{ marginTop: 8, lineHeight: 19 }}>
+                Personalized Daily Panchāṅga and the Muhūrta Planner (auspicious dates for marriage, travel,
+                business, moving, and more), plus Ask Tara all month, Weekly and Monthly Guidance, the full
+                Daily Insights, and health-aware guidance.
+              </Text>
+              <Pressable style={styles.upgrade} onPress={() => router.push('/paywall')}>
+                <Text variant="body" color="#1a1018" style={{ fontWeight: '600' }}>See Premium</Text>
+              </Pressable>
+            </Card>
+          ) : null}
           {SHOP_ITEMS.map((item) => {
             const owned = owns(item.id);
             const busy = busyId === item.id;
