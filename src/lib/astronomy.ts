@@ -118,6 +118,29 @@ export function getHoraWindows(
   };
 }
 
+// The full daytime horā schedule: 12 equal horās from sunrise to sunset, each with its ruling
+// planet (Chaldean order, starting from the day lord at sunrise). Used to find the best hour
+// for a given life area (career/love/money/spiritual) by its planet. Null in polar day/night.
+export function getHoraSchedule(
+  date: Date,
+  lat: number,
+  lon: number,
+  dayLordPlanet: string,
+  tzOffsetMinutes?: number,
+): { lord: string; start: string; end: string }[] | null {
+  const { sunrise, sunset } = getSunriseSunset(date, lat, lon);
+  if (!sunrise || !sunset) return null;
+  const horaMs = (sunset.getTime() - sunrise.getTime()) / 12;
+  const startIdx = Math.max(0, HORA_ORDER.indexOf(dayLordPlanet));
+  const out: { lord: string; start: string; end: string }[] = [];
+  for (let k = 0; k < 12; k++) {
+    const s = new Date(sunrise.getTime() + k * horaMs);
+    const e = new Date(sunrise.getTime() + (k + 1) * horaMs);
+    out.push({ lord: HORA_ORDER[(startIdx + k) % 7], start: fmtHM(s, tzOffsetMinutes), end: fmtHM(e, tzOffsetMinutes) });
+  }
+  return out;
+}
+
 // Rahukālam: the daytime is split into 8 equal parts; which part belongs to Rāhu depends
 // on the weekday (0-based part index, indexed by getDay(), Sunday = 0). This is the
 // traditional weekday model, not the horā/Yamaganda model. `dayLordPlanet` is accepted for
