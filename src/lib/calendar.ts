@@ -50,13 +50,17 @@ const AUSPICIOUS_YOGAS = new Set([
   'Prīti', 'Āyuṣmān', 'Saubhāgya', 'Śobhana', 'Sukarma', 'Dhṛti', 'Vṛddhi', 'Dhruva', 'Harṣaṇa',
   'Siddhi', 'Siddha', 'Sādhya', 'Śubha', 'Śukla', 'Brahma', 'Aindra',
 ]);
-export function nityaYoga(date: Date): { name: string; major: boolean } {
+// The traditionally inauspicious yogas the muhūrta planner avoids.
+const INAUSPICIOUS_YOGAS = new Set([
+  'Viṣkambha', 'Atigaṇḍa', 'Śūla', 'Gaṇḍa', 'Vyāghāta', 'Vajra', 'Vyatīpāta', 'Parigha', 'Vaidhṛti',
+]);
+export function nityaYoga(date: Date): { name: string; major: boolean; bad: boolean } {
   const d = atSunrise(date);
   const a = lahiriAyanamsa(d);
   const { sun, moon } = sunMoonLon(d);
   const idx = Math.floor(norm((sun - a) + (moon - a)) / (360 / 27)) % 27;
   const name = YOGA_NAMES[idx];
-  return { name, major: AUSPICIOUS_YOGAS.has(name) };
+  return { name, major: AUSPICIOUS_YOGAS.has(name), bad: INAUSPICIOUS_YOGAS.has(name) };
 }
 
 // ---- Month grid + per-day markers ---------------------------------------------

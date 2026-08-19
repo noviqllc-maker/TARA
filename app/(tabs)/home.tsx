@@ -30,6 +30,7 @@ import { colors, spacing } from '@/theme';
 // Quick actions — non-tab destinations only (Ask Tara & Birth Chart live in the tab bar).
 const QUICK = [
   { label: 'Vedic Calendar', route: '/calendar' },
+  { label: 'Muhūrta Planner', route: '/muhurta' },
   { label: 'Compatibility', route: '/insights/love' },
   { label: "Today's Remedies", route: '/(tabs)/insights' },
   { label: 'Life Timeline', route: '/chart/timeline' },
