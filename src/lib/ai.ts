@@ -115,7 +115,7 @@ export type TaraAnswer = {
 // Five answer structures. The client detects "Label — content" lead-ins on their own
 // lines and styles them; template E is plain conversational prose (no lead-ins).
 const TEMPLATES: Record<'A' | 'B' | 'C' | 'D' | 'E', string> = {
-  A: "TEMPLATE A. Five lead-ins, each on its own line: 'Short answer — …', 'Why — …', 'Best timing — …', 'Watch out — …', 'Tara's advice — …'.",
+  A: "TEMPLATE A. Five lead-ins, each on its own line: 'The Answer — …' (the direct one-sentence answer), 'The Deeper Layer — …' (why this transit or dasha matters for them specifically), 'The Timeline — …' (when this period peaks or resolves; specific timing if the data supports it), 'Where Caution Helps — …' (what to watch for, practical pitfalls), 'Tara's advice — …' (2 to 3 sentences of personal guidance tied to their chart and current phase).",
   B: "TEMPLATE B. Three lead-ins, each on its own line: 'The pattern — …', 'Why your chart says this — …', 'What helps now — …'.",
   C: "TEMPLATE C. Three lead-ins, each on its own line: 'Big picture — …', 'What's changing — …', 'What to do — …'.",
   D: "TEMPLATE D. Three lead-ins, each on its own line: 'Your challenge — …', 'Your strength — …', 'The opportunity — …'.",

@@ -35,7 +35,7 @@ type UIState = 'loading' | 'ready' | 'nochart' | 'nocredits' | 'fairuse' | 'erro
 // rather than any "Label — …" pattern — avoids styling the em dashes the translation rule
 // puts INSIDE content ("Mercury retrograde in your 3rd — you'll rewrite that text thrice").
 const LEAD_INS = new Set([
-  'short answer', 'why', 'best timing', 'watch out', "tara's advice",
+  'the answer', 'the deeper layer', 'the timeline', 'where caution helps', "tara's advice",
   'the pattern', 'why your chart says this', 'what helps now',
   'big picture', "what's changing", 'what to do',
   'your challenge', 'your strength', 'the opportunity',
@@ -58,10 +58,12 @@ function AnswerBody({ text }: { text: string }) {
         const sep = emIdx !== -1 ? emIdx : line.indexOf(' - '); // tolerate hyphen
         const label = sep > 0 ? line.slice(0, sep).trim() : '';
         if (label && LEAD_INS.has(label.toLowerCase())) {
+          // A prominent section: an all-caps gold Fraunces header, then its content below.
           return (
-            <Text key={i} variant="serif" style={styles.answer}>
-              <Text style={styles.leadIn}>{label}: </Text>{noEmDash(line.slice(sep + 3).trim())}
-            </Text>
+            <View key={i} style={{ gap: 3 }}>
+              <Text variant="serif" style={styles.sectionHeader}>{label.toUpperCase()}</Text>
+              <Text variant="serif" style={styles.answer}>{noEmDash(line.slice(sep + 3).trim())}</Text>
+            </View>
           );
         }
         return <Text key={i} variant="serif" style={styles.answer}>{noEmDash(line)}</Text>;
@@ -390,6 +392,7 @@ const styles = StyleSheet.create({
   answerLoading: { alignItems: 'flex-start', paddingVertical: 20 },
   answer: { fontSize: 17, lineHeight: 27, color: colors.cream },
   leadIn: { fontFamily: fonts.sansSemi, color: colors.gold, fontSize: 13, letterSpacing: 0.3 },
+  sectionHeader: { color: colors.gold, fontSize: 12.5, letterSpacing: 1.2, fontWeight: '600', marginTop: 4 },
   takeawayBox: {
     marginTop: spacing.xl, paddingTop: 16, paddingHorizontal: 16, paddingBottom: 18,
     borderRadius: 16, borderWidth: 1, borderColor: 'rgba(205,163,73,0.35)', backgroundColor: 'rgba(205,163,73,0.07)',
