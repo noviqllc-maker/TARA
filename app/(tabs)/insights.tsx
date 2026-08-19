@@ -18,6 +18,7 @@ import { GlossaryTooltip } from '@/components/GlossaryTooltip';
 import { PremiumSheet } from '@/components/PremiumNudge';
 import Disclaimer from '@/components/Disclaimer';
 import { useDailyContent } from '@/hooks/useDailyContent';
+import { usePanchangExplained } from '@/hooks/usePanchangExplained';
 import { useHealth } from '@/hooks/useHealth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useAuth } from '@/hooks/useAuth';
@@ -51,6 +52,7 @@ type CardVM =
 
 export default function Insights() {
   const daily = useDailyContent();
+  const panchang = usePanchangExplained();
   const { metrics, connected } = useHealth();
   const { isPremium } = useSubscription();
   const { session } = useAuth();
@@ -116,6 +118,19 @@ export default function Insights() {
         </View>
         <Text variant="serif" style={{ fontSize: 16.5, lineHeight: 25 }}>{daily.weatherSummary}</Text>
       </Card>
+
+      {/* Panchāṅga explained for the user's chart (deterministic instantly, AI-upgraded). */}
+      {panchang.data ? (
+        <Card style={{ marginBottom: spacing.lg }}>
+          <Eyebrow>Explained for your chart</Eyebrow>
+          {([['Tithi', panchang.data.tithi], ['Nakshatra', panchang.data.nakshatra], ['Yoga', panchang.data.yoga]] as const).map(([label, text]) => (
+            <View key={label} style={{ marginTop: 12 }}>
+              <Text variant="eyebrow" color={colors.muted} style={{ fontSize: 10, letterSpacing: 0.5 }}>{label}</Text>
+              <Text variant="tiny" color={colors.cream} style={{ fontSize: 13, lineHeight: 19, marginTop: 3 }}>{text}</Text>
+            </View>
+          ))}
+        </Card>
+      ) : null}
 
       {/* Weekly & Monthly Guidance entry — premium forecast; free sees a locked teaser. */}
       <Pressable onPress={() => router.push('/insights/forecast' as any)} style={{ marginBottom: spacing.lg }}>

@@ -312,3 +312,66 @@ function fallbackReply(history: ChatMessage[]): string {
     return "Venus sits beautifully on your ascendant, giving warmth and magnetism in connection. Today asks for patience over problem-solving. Lead with listening. The deeper rhythm is sound; let this tender transit pass before big conversations.";
   return "With the Moon transiting your 8th house under your Jupiter Mahādasha, today favors reflection over action. Keep things light, hydrate, and protect your focus. What feels heavy now is likely a threshold, not a wall.";
 }
+
+// ---- Panchāṅga explained (AI) ---------------------------------------------------
+// One structured call returns all three of today's panchāṅga elements explained for THIS
+// chart. It goes through the same edge as chat, so it consumes NO question credits; the
+// caller (panchangExplain.ts) caches the result per user/date so it fires at most once a day.
+export type PanchangExplained = { tithi: string; nakshatra: string; yoga: string };
+
+const stripEmDash = (s: string) => s.replace(/\s*—\s*/g, ', ');
+
+export async function askPanchang(
+  name: string,
+  chart: BirthChart | null,
+  facts: { tithi: string; nakshatra: string; yoga: string; moonHouse: number | null },
+): Promise<PanchangExplained | null> {
+  const url = endpoint();
+  if (!url || !chart) return null;
+  const context = buildContext(name, chart, null);
+  const system = [
+    "You are Tara, a warm, grounded Vedic guide. Explain today's panchāṅga for THIS person's chart in plain, practical English, never mystical or fear-based.",
+    'For EACH element give 2 to 3 short sentences: a plain-language gloss of the term, how it connects to this chart today (name the house a relevant transit activates), and one concrete, everyday suggestion.',
+    'Only use houses, planets, dashas, and transits present in the provided context; never invent placements. No medical, legal, or financial directives; no doom.',
+    'PUNCTUATION: use commas, periods, or semicolons instead of em-dashes; never use em-dashes.',
+    'OUTPUT: respond with ONLY a JSON object and nothing else (no code fences, no preamble): {"tithi":"...","nakshatra":"...","yoga":"..."}. Escape any newline inside a value as \\n and any double-quote as \\".',
+  ].join(' ');
+  const userMsg = `Today's panchāṅga for ${name || 'this person'}: Tithi ${facts.tithi}, Nakshatra ${facts.nakshatra}, Yoga ${facts.yoga}.${facts.moonHouse ? ` The transiting Moon is in their ${facts.moonHouse} house today.` : ''} Explain each element for them specifically.`;
+  try {
+    const res = await fetch(url, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: [{ role: 'user', content: userMsg }], context, system, maxTokens: 700 }),
+    });
+    if (!res.ok) {
+      if (__DEV__) { const b = await res.text().catch(() => ''); console.warn('[askPanchang] edge non-OK → deterministic fallback.', res.status, b.slice(0, 300)); }
+      return null;
+    }
+    const data = await res.json();
+    const obj = extractPanchang(String(data?.text ?? '').trim());
+    if (!obj) { if (__DEV__) console.warn('[askPanchang] unparseable → deterministic fallback.'); return null; }
+    return { tithi: stripEmDash(obj.tithi), nakshatra: stripEmDash(obj.nakshatra), yoga: stripEmDash(obj.yoga) };
+  } catch (e) {
+    if (__DEV__) console.warn('[askPanchang] threw → deterministic fallback:', String(e));
+    return null;
+  }
+}
+
+// Pull {tithi,nakshatra,yoga} from the model's JSON (strict parse, then per-field regex).
+function extractPanchang(text: string): PanchangExplained | null {
+  const t = text.replace(/```(?:json)?/gi, '').trim();
+  const a = t.indexOf('{'), b = t.lastIndexOf('}');
+  if (a !== -1 && b > a) {
+    try {
+      const o = JSON.parse(t.slice(a, b + 1));
+      if (o && typeof o.tithi === 'string' && typeof o.nakshatra === 'string' && typeof o.yoga === 'string') {
+        return { tithi: o.tithi, nakshatra: o.nakshatra, yoga: o.yoga };
+      }
+    } catch {}
+  }
+  const field = (k: string): string => {
+    const m = new RegExp(`"${k}"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"`).exec(t);
+    return m ? m[1].replace(/\\n/g, ' ').replace(/\\"/g, '"').trim() : '';
+  };
+  const tithi = field('tithi'), nakshatra = field('nakshatra'), yoga = field('yoga');
+  return tithi && nakshatra && yoga ? { tithi, nakshatra, yoga } : null;
+}
