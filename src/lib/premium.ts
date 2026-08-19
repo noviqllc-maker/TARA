@@ -13,6 +13,8 @@ export const PREMIUM_BENEFITS = [
   'Weekly & Monthly Guidance: your forecast, always current',
   'The full Daily Insights: every layer of your day',
   'Health-aware daily guidance, tuned to your real rhythm',
+  'Daily Panchāṅga, explained for your chart (tithi, nakshatra, yoga)',
+  'Muhūrta Planner: auspicious dates for marriage, travel, business, moving, and more',
   'Early access to new Tara features',
 ] as const;
 

@@ -7,10 +7,11 @@ import React, { useMemo, useState } from 'react';
 import { View, Pressable, Modal, ScrollView, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import Screen from '@/components/Screen';
-import { Text, Card, Eyebrow } from '@/components/ui';
+import { Text, Card, Eyebrow, GoldButton } from '@/components/ui';
 import Disclaimer from '@/components/Disclaimer';
 import { useChart } from '@/hooks/useChart';
 import { useProfile } from '@/hooks/useProfile';
+import { useSubscription } from '@/hooks/useSubscription';
 import { PURPOSES, Purpose, findMuhurtaDates, muhurtaWindows, MuhurtaDate } from '@/lib/muhurtaPlanner';
 import { colors, radius, spacing } from '@/theme';
 
@@ -19,10 +20,11 @@ const QUALITY_COLOR = { Excellent: colors.sage, Good: colors.goldSoft, Fair: col
 export default function MuhurtaScreen() {
   const chart = useChart();
   const { profile } = useProfile();
+  const { isPremium } = useSubscription();
   const [purpose, setPurpose] = useState<Purpose>('marriage');
   const [selected, setSelected] = useState<MuhurtaDate | null>(null);
 
-  const dates = useMemo(() => findMuhurtaDates(chart, purpose, 90, 5), [chart, purpose]);
+  const dates = useMemo(() => findMuhurtaDates(chart, purpose, 90, 5, isPremium), [chart, purpose, isPremium]);
   const location = profile.lat != null && profile.lon != null
     ? { lat: profile.lat, lon: profile.lon, tzOffsetMinutes: profile.tzOffsetMinutes }
     : undefined;
@@ -54,7 +56,18 @@ export default function MuhurtaScreen() {
         })}
       </View>
 
-      {!chart ? (
+      {!isPremium ? (
+        <Card solid glow style={{ alignItems: 'center', marginTop: spacing.lg }}>
+          <Text style={{ fontSize: 24, color: colors.gold }}>✦</Text>
+          <Text variant="serif" style={{ fontSize: 18, marginTop: 8, textAlign: 'center' }}>Personal Muhūrta Planner</Text>
+          <Text variant="tiny" color={colors.muted} style={{ marginTop: 8, textAlign: 'center', lineHeight: 19 }}>
+            Find auspicious dates for marriage, travel, business, moving, and more, tuned to your own chart. Part of Tara Premium.
+          </Text>
+          <View style={{ alignSelf: 'stretch', marginTop: 16 }}>
+            <GoldButton label="Unlock Premium" onPress={() => router.push('/paywall')} />
+          </View>
+        </Card>
+      ) : !chart ? (
         <Card solid glow style={{ alignItems: 'center', marginTop: spacing.lg }}>
           <Text style={{ fontSize: 22, color: colors.gold }}>✦</Text>
           <Text variant="tiny" color={colors.muted} style={{ marginTop: 8, textAlign: 'center', lineHeight: 19 }}>

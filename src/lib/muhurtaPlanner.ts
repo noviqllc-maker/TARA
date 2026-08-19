@@ -147,9 +147,10 @@ function scoreDay(chart: BirthChart, date: Date, purpose: Purpose): MuhurtaDate 
   };
 }
 
-// Scan the next `days` days (from tomorrow) and return the top `count` by score.
-export function findMuhurtaDates(chart: BirthChart | null, purpose: Purpose, days = 90, count = 5): MuhurtaDate[] {
-  if (!chart) return [];
+// Scan the next `days` days (from tomorrow) and return the top `count` by score. Premium-only:
+// returns [] when isPremium is false (the screen shows an upgrade prompt in that case).
+export function findMuhurtaDates(chart: BirthChart | null, purpose: Purpose, days = 90, count = 5, isPremium = false): MuhurtaDate[] {
+  if (!chart || !isPremium) return [];
   const today = new Date();
   const out: MuhurtaDate[] = [];
   for (let i = 1; i <= days; i++) {
