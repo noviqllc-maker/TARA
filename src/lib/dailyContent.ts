@@ -167,10 +167,43 @@ function composeCosmicLine(rng: Rng, graha: string): string {
   return `${withArticle(graha)} ${rng.pick(COSMIC_LINES[graha] ?? COSMIC_LINES.Moon)}`;
 }
 
+// ---- plain-English daily guidance (Home hero) ----------------------------------
+// Personal, actionable, warm — and deliberately free of astrology vocabulary: no planet,
+// house, sign, or transit is ever named. The day's driving graha is used only as a private
+// tone seed; the reader sees advice, not a mechanism. This is what replaces the jargon-laden
+// "Why? {planet} is moving through your Nth house" body on Home. 3-4 sentences.
+const GRAHA_ACTION: Record<string, string[]> = {
+  Sun: ['Lead with quiet confidence and let your actions speak.', 'Show up as yourself and let clarity guide your choices.'],
+  Moon: ['Let your feelings inform you without letting them run the show.', 'Be gentle with yourself and follow what feels steadying.'],
+  Mars: ['Aim your energy at one clear target instead of scattering it.', 'Move with intention, and choose your efforts with care.'],
+  Mercury: ['Say what you mean simply, and let one clear thought lead.', 'Get organized before you act, and keep things honest.'],
+  Jupiter: ['Think a little bigger and say yes to what expands you.', 'Be generous, and trust that there is room to grow.'],
+  Venus: ['Lead with warmth and let connection matter more than being right.', 'Choose ease and kindness over control today.'],
+  Saturn: ['Go slow and build something that lasts.', 'Trust patient effort over quick results.'],
+  Rahu: ['Reach for what is new, but keep your feet on the ground.', 'Let ambition move you without losing your center.'],
+  Ketu: ['Let go of what you have outgrown rather than forcing more.', 'Make room for quiet, and trust what you already know.'],
+};
+const GUIDANCE_FOCUS = [
+  'Put your energy into one thing that genuinely matters, and let the smaller stuff wait.',
+  'Choose a single meaningful priority and give it your real attention.',
+  'Focus on what is in front of you, and leave a little room instead of controlling every outcome.',
+];
+const GUIDANCE_CLOSE = [
+  'Stay open to the people and opportunities around you, and let the rest unfold naturally.',
+  'Be kind to yourself as the day moves, and trust that steady beats rushed.',
+  'Leave space for things to breathe, and let the day meet you halfway.',
+];
+function composeGuidance(rng: Rng, driver: string): string {
+  const open = rng.pick(GRAHA_LEADS[driver] ?? GRAHA_LEADS.Moon);
+  const act = rng.pick(GRAHA_ACTION[driver] ?? GRAHA_ACTION.Moon);
+  return `${open} ${act} ${rng.pick(GUIDANCE_FOCUS)} ${rng.pick(GUIDANCE_CLOSE)}`;
+}
+
 export type DailyMessage = { headline: string; body: string };
 export type DailyInsight = { key: string; label: string; color: string; text: string; question: string };
 export type DailyContent = {
   message: DailyMessage;
+  guidance: string;          // plain-English, jargon-free daily advice for the Home hero
   cosmicLine: string;        // one-line Home hero note from the day's strongest graha
   weatherSummary: string;
   insights: DailyInsight[];
@@ -195,6 +228,7 @@ function noChartContent(rng: Rng, date: Date): DailyContent {
   const body = `${rng.pick(GRAHA_LEADS.Moon)} ${rng.pick(['Lean into rest and reflection', 'Give your energy to quiet care'])}.\n\nWhy? The Moon sits in ${t.moonNakshatra}.`;
   return {
     message: { headline: rng.pick(GRAHA_HEADLINES.Moon), body },
+    guidance: composeGuidance(rng, 'Moon'),
     cosmicLine: composeCosmicLine(rng, 'Moon'),
     weatherSummary: `The Moon moves through ${t.moonSign} in ${t.moonNakshatra}, ${t.panchanga}. Add your birth details to personalize today’s reading to your chart.`,
     insights: [
@@ -328,6 +362,7 @@ export function composeDailyContent(chart: BirthChart | null, date: Date, seed: 
 
   return {
     message,
+    guidance: composeGuidance(rng, driver),
     cosmicLine: composeCosmicLine(rng, driver),
     weatherSummary,
     insights: chosen.map(({ key, label, color, text, question }) => ({ key, label, color, text, question })),
