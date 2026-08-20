@@ -136,21 +136,19 @@ export default function Insights() {
           <Text variant="secondaryBody" style={{ marginTop: 6 }}>{panchanga.universalMeaning}</Text>
         </View>
 
-        {/* Personal meaning — Premium (chart-tied); free users see a locked prompt */}
-        {isPremium && panchanga.personalMeaning ? (
-          <View style={styles.personalSection}>
-            <Text variant="caption" color={colors.gold}>✦ What this means for you</Text>
-            <Text variant="body" color={colors.cream} style={{ marginTop: 6 }}>{panchanga.personalMeaning}</Text>
-          </View>
-        ) : isPremium && !chart ? (
-          <View style={styles.personalSection}>
-            <Text variant="secondaryBody">Add your birth details to see what today means for your own chart.</Text>
-          </View>
-        ) : (
+        {/* Personal layer — free users get an unlock prompt; premium users are pointed to the
+            per-element "Explained for your chart" card below (the premium depth layer). The
+            broad personal paragraph is intentionally NOT here, so the two cards answer different
+            questions and never overlap. */}
+        {!isPremium ? (
           <Pressable onPress={() => router.push('/paywall')} style={styles.personalLocked}>
             <Text variant="caption" color={colors.gold}>✦ Personalized for your chart</Text>
             <Text variant="caption" color={colors.gold}>Premium →</Text>
           </Pressable>
+        ) : chart ? (
+          <Text variant="caption" color={colors.muted} style={{ marginTop: 12 }}>Scroll down for detailed per-element explanations.</Text>
+        ) : (
+          <Text variant="secondaryBody" style={{ marginTop: 12 }}>Add your birth details to see what today means for your own chart.</Text>
         )}
       </Card>
 
@@ -292,7 +290,6 @@ const styles = StyleSheet.create({
     marginTop: 14, paddingVertical: 12,
     borderTopWidth: 1, borderTopColor: colors.line, borderBottomWidth: 1, borderBottomColor: colors.line,
   },
-  personalSection: { marginTop: 12, paddingVertical: 12, paddingHorizontal: 12, backgroundColor: colors.cardSolid, borderRadius: radius.md },
   personalLocked: {
     marginTop: 12, paddingVertical: 12, paddingHorizontal: 12, backgroundColor: colors.cardSolid, borderRadius: radius.md,
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
