@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tara Wellness — Vedic Astrology & Daily Guidance</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;600;700&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     * {
       margin: 0;
@@ -12,11 +13,10 @@
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: linear-gradient(135deg, #0a0a1a 0%, #1a1a2e 100%);
+      font-family: 'Outfit', sans-serif;
+      background: linear-gradient(135deg, #0e0a14 0%, #1a1515 100%);
       color: #ffffff;
       line-height: 1.6;
-      overflow-x: hidden;
     }
 
     header {
@@ -24,13 +24,14 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+      border-bottom: 1px solid rgba(205, 163, 73, 0.2);
     }
 
     .logo {
+      font-family: 'Fraunces', serif;
       font-size: 24px;
       font-weight: 700;
-      color: #d4af37;
+      color: #cda349;
     }
 
     nav a {
@@ -43,77 +44,53 @@
 
     nav a:hover {
       opacity: 1;
-      color: #d4af37;
+      color: #cda349;
     }
 
     .hero {
       text-align: center;
-      padding: 80px 40px;
-      max-width: 1000px;
-      margin: 0 auto;
+      padding: 100px 40px;
     }
 
     .hero h1 {
-      font-size: 56px;
+      font-family: 'Fraunces', serif;
+      font-size: 64px;
       margin-bottom: 20px;
-      background: linear-gradient(135deg, #d4af37, #ffffff);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      color: #cda349;
+      font-weight: 700;
     }
 
     .hero p {
       font-size: 18px;
       opacity: 0.9;
-      margin-bottom: 40px;
+      margin-bottom: 50px;
       max-width: 600px;
       margin-left: auto;
       margin-right: auto;
     }
 
-    .cta-buttons {
-      display: flex;
-      gap: 20px;
-      justify-content: center;
-      flex-wrap: wrap;
-      margin-bottom: 60px;
-    }
-
-    .btn {
-      padding: 16px 32px;
-      border-radius: 8px;
+    .cta-button {
+      display: inline-block;
+      padding: 16px 40px;
+      background: #cda349;
+      color: #0e0a14;
       text-decoration: none;
       font-weight: 600;
       font-size: 16px;
+      border-radius: 6px;
       transition: all 0.3s;
-      border: 2px solid transparent;
     }
 
-    .btn-primary {
-      background: #d4af37;
-      color: #0a0a1a;
-    }
-
-    .btn-primary:hover {
+    .cta-button:hover {
       transform: translateY(-2px);
-      box-shadow: 0 10px 30px rgba(212, 175, 55, 0.3);
-    }
-
-    .btn-secondary {
-      border-color: #d4af37;
-      color: #d4af37;
-      background: transparent;
-    }
-
-    .btn-secondary:hover {
-      background: rgba(212, 175, 55, 0.1);
+      box-shadow: 0 10px 30px rgba(205, 163, 73, 0.3);
     }
 
     .features {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       gap: 40px;
-      max-width: 1200px;
+      max-width: 1000px;
       margin: 80px auto;
       padding: 0 40px;
     }
@@ -122,64 +99,41 @@
       text-align: center;
     }
 
-    .feature-icon {
-      font-size: 48px;
-      margin-bottom: 20px;
-    }
-
     .feature h3 {
-      font-size: 20px;
+      font-family: 'Fraunces', serif;
+      font-size: 18px;
       margin-bottom: 12px;
-      color: #d4af37;
+      color: #cda349;
     }
 
     .feature p {
-      opacity: 0.8;
+      opacity: 0.7;
       font-size: 14px;
     }
 
     footer {
       text-align: center;
       padding: 40px;
-      border-top: 1px solid rgba(212, 175, 55, 0.2);
+      border-top: 1px solid rgba(205, 163, 73, 0.2);
       margin-top: 80px;
       opacity: 0.6;
+      font-size: 14px;
     }
 
     footer a {
-      color: #d4af37;
+      color: #cda349;
       text-decoration: none;
-      margin: 0 15px;
+      margin: 0 10px;
     }
 
     @media (max-width: 768px) {
       .hero h1 {
-        font-size: 36px;
-      }
-
-      .hero p {
-        font-size: 16px;
-      }
-
-      header {
-        flex-direction: column;
-        gap: 20px;
-      }
-
-      nav {
-        text-align: center;
+        font-size: 40px;
       }
 
       nav a {
-        margin: 0 15px;
-      }
-
-      .cta-buttons {
-        flex-direction: column;
-      }
-
-      .btn {
-        width: 100%;
+        margin: 0 10px;
+        font-size: 14px;
       }
     }
   </style>
@@ -187,9 +141,8 @@
 <body>
 
 <header>
-  <div class="logo">✦ Tara Wellness</div>
+  <div class="logo">Tara Wellness</div>
   <nav>
-    <a href="#features">Features</a>
     <a href="https://purple-lab-d52c.noviqllc.workers.dev/">Privacy</a>
     <a href="mailto:support@tarawellness.org">Support</a>
   </nav>
@@ -198,57 +151,46 @@
 <section class="hero">
   <h1>Know Yourself Through the Stars</h1>
   <p>Personalized Vedic astrology guidance, daily cosmic insights, and the right timing for life's big moments — all tied to your unique birth chart.</p>
-
-  <div class="cta-buttons">
-    <a href="https://apps.apple.com/app/tara-wellness/id6738572891" class="btn btn-primary">Download on App Store</a>
-    <a href="#features" class="btn btn-secondary">Learn More</a>
-  </div>
+  <a href="https://apps.apple.com/app/tara-wellness/id6738572891" class="cta-button">Download on App Store</a>
 </section>
 
-<section class="features" id="features">
+<section class="features">
   <div class="feature">
-    <div class="feature-icon">📊</div>
-    <h3>Your Birth Chart</h3>
-    <p>Instantly computed, beautifully explained, always personal to you.</p>
+    <h3>✦ Your Chart</h3>
+    <p>Instantly computed, beautifully explained</p>
   </div>
 
   <div class="feature">
-    <div class="feature-icon">✨</div>
-    <h3>Daily Guidance</h3>
-    <p>Fresh every morning. Real insights tied to your actual chart.</p>
+    <h3>✦ Daily Guidance</h3>
+    <p>Fresh every morning, never repetitive</p>
   </div>
 
   <div class="feature">
-    <div class="feature-icon">📅</div>
-    <h3>Vedic Calendar</h3>
-    <p>See what's auspicious, plan your best moments ahead.</p>
+    <h3>✦ Ask Tara</h3>
+    <p>Personalized answers to your questions</p>
   </div>
 
   <div class="feature">
-    <div class="feature-icon">💬</div>
-    <h3>Ask Tara</h3>
-    <p>Get personalized answers to your biggest questions.</p>
+    <h3>✦ Compatibility</h3>
+    <p>Deep analysis with anyone</p>
   </div>
 
   <div class="feature">
-    <div class="feature-icon">💑</div>
-    <h3>Compatibility</h3>
-    <p>Deep analysis of your connection with anyone.</p>
+    <h3>✦ Vedic Calendar</h3>
+    <p>Plan your best moments ahead</p>
   </div>
 
   <div class="feature">
-    <div class="feature-icon">🧘</div>
-    <h3>Wellness Guidance</h3>
-    <p>Rhythm, rest, and practices for your wellbeing.</p>
+    <h3>✦ Wellness</h3>
+    <p>Rhythm and rest for wellbeing</p>
   </div>
 </section>
 
 <footer>
   <p>&copy; 2026 Noviq LLC. All rights reserved.</p>
   <p>
-    <a href="https://purple-lab-d52c.noviqllc.workers.dev/">Privacy Policy</a>
+    <a href="https://purple-lab-d52c.noviqllc.workers.dev/">Privacy</a> &bull;
     <a href="mailto:support@tarawellness.org">Support</a>
-    <a href="https://tarawellness.org">Website</a>
   </p>
 </footer>
 
