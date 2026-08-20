@@ -21,21 +21,35 @@ import { useCurrentLocation } from '@/hooks/useCurrentLocation';
 import { GlossaryTooltip } from '@/components/GlossaryTooltip';
 import { todayObservance } from '@/lib/observances';
 import { computeTransitFactor, BirthChart } from '@/lib/vedic';
+import { buildMonth, dayDetail, DayCell, TithiSpecial } from '@/lib/calendar';
+import { PURPOSES, Purpose, findMuhurtaDates } from '@/lib/muhurtaPlanner';
 import { Topic } from '@/lib/topic';
 import { PriorityKey } from '@/data/priorities';
 import { loadJapa, JapaState } from '@/lib/practice';
 import { greeting, todayLong, EnergyDomain } from '@/data/mock';
-import { colors, spacing } from '@/theme';
+import { colors, radius, spacing } from '@/theme';
 
 // Quick actions — non-tab destinations only (Ask Tara & Birth Chart live in the tab bar).
+// Calendar & Muhūrta now live as full embedded Home sections, so they're no longer here.
 const QUICK = [
-  { label: 'Vedic Calendar', route: '/calendar' },
-  { label: 'Muhūrta Planner', route: '/muhurta' },
+  { label: 'Vedic Calculator', route: '/calculator' },
   { label: 'Compatibility', route: '/insights/love' },
   { label: "Today's Remedies", route: '/(tabs)/insights' },
   { label: 'Life Timeline', route: '/chart/timeline' },
   { label: 'Shop', route: '/(tabs)/profile', params: { scrollTo: 'shop' } },
 ];
+
+// Calendar tithi-marker colors + labels (mirrors app/calendar.tsx so the embedded grid reads
+// identically to the full screen).
+const WEEKDAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+const DOT_COLOR: Record<Exclude<TithiSpecial, null>, string> = {
+  amavasya: colors.terra, purnima: colors.lav, ekadashi: colors.goldSoft,
+};
+const DOT_LABEL: Record<Exclude<TithiSpecial, null>, string> = {
+  amavasya: 'Amāvasyā', purnima: 'Pūrṇimā', ekadashi: 'Ekādaśī',
+};
+const sameDay = (a: Date, b: Date) =>
+  a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 
 // Life areas, each mapped to the topic that biases its daily teaser factor. Default order;
 // reordered at render time to lead with the user's onboarding priority.
@@ -159,6 +173,36 @@ export default function Home() {
   // Today's observance (Ekādaśī / Pūrṇimā / festival …), if one is active — surfaced as a
   // line on the cosmic-events card and echoed on the Practice card. Deterministic, no AI.
   const observance = useMemo(() => todayObservance(new Date()), [dayKey]);
+
+  // ---- Embedded Vedic Calendar + Muhūrta ----------------------------------------
+  // Month grid (deterministic, from calendar.ts), a tapped-day detail, and a purpose-driven
+  // muhūrta shortlist — the same engines the full /calendar and /muhurta screens use.
+  const today = new Date();
+  const [cursor, setCursor] = useState({ year: today.getFullYear(), month: today.getMonth() });
+  const [selectedDate, setSelectedDate] = useState<Date>(today);
+  const [purpose, setPurpose] = useState<Purpose>('business');
+
+  const { weeks, label: monthLabel } = useMemo(
+    () => buildMonth(cursor.year, cursor.month, today),
+    [cursor.year, cursor.month, dayKey],
+  );
+  const shiftMonth = (delta: number) => setCursor(({ year, month }) => {
+    const m = month + delta;
+    return { year: year + Math.floor(m / 12), month: ((m % 12) + 12) % 12 };
+  });
+  // Day detail uses the same current-or-birth location as Cosmic Events, so the time windows
+  // reflect where the user actually is. Without a location the windows read "Set birth place".
+  const dayInfo = useMemo(
+    () => dayDetail(selectedDate, chart, cosmicLocation),
+    [selectedDate, chart, cosmicLocation?.lat, cosmicLocation?.lon, cosmicLocation?.tzOffsetMinutes],
+  );
+  // Best upcoming muhūrta for the chosen purpose (premium-gated: [] for free users, who see a
+  // locked prompt instead of fabricated dates).
+  const topMuhurta = useMemo(
+    () => findMuhurtaDates(chart, purpose, 90, 1, isPremium)[0] ?? null,
+    [chart, purpose, isPremium],
+  );
+
   // Today's Guidance — engine-composed, seeded per user + day (no AI, no mock).
   const daily = useDailyContent();
   // "Monday • July 20" — title case, dot separator (not all caps).
@@ -377,6 +421,145 @@ export default function Home() {
         ) : null}
       </Card>
 
+      {/* 6b. Vedic Calendar — embedded month grid; tapping a day updates the detail below */}
+      <SectionLabel>Vedic Calendar</SectionLabel>
+      <View style={styles.monthHeader}>
+        <Pressable onPress={() => shiftMonth(-1)} hitSlop={12}><Text style={styles.calArrow}>‹</Text></Pressable>
+        <Text variant="serif" style={{ fontSize: 18 }}>{monthLabel}</Text>
+        <Pressable onPress={() => shiftMonth(1)} hitSlop={12}><Text style={styles.calArrow}>›</Text></Pressable>
+      </View>
+      <Card style={{ marginTop: 12, marginBottom: spacing.md, paddingHorizontal: 8, paddingVertical: 10 }}>
+        <View style={styles.weekRow}>
+          {WEEKDAYS.map((d, i) => (
+            <View key={i} style={styles.calCell}><Text variant="tiny" color={colors.muted} style={{ fontSize: 11 }}>{d}</Text></View>
+          ))}
+        </View>
+        {weeks.map((week, wi) => (
+          <View key={wi} style={styles.weekRow}>
+            {week.map((c: DayCell, di) => {
+              const m = c.marker;
+              const icon = m.observance?.kind === 'festival' ? '🪔' : m.observance?.kind === 'sankranti' ? '☀' : m.yogaMajor ? '⭐' : '';
+              const isSel = c.inMonth && sameDay(c.date, selectedDate);
+              return (
+                <Pressable
+                  key={di}
+                  onPress={() => c.inMonth && setSelectedDate(c.date)}
+                  style={[styles.calCell, c.isToday && !isSel && styles.calCellToday, isSel && styles.calCellSelected]}
+                  disabled={!c.inMonth}
+                >
+                  <Text
+                    variant="tiny"
+                    color={!c.inMonth ? colors.mutedDim : isSel ? colors.bg : c.isToday ? colors.gold : colors.cream}
+                    style={{ fontSize: 13.5, fontWeight: c.isToday || isSel ? '700' : '400' }}
+                  >
+                    {c.day}
+                  </Text>
+                  <View style={styles.markerRow}>
+                    {m.special ? <View style={[styles.dot, { backgroundColor: DOT_COLOR[m.special] }]} /> : <View style={styles.dot} />}
+                    {icon ? <Text style={{ fontSize: 8.5 }}>{icon}</Text> : null}
+                  </View>
+                </Pressable>
+              );
+            })}
+          </View>
+        ))}
+      </Card>
+      <View style={styles.legend}>
+        {(['amavasya', 'purnima', 'ekadashi'] as const).map((k) => (
+          <View key={k} style={styles.legendItem}>
+            <View style={[styles.dot, { backgroundColor: DOT_COLOR[k] }]} />
+            <Text variant="tiny" color={colors.muted} style={{ fontSize: 11 }}>{DOT_LABEL[k]}</Text>
+          </View>
+        ))}
+        <View style={styles.legendItem}><Text style={{ fontSize: 11 }}>🪔</Text><Text variant="tiny" color={colors.muted} style={{ fontSize: 11 }}>Festival</Text></View>
+        <View style={styles.legendItem}><Text style={{ fontSize: 11 }}>⭐</Text><Text variant="tiny" color={colors.muted} style={{ fontSize: 11 }}>Auspicious yoga</Text></View>
+      </View>
+
+      {/* 6c. Selected day detail — updates in place when a calendar day is tapped */}
+      <Card style={{ marginTop: spacing.lg, marginBottom: spacing.lg }}>
+        <Text variant="serif" style={{ fontSize: 18, marginBottom: 2 }}>{dayInfo.dateLabel}</Text>
+        <DetailField label="Tithi" value={dayInfo.tithi} note={dayInfo.tithiMeaning} />
+        <DetailField label="Nakshatra" value={dayInfo.nakshatra} note={dayInfo.nakshatraMeaning} />
+        <DetailField label="Yoga" value={dayInfo.yoga} note={dayInfo.yogaNote} />
+        {dayInfo.observance ? (
+          <DetailField
+            label={dayInfo.observance.kind === 'festival' ? 'Festival' : 'Observance'}
+            value={dayInfo.observance.name}
+            note={dayInfo.observance.significance}
+          />
+        ) : null}
+
+        <Text variant="eyebrow" color={colors.gold} style={styles.groupLabel}>Best hours</Text>
+        {dayInfo.bestHours.map((b) => (
+          <View key={b.area} style={styles.hourRow}>
+            <Text variant="tiny" color={colors.cream} style={{ fontSize: 13 }}>{b.area}</Text>
+            <Text variant="tiny" color={b.window ? colors.goldSoft : colors.mutedDim} style={{ fontSize: 13 }}>{b.window ?? 'Set birth place'}</Text>
+          </View>
+        ))}
+
+        <Text variant="eyebrow" color={colors.gold} style={styles.groupLabel}>Muhūrta windows</Text>
+        <View style={styles.hourRow}>
+          <Text variant="tiny" color={colors.cream} style={{ fontSize: 13 }}>Abhijit (auspicious)</Text>
+          <Text variant="tiny" color={dayInfo.abhijit ? colors.sage : colors.mutedDim} style={{ fontSize: 13 }}>{dayInfo.abhijit ?? 'Set birth place'}</Text>
+        </View>
+        <View style={styles.hourRow}>
+          <Text variant="tiny" color={colors.cream} style={{ fontSize: 13 }}>Rāhukālam (avoid)</Text>
+          <Text variant="tiny" color={dayInfo.rahukalam ? colors.terra : colors.mutedDim} style={{ fontSize: 13 }}>{dayInfo.rahukalam ?? 'Set birth place'}</Text>
+        </View>
+      </Card>
+
+      {/* 6d. Muhūrta Planner — purpose selector + best upcoming date (premium) */}
+      <SectionLabel>Muhūrta Planner</SectionLabel>
+      <Text variant="tiny" color={colors.muted} style={{ marginTop: 2, fontSize: 12.5 }}>Plan the right moment. What are you starting?</Text>
+      <View style={styles.purposeRow}>
+        {PURPOSES.map((p) => {
+          const on = purpose === p.key;
+          return (
+            <Pressable key={p.key} onPress={() => setPurpose(p.key)} style={[styles.chip, on && styles.chipOn]}>
+              <Text variant="tiny" color={on ? colors.bg : colors.muted} style={{ fontSize: 12.5, fontWeight: on ? '700' : '500' }}>{p.label}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+      {!isPremium ? (
+        <Card style={{ marginTop: 12, marginBottom: spacing.lg, alignItems: 'center' }}>
+          <Text style={{ fontSize: 22, color: colors.gold }}>✦</Text>
+          <Text variant="tiny" color={colors.muted} style={{ marginTop: 8, textAlign: 'center', lineHeight: 19 }}>
+            Auspicious dates for what you're planning, tuned to your own chart. Part of Tara Premium.
+          </Text>
+          <Pressable onPress={() => router.push('/paywall')} hitSlop={8} style={{ marginTop: 12 }}>
+            <Text variant="tiny" color={colors.gold} style={{ fontWeight: '600', fontSize: 13 }}>Unlock Premium →</Text>
+          </Pressable>
+        </Card>
+      ) : !chart ? (
+        <Card style={{ marginTop: 12, marginBottom: spacing.lg, alignItems: 'center' }}>
+          <Text variant="tiny" color={colors.muted} style={{ marginTop: 4, textAlign: 'center', lineHeight: 19 }}>
+            Add your birth details to find dates tuned to your own chart.
+          </Text>
+        </Card>
+      ) : (
+        <>
+          {topMuhurta ? (
+            <Pressable onPress={() => router.push('/muhurta')}>
+              <Card style={{ marginTop: 12 }}>
+                <Text variant="tiny" color={colors.muted} style={{ fontSize: 10.5, letterSpacing: 0.5, textTransform: 'uppercase' }}>Best upcoming window</Text>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
+                  <Text variant="serif" style={{ fontSize: 17 }}>{topMuhurta.dateLabel}</Text>
+                  <Text variant="tiny" color={colors.goldSoft} style={{ fontSize: 12.5, fontWeight: '700' }}>{topMuhurta.quality} · {topMuhurta.score}/100</Text>
+                </View>
+                <Text variant="tiny" color={colors.goldSoft} style={{ fontSize: 12, marginTop: 4 }}>{topMuhurta.tithi} · {topMuhurta.nakshatra} · {topMuhurta.yoga}</Text>
+                {topMuhurta.reasons[0] ? (
+                  <Text variant="tiny" color={colors.cream} style={{ fontSize: 12.5, lineHeight: 17, marginTop: 8 }}>✓ {topMuhurta.reasons[0]}</Text>
+                ) : null}
+              </Card>
+            </Pressable>
+          ) : null}
+          <Pressable onPress={() => router.push('/muhurta')} hitSlop={6} style={{ marginTop: 12, marginBottom: spacing.lg }}>
+            <Text variant="tiny" color={colors.gold} style={{ fontWeight: '600', fontSize: 13 }}>View all Muhūrtas →</Text>
+          </Pressable>
+        </>
+      )}
+
       {/* 7. Journal Prompt */}
       <Card style={{ marginBottom: spacing.lg }}>
         <SectionLabel>Journal Prompt</SectionLabel>
@@ -405,6 +588,17 @@ export default function Home() {
 
       <Disclaimer />
     </Screen>
+  );
+}
+
+// One labeled field in the selected-day detail card (label • value • one-line meaning).
+function DetailField({ label, value, note }: { label: string; value: string; note: string }) {
+  return (
+    <View style={{ marginTop: 14 }}>
+      <Text variant="eyebrow" color={colors.muted} style={{ fontSize: 10, letterSpacing: 0.5 }}>{label}</Text>
+      <Text variant="serif" style={{ fontSize: 15, color: colors.goldSoft, marginTop: 2 }}>{value}</Text>
+      <Text variant="tiny" color={colors.cream} style={{ fontSize: 12.5, lineHeight: 18, marginTop: 4 }}>{note}</Text>
+    </View>
   );
 }
 
@@ -446,4 +640,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 14, paddingTop: 12,
     borderTopWidth: 1, borderTopColor: colors.line,
   },
+  // Embedded Vedic Calendar
+  monthHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, paddingHorizontal: 4 },
+  calArrow: { fontSize: 28, color: colors.gold, lineHeight: 30, paddingHorizontal: 10 },
+  weekRow: { flexDirection: 'row' },
+  calCell: { flex: 1, aspectRatio: 0.92, alignItems: 'center', justifyContent: 'center', borderRadius: radius.sm, paddingTop: 4 },
+  calCellToday: { backgroundColor: 'rgba(205,163,73,0.12)', borderWidth: 1, borderColor: colors.line },
+  calCellSelected: { backgroundColor: colors.gold, borderWidth: 1, borderColor: colors.gold },
+  markerRow: { flexDirection: 'row', alignItems: 'center', gap: 2, marginTop: 3, height: 10 },
+  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'transparent' },
+  legend: { flexDirection: 'row', flexWrap: 'wrap', gap: 14, paddingHorizontal: 4 },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  groupLabel: { fontSize: 10.5, letterSpacing: 0.6, marginTop: 20, marginBottom: 6 },
+  hourRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 7, borderBottomWidth: 1, borderBottomColor: 'rgba(205,163,73,0.1)' },
+  // Muhūrta purpose chips
+  purposeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
+  chip: { paddingVertical: 8, paddingHorizontal: 14, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card },
+  chipOn: { backgroundColor: colors.gold, borderColor: colors.gold },
 });
