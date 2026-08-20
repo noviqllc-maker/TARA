@@ -11,6 +11,7 @@ import { GlossaryTooltip } from '@/components/GlossaryTooltip';
 import PlanetDetailModal from '@/components/PlanetDetailModal';
 import { useProfile } from '@/hooks/useProfile';
 import { useChart } from '@/hooks/useChart';
+import { useChartMode } from '@/hooks/useChartMode';
 import { PlanetPosition, BirthChart } from '@/lib/vedic';
 import { getExplanation } from '@/data/glossary';
 import { colors, fonts, radius, spacing } from '@/theme';
@@ -19,7 +20,8 @@ export default function Chart() {
   const { profile } = useProfile();
   const chart = useChart();
   const [selected, setSelected] = useState<PlanetPosition | null>(null);
-  const [chartMode, setChartMode] = useState<'beginner' | 'advanced'>('beginner');
+  // Default 'beginner'; the choice is remembered across sessions (AsyncStorage) once switched.
+  const { chartMode, setChartMode } = useChartMode();
 
   if (!chart) {
     return (
