@@ -20,6 +20,8 @@ export interface CompatibilityAnalysis {
   growthAreas: string[];
   conflictPattern: { whatHappens: string; cycleName: string; whatWorks: string[] };
   sharedLifeAreas: { emotional: number; communication: number; romance: number; commitment: number; family: number; money: number; growth: number; scoringBasis: string };
+  // One plain-English sentence per score, naming the actual driver + outcome (tap to reveal).
+  lifeAreaExplanations: Record<'emotional' | 'communication' | 'romance' | 'commitment' | 'family' | 'money' | 'growth', string>;
   relationshipClimate: { userCurrentPhase: string; partnerCurrentPhase: string; mutualInfluence: string; favorableWindow: string; considerations: string[] };
   taraGuidance: string[];
 }
@@ -233,6 +235,21 @@ export function composeCompatibilityDeep(userChart: BirthChart, partnerChart: Bi
     scoringBasis: 'Each score is 0-100, derived from element harmony of the ruling planets plus a nudge for benefic or malefic planets in the relevant house. Emotional = Moon element match + 4th-house tone; Communication = Mercury match + 3rd house; Romance = Venus match + 5th house; Commitment = 7th-lord match + 7th house + Jupiter; Family = emotional blended with the 4th and 10th; Money = 2nd and 11th house tone plus Jupiter; Growth = 9th house tone plus a bonus when both run the same Dasha lord. These are compatibility tendencies, not guarantees.',
   };
 
+  // One-sentence "why this number" per score — the actual driver + a band-based outcome, so a
+  // tap answers the immediate "why is communication 46?" question. Deterministic, no generics.
+  const band = (s: number) => (s >= 78 ? 'runs high' : s >= 64 ? 'is solid' : s >= 50 ? 'is mixed' : 'needs building');
+  const jupMoney = byName(userChart, 'Jupiter')?.house === 2 || byName(userChart, 'Jupiter')?.house === 11;
+  const sameDasha = firstWord(userChart.currentDasha) === firstWord(partnerChart.currentDasha);
+  const lifeAreaExplanations = {
+    emotional: `Both Moons are ${moonPair.word}, so emotional understanding ${band(emotional)}.`,
+    communication: `Mercury styles are ${mercPair.word}, so everyday communication ${band(communicationScore)}.`,
+    romance: `Venus signs are ${venPair.word}, so romantic chemistry ${band(romance)}.`,
+    commitment: `${jupInSeventh ? 'Jupiter blesses the 7th house of partnership, so ' : 'From your 7th-house footing, '}long-term commitment ${band(commitment)}.`,
+    family: `Your emotional match blended with the home and public houses (4th and 10th) means shared family life ${band(family)}.`,
+    money: `The shared-resources houses, the 2nd and 11th${jupMoney ? " with Jupiter's help" : ''}, mean money harmony ${band(money)}.`,
+    growth: `The 9th house of shared meaning${sameDasha ? ', plus a shared Dasha chapter,' : ''} means growing together ${band(growthScore)}.`,
+  };
+
   // ---- 11. Relationship Climate (both Dashas + a modest live transit note) ---------
   const uDashaLord = firstWord(userChart.currentDasha), pDashaLord = firstWord(partnerChart.currentDasha);
   const DASHA_THEME: Record<string, string> = {
@@ -272,6 +289,6 @@ export function composeCompatibilityDeep(userChart: BirthChart, partnerChart: Bi
   return {
     scoreContext, connectionType, relationshipSnapshot, emotionalCompatibility, loveAttraction,
     communication, longTermPartnership, navamsaCompatibility, strengths, growthAreas,
-    conflictPattern, sharedLifeAreas, relationshipClimate, taraGuidance,
+    conflictPattern, sharedLifeAreas, lifeAreaExplanations, relationshipClimate, taraGuidance,
   };
 }

@@ -30,17 +30,35 @@ const LEAD_KEYS = ['headline', 'summary', 'plainEnglish', 'whatHappens'];
 
 const scoreColor = (v: number) => (v >= 75 ? colors.sage : v >= 55 ? colors.goldSoft : colors.terra);
 
-function ScoreRow({ label, value }: { label: string; value: number }) {
-  return (
-    <View style={{ marginVertical: 5 }}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+function ScoreRow({ label, value, explanation }: { label: string; value: number; explanation?: string }) {
+  const [open, setOpen] = useState(false);
+  const inner = (
+    <>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
         <Text variant="tiny" color={colors.cream} style={{ fontSize: 12.5 }}>{label}</Text>
-        <Text variant="tiny" color={scoreColor(value)} style={{ fontSize: 12.5, fontWeight: '600' }}>{value}/100</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <Text variant="tiny" color={scoreColor(value)} style={{ fontSize: 12.5, fontWeight: '600' }}>{value}/100</Text>
+          {explanation ? <Text style={{ color: colors.gold, fontSize: 11 }}>{open ? '▾' : '▸'}</Text> : null}
+        </View>
       </View>
       <View style={styles.barTrack}>
         <View style={[styles.barFill, { width: `${value}%`, backgroundColor: scoreColor(value) }]} />
       </View>
-    </View>
+      {open && explanation ? (
+        <View style={{ marginTop: 7, paddingTop: 7, borderTopWidth: 1, borderTopColor: colors.line }}>
+          <Text variant="tiny" color={colors.muted} style={{ fontSize: 12, lineHeight: 18 }}>{explanation}</Text>
+        </View>
+      ) : null}
+    </>
+  );
+  if (!explanation) return <View style={{ marginVertical: 5 }}>{inner}</View>;
+  return (
+    <Pressable
+      onPress={() => setOpen((v) => !v)} style={{ marginVertical: 5 }}
+      accessibilityRole="button" accessibilityState={{ expanded: open }}
+    >
+      {inner}
+    </Pressable>
   );
 }
 
@@ -64,7 +82,8 @@ function LabeledField({ label, value }: { label: string; value: string }) {
 }
 
 // Render any of the section shapes (string | string[] | object) into a readable card body.
-function SectionBody({ content }: { content: unknown }) {
+// `explanations` (life-areas card only) maps a score key → its tap-to-reveal "why" sentence.
+function SectionBody({ content, explanations }: { content: unknown; explanations?: Record<string, string> }) {
   if (typeof content === 'string') {
     return <Text variant="tiny" color={colors.cream} style={styles.lead}>{content}</Text>;
   }
@@ -102,7 +121,7 @@ function SectionBody({ content }: { content: unknown }) {
         {scoreEntries.length > 0 && (
           <View style={{ marginTop: 8 }}>
             {scoreEntries.map(([key, value]) => (
-              <ScoreRow key={key} label={SCORE_LABELS[key] ?? key} value={value as number} />
+              <ScoreRow key={key} label={SCORE_LABELS[key] ?? key} value={value as number} explanation={explanations?.[key]} />
             ))}
           </View>
         )}
@@ -112,21 +131,21 @@ function SectionBody({ content }: { content: unknown }) {
   return null;
 }
 
-function CollapsibleCard({ label, content, open, onToggle }: { label: string; content: unknown; open: boolean; onToggle: () => void }) {
+function CollapsibleCard({ label, content, open, onToggle, explanations }: { label: string; content: unknown; open: boolean; onToggle: () => void; explanations?: Record<string, string> }) {
   return (
     <Card style={{ marginBottom: 10, paddingVertical: 0, paddingHorizontal: 0, overflow: 'hidden' }}>
       <Pressable onPress={onToggle} style={styles.header} accessibilityRole="button" accessibilityState={{ expanded: open }}>
         <Text variant="serif" style={{ fontSize: 15, color: colors.goldSoft, flex: 1 }}>{label}</Text>
         <Text style={{ color: colors.gold, fontSize: 12 }}>{open ? '▼' : '▶'}</Text>
       </Pressable>
-      {open ? <View style={styles.body}><SectionBody content={content} /></View> : null}
+      {open ? <View style={styles.body}><SectionBody content={content} explanations={explanations} /></View> : null}
     </Card>
   );
 }
 
 export function CompatibilityDeepView({ analysis }: { analysis: CompatibilityAnalysis }) {
   const [open, setOpen] = useState<string | null>('snapshot');
-  const CARDS: { id: string; label: string; data: unknown }[] = [
+  const CARDS: { id: string; label: string; data: unknown; explanations?: Record<string, string> }[] = [
     { id: 'snapshot', label: 'Your Relationship', data: analysis.relationshipSnapshot },
     { id: 'emotional', label: 'Emotional Connection', data: analysis.emotionalCompatibility },
     { id: 'love', label: 'Love & Attraction', data: analysis.loveAttraction },
@@ -136,7 +155,7 @@ export function CompatibilityDeepView({ analysis }: { analysis: CompatibilityAna
     { id: 'strengths', label: 'Strengths of This Relationship', data: analysis.strengths },
     { id: 'growth', label: 'Growth Areas', data: analysis.growthAreas },
     { id: 'conflict', label: 'When Conflict Happens', data: analysis.conflictPattern },
-    { id: 'lifeareas', label: 'Shared Life Areas', data: analysis.sharedLifeAreas },
+    { id: 'lifeareas', label: 'Shared Life Areas', data: analysis.sharedLifeAreas, explanations: analysis.lifeAreaExplanations },
     { id: 'climate', label: 'Current Relationship Climate', data: analysis.relationshipClimate },
     { id: 'guidance', label: "Tara's Guidance", data: analysis.taraGuidance },
   ];
@@ -155,7 +174,7 @@ export function CompatibilityDeepView({ analysis }: { analysis: CompatibilityAna
       </Text>
       {CARDS.map((c) => (
         <CollapsibleCard
-          key={c.id} label={c.label} content={c.data}
+          key={c.id} label={c.label} content={c.data} explanations={c.explanations}
           open={open === c.id} onToggle={() => setOpen(open === c.id ? null : c.id)}
         />
       ))}
