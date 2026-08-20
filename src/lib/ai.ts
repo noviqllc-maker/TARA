@@ -131,11 +131,11 @@ export type TaraAnswer = {
 // Five answer structures. The client detects "Label — content" lead-ins on their own
 // lines and styles them; template E is plain conversational prose (no lead-ins).
 const TEMPLATES: Record<'A' | 'B' | 'C' | 'D' | 'E', string> = {
-  A: "TEMPLATE A. Five lead-ins, each on its own line: 'The Answer — …' (the direct one-sentence answer), 'The Deeper Layer — …' (why this transit or dasha matters for them specifically), 'The Timeline — …' (when this period peaks or resolves; specific timing if the data supports it), 'Where Caution Helps — …' (what to watch for, practical pitfalls), 'Tara's advice — …' (2 to 3 sentences of personal guidance tied to their chart and current phase).",
-  B: "TEMPLATE B. Three lead-ins, each on its own line: 'The pattern — …', 'Why your chart says this — …', 'What helps now — …'.",
-  C: "TEMPLATE C. Three lead-ins, each on its own line: 'Big picture — …', 'What's changing — …', 'What to do — …'.",
-  D: "TEMPLATE D. Three lead-ins, each on its own line: 'Your challenge — …', 'Your strength — …', 'The opportunity — …'.",
-  E: "TEMPLATE E. A single flowing conversational answer with NO section lead-ins (best for short/simple questions). May be shorter (60–120 words).",
+  A: "TEMPLATE A. Five lead-ins, each on its own line: 'Short Answer — …' (the direct one-sentence answer), 'Why This Matters — …' (why this transit or dasha matters for them specifically), 'Timing — …' (when this period peaks or resolves; specific timing if the data supports it), 'What to Watch — …' (what to watch for, practical pitfalls), 'Tara's Guidance — …' (2 to 3 sentences of personal guidance tied to their chart and current phase).",
+  B: "TEMPLATE B. Three lead-ins, each on its own line: 'The Pattern — …', 'Why Your Chart Says This — …', 'What Helps Now — …'.",
+  C: "TEMPLATE C. Three lead-ins, each on its own line: 'Big Picture — …', 'What's Changing — …', 'What To Do — …'.",
+  D: "TEMPLATE D. Three lead-ins, each on its own line: 'Your Challenge — …', 'Your Strength — …', 'The Opportunity — …'.",
+  E: "TEMPLATE E. A single flowing conversational answer with NO section lead-ins (best for lightweight informational questions only). May be shorter (60–120 words).",
 };
 
 const strHash = (s: string): number => {
@@ -144,16 +144,44 @@ const strHash = (s: string): number => {
   return Math.abs(h);
 };
 
-// Choose a template by (question shape + topic + seeded rotation) so consecutive answers
-// vary. Short questions → E; timing questions → A/C (they carry 'best timing' / 'what's
-// changing'); otherwise rotate A–D by a hash of the question.
+// Choose a template by what the question MEANS, not how long it is. High-stakes short
+// questions ("Will I get married?") must reach the deep 5-section format, so word count is no
+// longer a gate; only genuinely lightweight informational asks fall to E. Everything else
+// rotates among the structured formats.
 function pickTemplate(question: string, topic: string): 'A' | 'B' | 'C' | 'D' | 'E' {
-  const words = question.trim().split(/\s+/).filter(Boolean).length;
-  if (words <= 6) return 'E';
-  const timing = /\b(when|timing|time|year|month|soon|window|period|right time|good time)\b/i.test(question);
-  const h = strHash(question.toLowerCase() + ':' + topic);
-  if (timing) return (['A', 'C'] as const)[h % 2];
-  return (['A', 'B', 'C', 'D'] as const)[h % 4];
+  const q = question.toLowerCase();
+
+  // Timing + Decision questions → TEMPLATE A (deepest, 5-section)
+  const timing = /\b(when|timing|time|year|month|soon|window|period|right time|good time|how long)\b/i.test(q);
+  // Real life-decisions only. NOTE: a blanket "should i" is deliberately NOT a trigger — it
+  // wrongly pulls "what should I focus on" (growth→D) and "what color should I wear" (E) into
+  // A. We match actual decision verbs, "should i <verb>", "will i", and the marr* stem (so
+  // "married"/"marriage" are caught, which a bare \bmarry\b would miss).
+  const decision =
+    /\b(buy|sell|quit|move|invest|switch|leave|divorce|relocate|marry|married|marriage|wedding)\b/i.test(q)
+    || /\bshould i (buy|sell|quit|move|invest|switch|leave|take|accept|start|change|marry)\b/i.test(q)
+    || /\b(will i|is this a good)\b/i.test(q);
+  if (timing || decision) return 'A';
+
+  // Pattern / psychology questions → TEMPLATE B
+  const pattern = /\b(why do i|why am i|keep|repeat|pattern|overthink|stuck|blocking|draining)\b/i.test(q);
+  if (pattern) return 'B';
+
+  // Transition / forecast questions → TEMPLATE C
+  const transition = /\b(changing|opening|coming|ahead|next|chapter|phase|growth|opportunity)\b/i.test(q);
+  if (transition) return 'C';
+
+  // Growth / coaching questions → TEMPLATE D
+  const growth = /\b(lesson|strength|challenge|purpose|focus|learn|need to|holding me back)\b/i.test(q);
+  if (growth) return 'D';
+
+  // Lightweight informational only → TEMPLATE E (the ONLY path to the shallow format)
+  const lightweight = /\b(mantra|color|planet of the day|what is|meaning of|define)\b/i.test(q);
+  if (lightweight) return 'E';
+
+  // Default: rotate among the structured formats B/C/D (never fall to E for unknown questions).
+  const h = strHash(q + ':' + topic);
+  return (['B', 'C', 'D'] as const)[h % 3];
 }
 
 export async function askTaraAnswer(

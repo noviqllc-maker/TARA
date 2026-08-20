@@ -35,9 +35,13 @@ type UIState = 'loading' | 'ready' | 'nochart' | 'nocredits' | 'fairuse' | 'erro
 // rather than any "Label — …" pattern — avoids styling the em dashes the translation rule
 // puts INSIDE content ("Mercury retrograde in your 3rd — you'll rewrite that text thrice").
 const LEAD_INS = new Set([
-  'the answer', 'the deeper layer', 'the timeline', 'where caution helps', "tara's advice",
+  // Template A (deep, 5-section)
+  'short answer', 'why this matters', 'timing', 'what to watch', "tara's guidance",
+  // Template B
   'the pattern', 'why your chart says this', 'what helps now',
+  // Template C
   'big picture', "what's changing", 'what to do',
+  // Template D
   'your challenge', 'your strength', 'the opportunity',
 ]);
 
