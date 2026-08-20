@@ -333,8 +333,20 @@ export function composeDailyContent(chart: BirthChart | null, date: Date, seed: 
   const usedGrahas = new Set<string>([factor.transiting]);
   const usedHouses = new Set<number>();
   if (factor.house != null) usedHouses.add(factor.house); // Home already gave this house's advice
+
+  // Retrograde Watch is prioritized: on a retrograde day this card ALWAYS renders, even when the
+  // retrograde planet also drives another card (which the graha guard would otherwise drop). It
+  // claims its graha first, so no other card re-leads with that planet; the collided card simply
+  // yields its slot to the next candidate.
+  const retroCard = shuffled.find((c) => c.key === 'retrograde');
+  if (retroCard) {
+    chosen.push(retroCard);
+    usedGrahas.add(retroCard.graha);
+  }
+
   for (const c of shuffled) {
     if (chosen.length >= 6) break;
+    if (chosen.includes(c)) continue;                   // already added (e.g. the retro card)
     if (usedGrahas.has(c.graha)) continue;              // don't repeat one planet across the day
     if (c.house != null && usedHouses.has(c.house)) continue; // don't repeat a house's advice
     chosen.push(c);
