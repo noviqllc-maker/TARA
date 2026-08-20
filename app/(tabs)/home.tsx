@@ -20,7 +20,7 @@ import { computeCosmicEvents, CosmicEvents } from '@/lib/panchanga';
 import { useCurrentLocation } from '@/hooks/useCurrentLocation';
 import { GlossaryTooltip } from '@/components/GlossaryTooltip';
 import { todayObservance } from '@/lib/observances';
-import { computeTransitFactor, BirthChart } from '@/lib/vedic';
+import { composeLifeAreaTeasers } from '@/lib/homeLifeAreas';
 import { buildMonth, dayDetail, DayCell, TithiSpecial } from '@/lib/calendar';
 import { PURPOSES, Purpose, findMuhurtaDates } from '@/lib/muhurtaPlanner';
 import { Topic } from '@/lib/topic';
@@ -70,45 +70,8 @@ const PRIORITY_TOPIC: Record<PriorityKey, Topic> = {
   purpose: 'spiritual', learning: 'spiritual',
 };
 
-// ---- daily life-area teaser (deterministic, seeded by user+date+domain) ---------
-// A one-line read composed from the domain's strongest transiting graha (topic-biased, the
-// same engine the rest of the app uses) + a short domain-flavoured tag. Returns null so a
-// row degrades to a plain link when there's no chart / no factor.
-// Two tone phrasings per graha, so a graha that leads more than one domain on a busy day
-// still reads differently row to row (the tone is seeded per domain, like the advice).
-const GRAHA_TONE: Record<string, string[]> = {
-  Sun: ['the Sun lends clarity', 'the Sun brings a steadying focus'],
-  Moon: ['the Moon softens the mood', 'the Moon deepens feeling'],
-  Mars: ['Mars brings drive', 'Mars sharpens your edge'],
-  Mercury: ['Mercury quickens the mind', 'Mercury favours clear words'],
-  Jupiter: ['Jupiter opens things up', 'Jupiter widens the view'],
-  Venus: ['Venus warms the day', 'Venus draws people closer'],
-  Saturn: ['Saturn asks for patience', 'Saturn rewards steady effort'],
-  Rahu: ['Rahu stirs ambition', 'Rahu pulls toward the new'],
-  Ketu: ['Ketu turns you inward', 'Ketu invites you to let go'],
-};
-const DOMAIN_ADVICE: Partial<Record<Topic, string[]>> = {
-  love: ['listen first', 'lead with warmth', 'say the kind thing'],
-  career: ['pick one priority', 'move with intention', 'let steadiness lead'],
-  health: ['tend your energy gently', 'rest counts as work today', 'keep the rhythm simple'],
-  spiritual: ['make room for reflection', 'follow what holds meaning', 'trust the quiet pull'],
-};
-function teaserHash(s: string): number {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
-  return Math.abs(h);
-}
-function lifeAreaTeaser(chart: BirthChart | null, date: Date, topic: Topic, seed: string): string | null {
-  if (!chart) return null;
-  let graha: string;
-  try { graha = computeTransitFactor(chart, date, topic).transiting; } catch { return null; }
-  const tones = GRAHA_TONE[graha];
-  const advice = DOMAIN_ADVICE[topic];
-  if (!tones?.length || !advice?.length) return null;
-  const tone = tones[teaserHash(seed + ':tone') % tones.length];
-  const a = advice[teaserHash(seed) % advice.length];
-  return `${tone[0].toUpperCase()}${tone.slice(1)}. ${a[0].toUpperCase()}${a.slice(1)}.`;
-}
+// The daily life-area teasers (deterministic, seeded, deduped so each card leads with a
+// distinct graha) live in @/lib/homeLifeAreas via composeLifeAreaTeasers.
 
 // Title-case gold section header on the unified scale (18 Outfit Medium).
 function SectionLabel({ children }: { children: React.ReactNode }) {
@@ -280,7 +243,7 @@ export default function Home() {
 
   // Per-domain daily teasers, seeded (user + date + domain), recomputed per calendar day.
   const areaTeasers = useMemo(
-    () => orderedAreas.map((a) => lifeAreaTeaser(chart, new Date(), a.topic, `${uid}:${dayKey}:${a.topic}`)),
+    () => composeLifeAreaTeasers(chart, new Date(), orderedAreas.map((a) => a.topic), `${uid}:${dayKey}`),
     [chart, uid, dayKey, orderedAreas],
   );
 
