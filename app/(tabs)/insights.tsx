@@ -107,26 +107,26 @@ export default function Insights() {
     <Screen>
       <Animated.View entering={FadeInDown.duration(500)}>
         <Eyebrow>Daily Insights · {todayLong()}</Eyebrow>
-        <Text variant="h1" style={{ marginTop: 8, marginBottom: spacing.lg }}>Your Cosmic Weather</Text>
+        <Text variant="screenTitle" style={{ marginTop: 8, marginBottom: spacing.lg }}>Your Cosmic Weather</Text>
       </Animated.View>
 
       {/* FREE — the overall weather headline. */}
       <Card solid glow style={{ marginBottom: spacing.lg }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 8 }}>
-          <Eyebrow color={colors.gold}>Today's Panchāṅga</Eyebrow>
+          <Text variant="sectionHeader" color={colors.gold}>Today's Panchāṅga</Text>
           <GlossaryTooltip term="panchanga" />
         </View>
-        <Text variant="serif" style={{ fontSize: 16.5, lineHeight: 25 }}>{daily.weatherSummary}</Text>
+        <Text variant="body">{daily.weatherSummary}</Text>
       </Card>
 
       {/* Panchāṅga explained for the user's chart (deterministic instantly, AI-upgraded). */}
       {panchang.data ? (
         <Card style={{ marginBottom: spacing.lg }}>
-          <Eyebrow>Explained for your chart</Eyebrow>
+          <Text variant="sectionHeader">Explained for your chart</Text>
           {([['Tithi', panchang.data.tithi], ['Nakshatra', panchang.data.nakshatra], ['Yoga', panchang.data.yoga]] as const).map(([label, text]) => (
             <View key={label} style={{ marginTop: 12 }}>
-              <Text variant="eyebrow" color={colors.muted} style={{ fontSize: 10, letterSpacing: 0.5 }}>{label}</Text>
-              <Text variant="tiny" color={colors.cream} style={{ fontSize: 13, lineHeight: 19, marginTop: 3 }}>{text}</Text>
+              <Text variant="caption" color={colors.muted}>{label}</Text>
+              <Text variant="secondaryBody" color={colors.cream} style={{ marginTop: 3 }}>{text}</Text>
             </View>
           ))}
         </Card>
@@ -137,8 +137,8 @@ export default function Insights() {
         <Card>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <View style={{ flex: 1, paddingRight: 10 }}>
-              <Eyebrow color={colors.gold}>Weekly & Monthly Guidance</Eyebrow>
-              <Text variant="tiny" color={colors.muted} style={{ marginTop: 6, fontSize: 12.5 }}>
+              <Text variant="sectionHeader" color={colors.gold}>Weekly & Monthly Guidance</Text>
+              <Text variant="metadata" color={colors.muted} style={{ marginTop: 6 }}>
                 {isPremium ? 'Your week & month ahead. Always current' : '✦ Premium · your week & month ahead'}
               </Text>
             </View>
@@ -153,34 +153,34 @@ export default function Insights() {
           <Pressable key={c.key} onPress={openSheet}>
             <Card style={{ marginBottom: 12 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Eyebrow color={c.color}>{c.label}</Eyebrow>
+                <Text variant="sectionHeader" color={c.color}>{c.label}</Text>
                 <Text style={{ color: colors.gold, fontSize: 13 }}>✦</Text>
               </View>
-              <Text variant="tiny" color={colors.muted} style={{ marginTop: 8, fontSize: 13 }}>{c.teaser}</Text>
+              <Text variant="secondaryBody" color={colors.muted} style={{ marginTop: 8 }}>{c.teaser}</Text>
             </Card>
           </Pressable>
         ) : (
           <Card key={c.key} style={{ marginBottom: 12 }}>
-            <Eyebrow color={c.color}>{c.label}</Eyebrow>
-            <Text variant="tiny" style={{ marginTop: 8, fontSize: 13 }}>{c.text}</Text>
+            <Text variant="sectionHeader" color={c.color}>{c.label}</Text>
+            <Text variant="body" style={{ marginTop: 8 }}>{c.text}</Text>
 
             {/* Body Signal only (premium): the lifestyle suggestion, or a connect invite. */}
             {c.key === 'body' && bodyExtra ? (
               <View style={styles.suggestion}>
                 <Text variant="tiny" color={colors.sage} style={{ fontSize: 12 }}>✦ </Text>
-                <Text variant="tiny" color={colors.creamDim} style={{ fontSize: 12.5, lineHeight: 18, flex: 1 }}>{bodyExtra}</Text>
+                <Text variant="secondaryBody" color={colors.creamDim} style={{ flex: 1 }}>{bodyExtra}</Text>
               </View>
             ) : null}
             {c.key === 'body' && !connected ? (
               <Pressable onPress={() => router.push('/insights/wellness')} hitSlop={6} style={{ marginTop: 10 }}>
-                <Text variant="tiny" color={colors.muted} style={{ fontSize: 11.5 }}>
+                <Text variant="metadata" color={colors.muted}>
                   Connect Apple Health for guidance tuned to your real rhythm <Text variant="tiny" color={colors.gold} style={{ fontSize: 11.5 }}>→</Text>
                 </Text>
               </Pressable>
             ) : null}
 
             <Pressable onPress={() => askWhy(c.question)} hitSlop={6} style={{ marginTop: 12, alignSelf: 'flex-start' }}>
-              <Text variant="tiny" color={colors.gold} style={{ fontWeight: '600', fontSize: 12.5 }}>Ask Tara why →</Text>
+              <Text variant="caption" color={colors.gold}>Ask Tara why →</Text>
             </Pressable>
           </Card>
         ),
@@ -190,12 +190,12 @@ export default function Insights() {
       {isPremium ? (
         <View style={styles.dual}>
           <Card style={{ flex: 1 }}>
-            <Eyebrow color={colors.rose}>What to Avoid</Eyebrow>
-            <Text variant="tiny" style={{ marginTop: 8 }}>{daily.avoid}</Text>
+            <Text variant="sectionHeader" color={colors.rose}>What to Avoid</Text>
+            <Text variant="body" style={{ marginTop: 8 }}>{daily.avoid}</Text>
           </Card>
           <Card style={{ flex: 1 }}>
-            <Eyebrow color={colors.sage}>Lean Into</Eyebrow>
-            <Text variant="tiny" style={{ marginTop: 8 }}>{daily.leanInto}</Text>
+            <Text variant="sectionHeader" color={colors.sage}>Lean Into</Text>
+            <Text variant="body" style={{ marginTop: 8 }}>{daily.leanInto}</Text>
           </Card>
         </View>
       ) : (
@@ -205,19 +205,19 @@ export default function Insights() {
           <Pressable style={{ flex: 1 }} onPress={openSheet}>
             <Card>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Eyebrow color={colors.rose}>What to Avoid</Eyebrow>
+                <Text variant="sectionHeader" color={colors.rose}>What to Avoid</Text>
                 <Text style={{ color: colors.gold, fontSize: 13 }}>✦</Text>
               </View>
-              <Text variant="tiny" color={colors.muted} style={{ marginTop: 8, fontSize: 12 }}>Premium · unlock →</Text>
+              <Text variant="metadata" color={colors.muted} style={{ marginTop: 8 }}>Premium · unlock →</Text>
             </Card>
           </Pressable>
           <Pressable style={{ flex: 1 }} onPress={openSheet}>
             <Card>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Eyebrow color={colors.sage}>Lean Into</Eyebrow>
+                <Text variant="sectionHeader" color={colors.sage}>Lean Into</Text>
                 <Text style={{ color: colors.gold, fontSize: 13 }}>✦</Text>
               </View>
-              <Text variant="tiny" color={colors.muted} style={{ marginTop: 8, fontSize: 12 }}>Premium · unlock →</Text>
+              <Text variant="metadata" color={colors.muted} style={{ marginTop: 8 }}>Premium · unlock →</Text>
             </Card>
           </Pressable>
         </View>
@@ -226,12 +226,12 @@ export default function Insights() {
       {/* FREE — Mantra of the Day. */}
       <Card solid style={{ marginTop: spacing.lg }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-          <Eyebrow>Mantra of the Day</Eyebrow>
+          <Text variant="sectionHeader">Mantra of the Day</Text>
           <GlossaryTooltip term="mantra" />
         </View>
-        <Text variant="tiny" color={colors.muted} style={{ marginTop: 4, fontSize: 11 }}>Today's mantra · {daily.mantraGraha}</Text>
-        <Text variant="serif" style={{ fontSize: 19, marginTop: 8, color: colors.goldSoft }}>{daily.mantra}</Text>
-        <Text variant="tiny" style={{ marginTop: 6 }}>{daily.mantraNote}</Text>
+        <Text variant="metadata" color={colors.muted} style={{ marginTop: 4 }}>Today's mantra · {daily.mantraGraha}</Text>
+        <Text variant="cardTitle" color={colors.goldSoft} style={{ marginTop: 8 }}>{daily.mantra}</Text>
+        <Text variant="body" style={{ marginTop: 6 }}>{daily.mantraNote}</Text>
       </Card>
 
       <Disclaimer />

@@ -26,8 +26,8 @@ export default function Chart() {
       <Screen>
         <View style={{ marginTop: 40 }}>
           <Eyebrow>Your Vedic Birth Chart</Eyebrow>
-          <Text variant="h2" style={{ marginTop: 8 }}>Chart not available</Text>
-          <Text variant="tiny" style={{ marginTop: 10 }}>
+          <Text variant="screenTitle" style={{ marginTop: 8 }}>Chart not available</Text>
+          <Text variant="body" style={{ marginTop: 10 }}>
             We need your birth date and time to calculate your chart. Please complete onboarding.
           </Text>
         </View>
@@ -39,14 +39,14 @@ export default function Chart() {
     <Screen>
       <Animated.View entering={FadeInDown.duration(500)}>
         <Eyebrow>Your Vedic Birth Chart</Eyebrow>
-        <Text variant="h2" style={{ marginTop: 6, marginBottom: spacing.lg }}>{profile.name}'s Kundali</Text>
+        <Text variant="screenTitle" style={{ marginTop: 6, marginBottom: spacing.lg }}>{profile.name}'s Kundali</Text>
       </Animated.View>
 
       {/* North-Indian diamond chart with ascendant marker */}
       <Card solid style={{ alignItems: 'center', marginBottom: spacing.lg }}>
         <NorthIndianChart chart={chart} />
         <View style={styles.inlineRow}>
-          <Text variant="tiny" color={colors.muted}>Ascendant (Lagna): {chart.ascendant.sign} {chart.ascendant.degree}</Text>
+          <Text variant="caption" color={colors.muted}>Ascendant (Lagna): {chart.ascendant.sign} {chart.ascendant.degree}</Text>
           <GlossaryTooltip term="lagna" />
         </View>
       </Card>
@@ -61,10 +61,10 @@ export default function Chart() {
         ] as const).map(([k, v, term]) => (
           <Card key={k} style={styles.gridCard}>
             <View style={styles.inlineRow}>
-              <Text variant="eyebrow" color={colors.muted} style={{ fontSize: 9.5 }}>{k}</Text>
+              <Text variant="caption" color={colors.muted}>{k}</Text>
               <GlossaryTooltip term={term} />
             </View>
-            <Text variant="serif" style={{ fontSize: 15, marginTop: 5 }}>{v}</Text>
+            <Text variant="cardTitle" style={{ marginTop: 5 }}>{v}</Text>
           </Card>
         ))}
       </View>
@@ -73,12 +73,12 @@ export default function Chart() {
       {chart.currentDasha ? (
         <Card solid glow style={{ marginTop: spacing.lg }}>
           <View style={styles.inlineRow}>
-            <Eyebrow color={colors.gold}>Current Period</Eyebrow>
+            <Text variant="sectionHeader" color={colors.gold}>Current Period</Text>
             <GlossaryTooltip term="mahadasha" />
           </View>
-          <Text variant="serif" style={{ fontSize: 18, marginTop: 6 }}>{chart.currentDasha}</Text>
+          <Text variant="cardTitle" style={{ marginTop: 6 }}>{chart.currentDasha}</Text>
           {chart.currentAntardasha ? (
-            <Text variant="tiny" color={colors.goldSoft} style={{ marginTop: 4 }}>{chart.currentAntardasha}</Text>
+            <Text variant="caption" color={colors.goldSoft} style={{ marginTop: 4 }}>{chart.currentAntardasha}</Text>
           ) : null}
         </Card>
       ) : null}
@@ -86,7 +86,7 @@ export default function Chart() {
       {/* Planetary positions — Beginner (plain meaning) / Advanced (degree, house, Navāṁśa) */}
       <Card style={{ marginTop: spacing.lg }}>
         <View style={styles.inlineRow}>
-          <Eyebrow>Planetary Positions</Eyebrow>
+          <Text variant="sectionHeader">Planetary Positions</Text>
           <View style={styles.modeToggle}>
             {(['beginner', 'advanced'] as const).map((m) => (
               <Pressable
@@ -97,9 +97,8 @@ export default function Chart() {
                 style={[styles.modeBtn, chartMode === m && styles.modeBtnOn]}
               >
                 <Text
-                  variant="tiny"
+                  variant="caption"
                   color={chartMode === m ? colors.bg : colors.muted}
-                  style={{ fontSize: 11.5, fontWeight: '600' }}
                 >
                   {m === 'beginner' ? 'Beginner' : 'Advanced'}
                 </Text>
@@ -110,17 +109,17 @@ export default function Chart() {
 
         {chartMode === 'beginner' ? (
           <>
-            <Text variant="tiny" style={{ marginTop: 4, marginBottom: 8 }}>Each planet, in plain language. Tap any for its full reading.</Text>
+            <Text variant="secondaryBody" style={{ marginTop: 4, marginBottom: 8 }}>Each planet, in plain language. Tap any for its full reading.</Text>
             {chart.planets.map((pl) => (
               <Pressable key={pl.name} style={styles.planetCol} onPress={() => setSelected(pl)}>
                 <View style={[styles.inlineRow, { justifyContent: 'space-between' }]}>
-                  <Text variant="serif" style={{ fontSize: 15 }}>{pl.glyph}  {pl.name}</Text>
+                  <Text variant="sectionHeader">{pl.glyph}  {pl.name}</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Text variant="tiny" color={colors.goldSoft}>{pl.sign}</Text>
+                    <Text variant="secondaryBody" color={colors.goldSoft}>{pl.sign}</Text>
                     <Text style={{ color: colors.gold, fontSize: 16 }}>›</Text>
                   </View>
                 </View>
-                <Text variant="tiny" color={colors.muted} style={{ fontSize: 11.5, marginTop: 3, lineHeight: 16 }}>
+                <Text variant="secondaryBody" color={colors.muted} style={{ marginTop: 3 }}>
                   {getExplanation(pl.name)}
                 </Text>
               </Pressable>
@@ -129,16 +128,16 @@ export default function Chart() {
         ) : (
           <>
             <View style={[styles.inlineRow, { marginTop: 4, marginBottom: 8 }]}>
-              <Text variant="tiny">Full detail: degree, house, Navāṁśa. Tap a planet for its 8 life areas.</Text>
+              <Text variant="secondaryBody">Full detail: degree, house, Navāṁśa. Tap a planet for its 8 life areas.</Text>
               <GlossaryTooltip term="navamsa" />
             </View>
             {chart.planets.map((pl) => (
               <Pressable key={pl.name} style={styles.planetRow} onPress={() => setSelected(pl)}>
-                <Text variant="serif" style={{ fontSize: 15 }}>{pl.glyph}  {pl.name}{pl.retrograde ? ' ℞' : ''}</Text>
+                <Text variant="sectionHeader">{pl.glyph}  {pl.name}{pl.retrograde ? ' ℞' : ''}</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <View style={{ alignItems: 'flex-end' }}>
-                    <Text variant="tiny" color={colors.goldSoft}>{pl.sign} · {pl.degree} · H{pl.house}</Text>
-                    <Text variant="tiny" color={colors.muted} style={{ fontSize: 10.5, marginTop: 2 }}>Navāṁśa (D9): {pl.navamsaSign}</Text>
+                    <Text variant="secondaryBody" color={colors.goldSoft}>{pl.sign} · {pl.degree} · H{pl.house}</Text>
+                    <Text variant="metadata" color={colors.muted} style={{ marginTop: 2 }}>Navāṁśa (D9): {pl.navamsaSign}</Text>
                   </View>
                   <Text style={{ color: colors.gold, fontSize: 16 }}>›</Text>
                 </View>
@@ -153,10 +152,10 @@ export default function Chart() {
 
       {/* Aspects — derived from real chart */}
       <Card style={{ marginTop: spacing.lg }}>
-        <Eyebrow>Chart Highlights</Eyebrow>
+        <Text variant="sectionHeader">Chart Highlights</Text>
         <View style={{ marginTop: 10, gap: 8 }}>
           {chart.aspects.map((a) => (
-            <Text key={a} variant="tiny" color={colors.cream} style={{ fontSize: 13 }}>• {a}</Text>
+            <Text key={a} variant="body" color={colors.cream}>• {a}</Text>
           ))}
         </View>
       </Card>
@@ -165,12 +164,12 @@ export default function Chart() {
       {chart.drishti.length > 0 && (
         <Card style={{ marginTop: spacing.lg }}>
           <View style={styles.inlineRow}>
-            <Eyebrow>Graha Drishti</Eyebrow>
+            <Text variant="sectionHeader">Graha Drishti</Text>
             <GlossaryTooltip term="graha_drishti" />
           </View>
           <View style={{ marginTop: 10, gap: 7 }}>
             {chart.drishti.map((a, i) => (
-              <Text key={`${a.from}-${a.house}-${i}`} variant="tiny" color={colors.cream} style={{ fontSize: 13 }}>
+              <Text key={`${a.from}-${a.house}-${i}`} variant="body" color={colors.cream}>
                 • {a.from} aspects {a.targets.join(', ')} (house {a.house})
               </Text>
             ))}

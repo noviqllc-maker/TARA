@@ -62,11 +62,11 @@ function AnswerBody({ text }: { text: string }) {
           return (
             <View key={i} style={{ gap: 3 }}>
               <Text variant="serif" style={styles.sectionHeader}>{label.toUpperCase()}</Text>
-              <Text variant="serif" style={styles.answer}>{noEmDash(line.slice(sep + 3).trim())}</Text>
+              <Text variant="body" style={styles.answer}>{noEmDash(line.slice(sep + 3).trim())}</Text>
             </View>
           );
         }
-        return <Text key={i} variant="serif" style={styles.answer}>{noEmDash(line)}</Text>;
+        return <Text key={i} variant="body" style={styles.answer}>{noEmDash(line)}</Text>;
       })}
     </View>
   );
@@ -211,7 +211,7 @@ export default function AnswerView() {
         </Pressable>
         <View style={styles.center}>
           <Text variant="serif" style={{ fontSize: 22, textAlign: 'center' }}>Add your birth details</Text>
-          <Text variant="tiny" color={colors.muted} style={{ marginTop: 8, marginBottom: 22, textAlign: 'center' }}>
+          <Text variant="secondaryBody" color={colors.muted} style={{ marginTop: 8, marginBottom: 22, textAlign: 'center' }}>
             Ask Tara reads the live sky against your birth chart. Add your date, time, and place of birth first.
           </Text>
           <View style={{ alignSelf: 'stretch', paddingHorizontal: spacing.xl }}>
@@ -231,7 +231,7 @@ export default function AnswerView() {
         <View style={styles.center}>
           <Text variant="eyebrow" color={colors.gold} style={{ marginBottom: 10 }}>✦ Out of Questions</Text>
           <Text variant="serif" style={{ fontSize: 22, textAlign: 'center' }}>You're out of credits</Text>
-          <Text variant="tiny" color={colors.muted} style={{ marginTop: 8, marginBottom: 22, textAlign: 'center' }}>
+          <Text variant="secondaryBody" color={colors.muted} style={{ marginTop: 8, marginBottom: 22, textAlign: 'center' }}>
             Buy a credit pack to ask this question. Credits never expire.
           </Text>
           <View style={{ alignSelf: 'stretch', paddingHorizontal: spacing.xl }}>
@@ -240,15 +240,15 @@ export default function AnswerView() {
           {refetching ? (
             <View style={{ marginTop: 16, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <ActivityIndicator color={colors.gold} size="small" />
-              <Text variant="tiny" color={colors.muted}>Checking your balance…</Text>
+              <Text variant="metadata" color={colors.muted}>Checking your balance…</Text>
             </View>
           ) : (
             <Pressable onPress={onTryAgain} hitSlop={8} style={{ marginTop: 16 }}>
-              <Text variant="tiny" color={colors.gold} style={{ fontWeight: '600' }}>Try again</Text>
+              <Text variant="caption" color={colors.gold}>Try again</Text>
             </Pressable>
           )}
           {refreshNote ? (
-            <Text variant="tiny" color={colors.muted} style={{ marginTop: 12 }}>{refreshNote}</Text>
+            <Text variant="metadata" color={colors.muted} style={{ marginTop: 12 }}>{refreshNote}</Text>
           ) : null}
         </View>
       </Screen>
@@ -264,7 +264,7 @@ export default function AnswerView() {
         <View style={styles.center}>
           <Text variant="eyebrow" color={colors.gold} style={{ marginBottom: 10 }}>✦ Fair-use limit</Text>
           <Text variant="serif" style={{ fontSize: 22, textAlign: 'center' }}>You've reached this month's limit</Text>
-          <Text variant="tiny" color={colors.muted} style={{ marginTop: 8, marginBottom: 22, textAlign: 'center', lineHeight: 19 }}>
+          <Text variant="secondaryBody" color={colors.muted} style={{ marginTop: 8, marginBottom: 22, textAlign: 'center' }}>
             You've asked 100 questions this month: the fair-use limit for Premium. Your questions refresh on {resetDate}.
           </Text>
           <View style={{ alignSelf: 'stretch', paddingHorizontal: spacing.xl }}>
@@ -272,7 +272,7 @@ export default function AnswerView() {
           </View>
           {/* Overflow option — a credit pack works past the monthly cap (no trapped state). */}
           <Pressable onPress={() => router.push('/credits')} hitSlop={8} style={{ marginTop: 16 }}>
-            <Text variant="tiny" color={colors.gold} style={{ fontWeight: '600' }}>Need more now? Get a credit pack →</Text>
+            <Text variant="caption" color={colors.gold}>Need more now? Get a credit pack →</Text>
           </Pressable>
         </View>
       </Screen>
@@ -288,14 +288,14 @@ export default function AnswerView() {
         <View style={styles.center}>
           <Text variant="eyebrow" color={colors.gold} style={{ marginBottom: 10 }}>✦ Try once more</Text>
           <Text variant="serif" style={{ fontSize: 22, textAlign: 'center' }}>Tara's answer didn't come through cleanly</Text>
-          <Text variant="tiny" color={colors.muted} style={{ marginTop: 8, marginBottom: 22, textAlign: 'center', lineHeight: 19 }}>
+          <Text variant="secondaryBody" color={colors.muted} style={{ marginTop: 8, marginBottom: 22, textAlign: 'center' }}>
             Ask again. This one won't use a credit.
           </Text>
           <View style={{ alignSelf: 'stretch', paddingHorizontal: spacing.xl }}>
             <GoldButton label="Ask again" onPress={onErrorRetry} />
           </View>
           <Pressable onPress={close} hitSlop={8} style={{ marginTop: 16 }}>
-            <Text variant="tiny" color={colors.muted}>Close</Text>
+            <Text variant="metadata" color={colors.muted}>Close</Text>
           </Pressable>
         </View>
       </Screen>
@@ -329,7 +329,7 @@ export default function AnswerView() {
       {state === 'loading' ? (
         <View style={styles.answerLoading}>
           <ActivityIndicator color={colors.gold} />
-          <Text variant="tiny" color={colors.muted} style={{ marginTop: 10 }}>Tara is reading your chart…</Text>
+          <Text variant="metadata" color={colors.muted} style={{ marginTop: 10 }}>Tara is reading your chart…</Text>
         </View>
       ) : (
         <>
@@ -373,7 +373,7 @@ export default function AnswerView() {
             </Pressable>
           </View>
           {rating ? (
-            <Text variant="tiny" color={colors.sage} style={{ marginTop: 10 }}>
+            <Text variant="metadata" color={colors.sage} style={{ marginTop: 10 }}>
               Thank you. Tara learns from this. Tap again to change.
             </Text>
           ) : null}
@@ -390,7 +390,7 @@ const styles = StyleSheet.create({
   calcCard: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xl },
   factor: { fontFamily: fonts.sansSemi, color: colors.gold, fontSize: 12.5, letterSpacing: 0.8, lineHeight: 18, marginTop: 8 },
   answerLoading: { alignItems: 'flex-start', paddingVertical: 20 },
-  answer: { fontSize: 17, lineHeight: 27, color: colors.cream },
+  answer: { color: colors.cream },
   leadIn: { fontFamily: fonts.sansSemi, color: colors.gold, fontSize: 13, letterSpacing: 0.3 },
   sectionHeader: { color: colors.gold, fontSize: 12.5, letterSpacing: 1.2, fontWeight: '600', marginTop: 4 },
   takeawayBox: {
