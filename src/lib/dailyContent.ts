@@ -234,7 +234,7 @@ function noChartContent(rng: Rng, date: Date): DailyContent {
     weatherSummary: `The Moon moves through ${t.moonSign} in ${t.moonNakshatra}, ${t.panchanga}. Add your birth details to personalize today’s reading to your chart.`,
     insights: [
       { key: 'emotional', label: 'Emotional Energy', color: colors.rose, question: 'Why does my emotional energy feel this way today?', text: `${NAKSHATRA_QUALITY[t.moonNakshatra] ?? 'A gentle lunar current moves today.'} Honor it without acting on every wave, because the Moon sits in ${t.moonNakshatra}.` },
-      { key: 'nakshatra', label: 'Moon’s Nakshatra', color: colors.saffron, question: 'What does my Moon’s nakshatra mean today?', text: `${NAKSHATRA_QUALITY[t.moonNakshatra] ?? 'A quiet, reflective tone.'} because the Moon sits in ${t.moonNakshatra}.` },
+      { key: 'nakshatra', label: 'Moon’s Nakshatra', color: colors.saffron, question: 'What does my Moon’s nakshatra mean today?', text: `${NAKSHATRA_QUALITY[t.moonNakshatra] ?? 'A quiet, reflective tone colors the day.'} This is ${t.moonNakshatra}'s signature on the day.` },
     ],
     avoid: 'Major decisions, overcommitting, harsh self-judgment.',
     leanInto: 'Rest, hydration, journaling, gentle routine.',
@@ -310,7 +310,7 @@ export function composeDailyContent(chart: BirthChart | null, date: Date, seed: 
   // Nakshatra note.
   cands.push({
     key: 'nakshatra', label: 'Moon’s Nakshatra', color: colors.saffron, question: 'What does my Moon’s nakshatra mean today?', graha: nakshatraLord(moonNak), house: null,
-    text: `${NAKSHATRA_QUALITY[moonNak] ?? 'A quiet lunar tone colors the day.'} ${rng.pick(['Let it guide your pace', 'Work with it, not against it'])}, because the Moon sits in ${moonNak}.`,
+    text: `${NAKSHATRA_QUALITY[moonNak] ?? 'A quiet, reflective tone colors the day.'} ${rng.pick(['Let it guide your pace', 'Work with it, not against it'])}. This is ${moonNak}'s signature on the day.`,
   });
 
   // Retrograde watch (only if something is retrograde).
