@@ -6,10 +6,16 @@ import {
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, fonts, radius, spacing, shadow } from '@/theme';
+import { TYPO, TYPE_SPACING } from '@/styles/typography';
 
 /* ---------- Text ---------- */
-type TVariant = 'h1' | 'h2' | 'h3' | 'body' | 'tiny' | 'eyebrow' | 'serif';
-const SERIF_VARIANTS = new Set<TVariant>(['h1', 'h2', 'h3', 'serif']);
+// Legacy variants (h1/h2/h3/serif/body/tiny/eyebrow) coexist with the unified scale
+// (heroGreeting/screenTitle/cardTitle/sectionHeader/secondaryBody/caption/metadata) so screens
+// can migrate incrementally without a big-bang sweep.
+type TVariant =
+  | 'h1' | 'h2' | 'h3' | 'body' | 'tiny' | 'eyebrow' | 'serif'
+  | 'heroGreeting' | 'screenTitle' | 'cardTitle' | 'sectionHeader' | 'secondaryBody' | 'caption' | 'metadata';
+const SERIF_VARIANTS = new Set<TVariant>(['h1', 'h2', 'h3', 'serif', 'heroGreeting', 'screenTitle', 'cardTitle']);
 
 // Map a base face (Fraunces serif / Outfit sans) + numeric weight to the exact
 // bundled family. Custom fonts don't synthesize weight from fontWeight on iOS, so
@@ -128,18 +134,26 @@ const styles = StyleSheet.create({
   h2: { fontFamily: fonts.serif, fontSize: 22, fontWeight: '600', color: colors.cream, lineHeight: 28 },
   h3: { fontFamily: fonts.serif, fontSize: 18, fontWeight: '600', color: colors.cream, lineHeight: 24 },
   serif: { fontFamily: fonts.serif, fontSize: 16, fontWeight: '600', color: colors.cream, lineHeight: 23 },
-  body: { fontFamily: fonts.sans, fontSize: 14.5, fontWeight: '400', color: colors.cream, lineHeight: 21 },
+  body: { ...TYPO.body, color: colors.cream },
   tiny: { fontFamily: fonts.sans, fontSize: 11.5, fontWeight: '400', color: colors.muted, lineHeight: 17 },
   eyebrow: {
     fontFamily: fonts.sansMed, fontSize: 10.5, fontWeight: '600', letterSpacing: 2.4,
     textTransform: 'uppercase', color: colors.gold,
   },
+  // Unified scale (Tara refinement) — Fraunces accents + Outfit content.
+  heroGreeting: { ...TYPO.heroGreeting, color: colors.cream },
+  screenTitle: { ...TYPO.screenTitle, color: colors.cream },
+  cardTitle: { ...TYPO.cardTitle, color: colors.cream },
+  sectionHeader: { ...TYPO.sectionHeader, color: colors.cream },
+  secondaryBody: { ...TYPO.secondaryBody, color: colors.creamDim },
+  caption: { ...TYPO.caption, color: colors.muted },
+  metadata: { ...TYPO.metadata, color: colors.muted },
   card: {
     backgroundColor: colors.card,
     borderColor: colors.line,
     borderWidth: 1,
     borderRadius: radius.xl,
-    padding: spacing.lg + 2,
+    padding: TYPE_SPACING.cardPadding,
   },
   cardSolid: { backgroundColor: colors.cardSolid },
   goldBtn: {

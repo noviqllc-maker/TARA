@@ -12,7 +12,7 @@ export default function SubHeader({ eyebrow, title }: { eyebrow: string; title: 
         <Text variant="body" color={colors.gold}>‹ Back</Text>
       </Pressable>
       <Eyebrow>{eyebrow}</Eyebrow>
-      <Text variant="h1" style={{ marginTop: 8 }}>{title}</Text>
+      <Text variant="screenTitle" style={{ marginTop: 8 }}>{title}</Text>
     </View>
   );
 }

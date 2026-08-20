@@ -108,9 +108,9 @@ function lifeAreaTeaser(chart: BirthChart | null, date: Date, topic: Topic, seed
   return `${tone[0].toUpperCase()}${tone.slice(1)}. ${a[0].toUpperCase()}${a.slice(1)}.`;
 }
 
-// Title-case gold section label (replaces the old all-caps Eyebrow on Home).
+// Title-case gold section header on the unified scale (18 Outfit Medium).
 function SectionLabel({ children }: { children: React.ReactNode }) {
-  return <Text color={colors.gold} style={styles.sectionLabel}>{children}</Text>;
+  return <Text variant="sectionHeader" color={colors.gold}>{children}</Text>;
 }
 
 export default function Home() {
@@ -241,17 +241,17 @@ export default function Home() {
   return (
     <Screen>
       <Animated.View entering={FadeInDown.duration(500)}>
-        <Text color={colors.gold} style={styles.dateLine}>{dateLine}</Text>
-        <Text variant="serif" style={styles.hero}>{greeting()},</Text>
-        <Text variant="serif" style={[styles.hero, styles.heroName]}>{profile.name || 'friend'}</Text>
+        <Text variant="caption" color={colors.gold} style={{ marginBottom: 12 }}>{dateLine}</Text>
+        <Text variant="heroGreeting">{greeting()},</Text>
+        <Text variant="heroGreeting" color={colors.gold}>{profile.name || 'friend'}</Text>
         {/* No transit subtitle here — Today's Guidance carries the day's message in plain English. */}
       </Animated.View>
 
       {/* Today's Guidance — the hero card, emotion-first (renamed from Tara's Message) */}
       <Card solid glow style={{ marginBottom: spacing.lg }}>
         <SectionLabel>Today's Guidance</SectionLabel>
-        <Text variant="serif" style={styles.guidanceHead}>{daily.message.headline}</Text>
-        <Text style={styles.guidanceBody}>{daily.guidance}</Text>
+        <Text variant="cardTitle" style={{ marginTop: 12, marginBottom: 4 }}>{daily.message.headline}</Text>
+        <Text variant="body" color={colors.cream} style={{ marginTop: 10, opacity: 0.9 }}>{daily.guidance}</Text>
         <GoldButton label="Ask Tara about today" onPress={() => router.push('/(tabs)/tara')} style={{ marginTop: 18 }} />
       </Card>
 
@@ -583,16 +583,8 @@ function DetailField({ label, value, note }: { label: string; value: string; not
 }
 
 const styles = StyleSheet.create({
-  // Header hero
-  dateLine: { fontSize: 13.5, fontWeight: '500', letterSpacing: 0.2, marginBottom: 12 },
-  hero: { fontSize: 48, fontWeight: '600', letterSpacing: -0.5, lineHeight: 52, color: colors.cream },
-  heroName: { color: colors.gold },
-  cosmicLine: { fontSize: 16, lineHeight: 22, color: colors.goldSoft, marginTop: 12, marginBottom: spacing.lg },
-  // Section labels (title case, gold, 14px medium — no all caps)
-  sectionLabel: { fontSize: 14, fontWeight: '500', letterSpacing: 0.1, marginBottom: 2 },
-  // Guidance hero card
-  guidanceHead: { fontSize: 31, fontWeight: '500', lineHeight: 40, marginTop: 12, marginBottom: 4, color: colors.cream },
-  guidanceBody: { fontSize: 15, lineHeight: 24, color: colors.cream, opacity: 0.85, marginTop: 10 },
+  // Header hero + section labels + guidance now use the unified type scale (variants
+  // heroGreeting / sectionHeader / cardTitle / body), so their ad-hoc styles are gone.
   // Cosmic events value (prominent)
   eventValue: { fontSize: 14, fontWeight: '600' },
   connectRow: {
