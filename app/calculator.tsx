@@ -15,6 +15,7 @@ import { computeChart, BirthChart, PlanetPosition } from '@/lib/vedic';
 import { ChartAnalysisSections } from '@/components/ChartAnalysisSections';
 import TimeTextInput from '@/components/TimeTextInput';
 import { setOverrideChart } from '@/lib/askOverrideChart';
+import { useProfile } from '@/hooks/useProfile';
 import { colors, spacing, radius } from '@/theme';
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -39,6 +40,14 @@ export default function Calculator() {
   const [computing, setComputing] = useState(false);
   const [chart, setChart] = useState<BirthChart | null>(null);
   const [error, setError] = useState('');
+  const { profile } = useProfile();
+
+  // Show a context label only when this chart is clearly someone ELSE's: a name was entered
+  // and it differs from the signed-in user's name (case-insensitive). Blank name or the user's
+  // own name → no label, so it never nags on a self-lookup.
+  const trimmedName = name.trim();
+  const isOtherPerson =
+    trimmedName !== '' && trimmedName.toLowerCase() !== (profile.name ?? '').trim().toLowerCase();
 
   // place autocomplete (mirrors the onboarding birthplace screen)
   useEffect(() => {
@@ -162,6 +171,13 @@ export default function Calculator() {
         style={{ marginTop: spacing.lg }}
       />
       {error ? <Text variant="tiny" color={colors.terra} style={{ marginTop: 10 }}>{error}</Text> : null}
+
+      {chart && isOtherPerson && (
+        <View style={styles.contextLabel}>
+          <Text variant="caption">Asking about</Text>
+          <Text variant="body" color={colors.gold}>{trimmedName}'s chart</Text>
+        </View>
+      )}
 
       {chart && <ChartResults name={name.trim()} chart={chart} />}
 
@@ -287,6 +303,11 @@ function ChartResults({ name, chart }: { name: string; chart: BirthChart }) {
 }
 
 const styles = StyleSheet.create({
+  contextLabel: {
+    marginTop: spacing.lg, paddingHorizontal: 16, paddingVertical: 8, gap: 2,
+    backgroundColor: 'rgba(205,163,73,0.08)', borderRadius: 8,
+    borderLeftColor: colors.gold, borderLeftWidth: 2,
+  },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 12 },
   gridCard: { width: '47.5%' },
   planetRow: {
