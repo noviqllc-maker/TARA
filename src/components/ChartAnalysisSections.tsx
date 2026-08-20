@@ -83,7 +83,7 @@ function CollapsibleSection({ label, data, open, onToggle }: { label: string; da
   return (
     <Card style={{ marginBottom: 10, paddingVertical: 0, paddingHorizontal: 0, overflow: 'hidden' }}>
       <Pressable onPress={onToggle} style={styles.header} accessibilityRole="button" accessibilityState={{ expanded: open }}>
-        <Text variant="serif" style={{ fontSize: 15, color: colors.goldSoft, flex: 1 }}>{label}</Text>
+        <Text variant="sectionHeader" color={colors.goldSoft} style={{ flex: 1 }}>{label}</Text>
         <Text style={{ color: colors.gold, fontSize: 12 }}>{open ? '▼' : '▶'}</Text>
       </Pressable>
       {open ? <View style={styles.body}><SectionBody data={data} /></View> : null}
