@@ -15,33 +15,44 @@ import { BirthChart, computeAllTransits, computeTransitFactor, transitBodyOn, SI
 import { computeTransits, houseTheme } from '@/lib/transits';
 import { MAHA_MEANING } from '@/data/dashaMeaning';
 
-export type ForecastDay = {
-  key: string;         // 'YYYY-M-D'
-  label: string;       // "Thu, Aug 6"
-  rel: string;         // "Today" | "Tomorrow" | "Thursday"
-  glyph: string;       // dominant graha glyph (decorative)
-  strength: number;    // 0–100 (drives the bar + the qualitative label; the number isn't shown)
-  scoreLabel: string;  // qualitative tier — "High energy" / "Steady energy" / "Lower energy" / "Slow energy"
-  bestFor: string[];   // ["Conversations", "Short trips", "Courage"] — what the day supports
-  headline: string;    // collapsed one-liner (plain English, actionable — no mechanics)
-  reading: string;     // 2–3 sentence expanded reading (plain English — NO planets/houses/aspects)
-  mechanics: string;   // the technical breakdown, revealed only on "Why this?" (kept out of the reading)
-  question: string;    // Ask-Tara bridge (prefilled, never auto-sent)
-};
-
 export type ForecastMark = { date: string; text: string };
+export type ForecastWindow = { dateRange: string; reason: string };
 
-export type MonthAhead = {
-  label: string;               // "The Month Ahead · Aug 6 – Sep 5"
-  strength: number;            // 0–100 average tenor (drives the bar; the number isn't shown)
-  strengthLabel: string;       // qualitative tenor word ("Broadly favourable" / "Mixed" / "Quieter")
-  theme: string;               // 2–4 sentence composed theme (distinct from Year Ahead)
-  keyDates: ForecastMark[];    // real dated events
-  opportunities: ForecastMark[]; // favourable windows
-  watch: ForecastMark[];       // periods to move carefully
+// One day in the week arc: a single actionable headline + the strength that drives the arc bar.
+// No per-day bestFor / mechanics / "Why this?" — the value now lives in the week narrative.
+export type WeekDay = {
+  key: string;         // 'YYYY-M-D'
+  dayName: string;     // "Thursday"
+  rel: string;         // "Today" | "Tomorrow" | weekday
+  dateLabel: string;   // "Aug 22"
+  headline: string;    // one plain-English, actionable line
+  strength: number;    // 0–100, drives the energy-arc bar
 };
 
-export type Forecast = { week: ForecastDay[]; month: MonthAhead };
+// The week as a genuine arc: a story, its energy shape, seven day-lines, best windows, one
+// caution, and a takeaway (not seven stitched-together daily forecasts).
+export type WeeklyGuidance = {
+  weekRange: string;            // "Aug 20 – Aug 26"
+  weekStory: string;           // 2–3 sentence arc narrative
+  energyShape: string;         // "Building through the week, peaks Thursday, quietest Sunday"
+  days: WeekDay[];
+  bestWindows: ForecastWindow[];
+  watchOut: string;            // one caution for the week
+  oneThingToRemember: string;  // takeaway
+};
+
+// The month, scannable: a story, key dated events, strongest windows, cautions, a takeaway.
+export type MonthlyGuidance = {
+  monthRange: string;          // "Aug 20 – Sep 19"
+  monthStory: string;          // 2–4 sentence narrative
+  strengthLabel: string;       // qualitative tenor ("Broadly favourable" / "Mixed" / "Quieter")
+  keyDates: ForecastMark[];    // real dated events
+  strongestWindows: ForecastMark[];
+  watchOut: ForecastMark[];
+  oneThingToRemember: string;
+};
+
+export type Forecast = { week: WeeklyGuidance; month: MonthlyGuidance };
 
 const MS_DAY = 86_400_000;
 const ORD = ['', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th', '11th', '12th'];
@@ -156,40 +167,8 @@ function relLabel(offset: number, date: Date): string {
   return WEEKDAY[date.getDay()];
 }
 
-function dayReading(chart: BirthChart, date: Date, rel: string, seedBase: string, used: Set<string>, strength: number): Omit<ForecastDay, 'key' | 'label' | 'rel' | 'strength'> {
-  const f = computeTransitFactor(chart, date, 'general');
-  const t = computeTransits(date, chart);
-  const g = f.transiting;
-  const ht = houseTheme(t.moonHouse);
-  const mh = t.moonHouse;
-  const [, tithiName] = t.panchanga.split(' · ');
-  const tier = tierOf(strength);
-
-  // Headline — actionable and plain (no astrology vocabulary), keyed to the day's energy tier,
-  // variety-guarded so no two days in the week repeat the same line.
-  const headline = chooseUnique(seedBase + 'h', HEADLINES[tier], used);
-
-  // Meaning — plain English, mechanics HIDDEN. Moon-house mood → what to lean into / ease off →
-  // a per-day focus nudge. The nudge changes day to day, so two days that share a Moon house
-  // (the Moon lingers ~2.25 days) still read differently. No planet, house, sign, or aspect is
-  // ever named here; the technical driver lives in `mechanics`, revealed only on tap.
-  const moodS = `Today feels ${lower(ht.mood)}.`;
-  const actionS = `Put your energy into ${lower(ht.lean)}, and go easy on ${lower(ht.avoid)}.`;
-  const nudge = chooseUnique(seedBase + 'n', NUDGES, used);
-  const reading = `${moodS} ${actionS} ${nudge}`;
-
-  // Mechanics — the technical breakdown, surfaced only behind "Why this?" so it never crowds
-  // the plain reading. This is where the slow, day-to-day-repeating transit is allowed to live.
-  const aspect = f.natalPlanet && f.aspectName
-    ? `transiting ${g} ${lower(f.aspectName)}s your natal ${f.natalPlanet}`
-    : `${g} moving through your ${ord(f.house)} house`;
-  const mechanics = `The Moon is in your ${ord(mh)} house of ${HOUSE_OF[mh ?? 1] ?? 'daily rhythm'}${tithiName ? `, on ${tithiName}` : ''}, and the day's strongest thread is ${aspect}.`;
-
-  const relWord = rel === 'Today' ? 'today' : rel === 'Tomorrow' ? 'tomorrow' : rel;
-  const question = `What should I focus on ${relWord}, ${fmtShort(date)}?`;
-
-  return { glyph: GLYPH[g] ?? '✦', scoreLabel: scoreLabel(strength), bestFor: bestForOf(mh), headline, reading, mechanics, question };
-}
+// (The per-day rich reading/mechanics builder was removed with the arc rewrite; the week now
+// surfaces one headline per day via HEADLINES + the narrative, not a card per day.)
 
 // ---- month window events -------------------------------------------------------
 type FEvent = {
@@ -313,25 +292,101 @@ function composeMonthTheme(strength: number, top: FEvent | null, mahaLord: strin
   return [tenor, turning, backdrop, closer].filter(Boolean).join(' ');
 }
 
+// ---- week arc (narrative from the 7 day-strengths) -----------------------------
+const relPhrase = (rel: string) => (rel === 'Today' ? 'today' : rel === 'Tomorrow' ? 'tomorrow' : `on ${rel}`);
+
+// A short label for the week's energy shape, from the 7 strengths.
+function describeEnergyArc(strengths: number[], dates: Date[]): string {
+  const peakIdx = strengths.indexOf(Math.max(...strengths));
+  const lowIdx = strengths.indexOf(Math.min(...strengths));
+  const first = (strengths[0] + strengths[1] + strengths[2]) / 3;
+  const last = (strengths[4] + strengths[5] + strengths[6]) / 3;
+  const shape = last - first > 6 ? 'Building through the week' : first - last > 6 ? 'Strongest early, then easing' : 'A fairly even week';
+  if (lowIdx === peakIdx) return `${shape}, steady throughout`;
+  return `${shape}, peaks ${WEEKDAY[dates[peakIdx].getDay()]}, quietest ${WEEKDAY[dates[lowIdx].getDay()]}`;
+}
+
+// A 2–3 sentence week narrative: the arc, where to push vs. rest, and the dasha backdrop.
+function composeWeekStory(strengths: number[], rels: string[], mahaLord: string): string {
+  const peakIdx = strengths.indexOf(Math.max(...strengths));
+  const lowIdx = strengths.indexOf(Math.min(...strengths));
+  const first = (strengths[0] + strengths[1] + strengths[2]) / 3;
+  const last = (strengths[4] + strengths[5] + strengths[6]) / 3;
+  const arc = last - first > 6 ? 'builds as it goes on' : first - last > 6 ? 'is strongest in the first half' : 'holds a steady, even pace';
+  const s1 = `This week ${arc}.`;
+  const s2 = peakIdx === lowIdx
+    ? 'Energy stays level, so choose your moments by what matters rather than by the day.'
+    : `The strongest push comes ${relPhrase(rels[peakIdx])}, so aim your important moves there; keep ${relPhrase(rels[lowIdx])} for rest and repair.`;
+  const chapter = lower(MAHA_MEANING[mahaLord]?.chapter ?? 'current chapter');
+  const s3 = `Underneath it, your ${chapter} sets the longer rhythm.`;
+  return [s1, s2, s3].join(' ');
+}
+
 // ---- main ----------------------------------------------------------------------
 export function computeForecast(chart: BirthChart, from: Date = new Date()): Forecast {
   const today = new Date(from.getFullYear(), from.getMonth(), from.getDate(), 12);
   const userSeed = `${chart.ascendant.signIndex}:${chart.moonSign}`;
 
-  // WEEK — the next 7 days (today included), each fully composed.
+  // ---- WEEK — the next 7 days as an arc -----------------------------------------
   const usedWeek = new Set<string>();
-  const week: ForecastDay[] = [];
+  const weekDates: Date[] = [];
+  const weekRels: string[] = [];
+  const weekStrengths: number[] = [];
+  const days: WeekDay[] = [];
   for (let i = 0; i < 7; i++) {
     const d = addDays(today, i);
     const f = computeTransitFactor(chart, d, 'general');
     const strength = dayStrength(chart, d, f.transiting, f.house ?? null);
     const rel = relLabel(i, d);
-    const body = dayReading(chart, d, rel, `${userSeed}:${i}:`, usedWeek, strength);
-    week.push({
+    weekDates.push(d); weekRels.push(rel); weekStrengths.push(strength);
+    const headline = chooseUnique(`${userSeed}:${i}:h`, HEADLINES[tierOf(strength)], usedWeek);
+    days.push({
       key: `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`,
-      label: fmtDay(d), rel, strength, ...body,
+      dayName: WEEKDAY[d.getDay()], rel, dateLabel: fmtShort(d), headline, strength,
     });
   }
+  const wFirst = (weekStrengths[0] + weekStrengths[1] + weekStrengths[2]) / 3;
+  const wLast = (weekStrengths[4] + weekStrengths[5] + weekStrengths[6]) / 3;
+
+  // Week windows / one caution, from the 7-day strengths + any events inside the week.
+  const weekEvents = detectWindowEvents(chart, today, 6);
+  const twoDay = (pickMax: boolean) => {
+    let idx = 0, bv = pickMax ? -1 : 201;
+    for (let i = 0; i + 1 < 7; i++) { const m = weekStrengths[i] + weekStrengths[i + 1]; if (pickMax ? m > bv : m < bv) { bv = m; idx = i; } }
+    return idx;
+  };
+  const bwi = twoDay(true), wwi = twoDay(false);
+  const bestWindows: ForecastWindow[] = [
+    { dateRange: `${fmtShort(weekDates[bwi])} – ${fmtShort(weekDates[bwi + 1])}`, reason: 'Your strongest stretch this week: good for first moves, asks, and starting things.' },
+  ];
+  for (const e of weekEvents.filter((x) => x.favourable && (x.kind === 'station' || x.kind === 'ingress')).slice(0, 1)) {
+    bestWindows.push({
+      dateRange: `From ${e.date}`,
+      reason: e.kind === 'station' ? `${e.body} turns direct, reopening momentum for ${benefit(e.body)}.` : `${e.body} enters ${e.toSign}, warming up ${HOUSE_OF[e.house ?? 1] ?? 'new ground'}.`,
+    });
+  }
+  const weekRetroStation = weekEvents.find((x) => x.kind === 'station' && x.dir === 'retrograde');
+  const nowRetroWk = computeAllTransits(chart, today).filter((p) => p.retrograde && p.name !== 'Rahu' && p.name !== 'Ketu');
+  const weakRange = `${fmtShort(weekDates[wwi])} – ${fmtShort(weekDates[wwi + 1])}`;
+  const watchOutWeek = weekRetroStation
+    ? `Around ${weekRetroStation.date}, ${weekRetroStation.body} turns retrograde, so hold big ${benefit(weekRetroStation.body)} decisions lightly.`
+    : nowRetroWk[0]
+      ? `${nowRetroWk[0].name} is retrograde this week, so favour reviewing and refining over launching.`
+      : `The quieter stretch is ${weakRange}; keep it for rest and maintenance rather than big pushes.`;
+  const weekTakeaway = wLast - wFirst > 6 ? 'Your week builds, so save the big move for the peak, not Monday.'
+    : wFirst - wLast > 6 ? 'The early days are your launchpad, so front-load what matters.'
+    : 'A steady week: consistency will carry you further than any single push.';
+  const mahaLordWeek = chart.dasha.find((d) => d.phase === 'present')?.planet ?? chart.dasha[0]?.planet ?? 'Jupiter';
+
+  const week: WeeklyGuidance = {
+    weekRange: `${fmtShort(today)} – ${fmtShort(addDays(today, 6))}`,
+    weekStory: composeWeekStory(weekStrengths, weekRels, mahaLordWeek),
+    energyShape: describeEnergyArc(weekStrengths, weekDates),
+    days,
+    bestWindows,
+    watchOut: watchOutWeek,
+    oneThingToRemember: weekTakeaway,
+  };
 
   // MONTH — the next 30 days.
   const DAYS = 30;
@@ -399,14 +454,18 @@ export function computeForecast(chart: BirthChart, from: Date = new Date()): For
   const antarLord = antar?.planet ?? mahaLord;
   const top = events.slice().sort((a, b) => b.salience - a.salience)[0] ?? null;
 
-  const month: MonthAhead = {
-    label: `${fmtShort(today)} – ${fmtShort(addDays(today, DAYS))}`,
-    strength: avg,
+  const monthTakeaway = avg >= 68 ? 'The month is on your side: make your biggest asks in the strong windows above.'
+    : avg >= 54 ? 'Press on the strong windows and go gently on the quiet ones; timing is everything this month.'
+    : 'A tending month more than a launching one: protect your energy and pick your moments.';
+
+  const month: MonthlyGuidance = {
+    monthRange: `${fmtShort(today)} – ${fmtShort(addDays(today, DAYS))}`,
+    monthStory: composeMonthTheme(avg, top, mahaLord, antarLord, userSeed),
     strengthLabel: monthTenorLabel(avg),
-    theme: composeMonthTheme(avg, top, mahaLord, antarLord, userSeed),
     keyDates,
-    opportunities: opportunities.slice(0, 3),
-    watch: watch.slice(0, 3),
+    strongestWindows: opportunities.slice(0, 3),
+    watchOut: watch.slice(0, 3),
+    oneThingToRemember: monthTakeaway,
   };
 
   return { week, month };
