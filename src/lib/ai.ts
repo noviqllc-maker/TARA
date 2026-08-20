@@ -9,12 +9,28 @@ import { HealthMetrics } from '@/lib/health';
 import { computeTransits } from '@/lib/transits';
 import { varaLord } from '@/lib/panchanga';
 import { detectCategory, buildCategoryPrompt } from '@/lib/askTaraCategory';
+import { supabase } from '@/lib/supabase';
 
 export type ChatMessage = { role: 'user' | 'assistant'; content: string };
 
 function endpoint(): string | undefined {
   const extra = (Constants.expoConfig?.extra ?? {}) as Record<string, string>;
   return extra.taraAiUrl || undefined;
+}
+
+// Headers for the Supabase edge call. The function is intended to be deployed with
+// --no-verify-jwt (public), but if it was deployed with the default verify_jwt=true the
+// gateway 401s without auth. So we always send the project apikey + an Authorization bearer,
+// using the public anon key as the baseline (never "Bearer undefined") and upgrading to the
+// signed-in user's access token when present. This works in either deploy mode.
+const ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
+async function edgeHeaders(): Promise<Record<string, string>> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (ANON_KEY) headers.apikey = ANON_KEY;
+  let token = ANON_KEY;
+  try { const { data } = await supabase.auth.getSession(); if (data.session?.access_token) token = data.session.access_token; } catch {}
+  if (token) headers.Authorization = `Bearer ${token}`;
+  return headers;
 }
 
 // Context string built from the user's REAL chart + REAL wellness (when connected).
@@ -78,7 +94,7 @@ export async function askTara(
   try {
     const res = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: await edgeHeaders(),
       body: JSON.stringify({
         messages: history.map((m) => ({ role: m.role, content: m.content })),
         context,
@@ -187,7 +203,7 @@ export async function askTaraAnswer(
   try {
     const res = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: await edgeHeaders(),
       body: JSON.stringify({ messages: [{ role: 'user', content: userMsg }], context, system, maxTokens: 1500 }),
     });
     if (!res.ok) {
@@ -339,7 +355,7 @@ export async function askPanchang(
   const userMsg = `Today's panchāṅga for ${name || 'this person'}: Tithi ${facts.tithi}, Nakshatra ${facts.nakshatra}, Yoga ${facts.yoga}.${facts.moonHouse ? ` The transiting Moon is in their ${facts.moonHouse} house today.` : ''} Explain each element for them specifically.`;
   try {
     const res = await fetch(url, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: await edgeHeaders(),
       body: JSON.stringify({ messages: [{ role: 'user', content: userMsg }], context, system, maxTokens: 700 }),
     });
     if (!res.ok) {
