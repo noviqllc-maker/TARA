@@ -3,7 +3,8 @@
 // section reads real fields: both charts' planets (sign/house/element), houses derived from
 // the ascendant + sign lords, per-planet D9 (navamsaSign), and each person's running Dasha.
 // Copy is plain-English first, then a short "Vedic basis" line. Language is probabilistic
-// ("likely", "may", "tends to"), never predictive of events, and never uses "Soulmate".
+// ("likely", "may", "tends to"), never predictive of events, and never uses over-promising
+// tier names like a "destined match".
 import { BirthChart, PlanetPosition, computeAllTransits } from '@/lib/vedic';
 
 export interface CompatibilityAnalysis {

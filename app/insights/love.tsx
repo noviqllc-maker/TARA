@@ -43,7 +43,7 @@ function NarrativeCard({ result }: { result: GunaResult }) {
   const n = relationshipNarrative(result);
   return (
     <View style={{ marginTop: 16 }}>
-      <Eyebrow color={colors.gold}>Your Relationship: {n.title}</Eyebrow>
+      <Eyebrow color={colors.gold}>Your Connection: {n.title}</Eyebrow>
       <Text variant="body" color={colors.cream} style={{ marginTop: 8, fontSize: 14, lineHeight: 22 }}>{n.summary}</Text>
       {n.dynamics.length > 0 && (
         <View style={{ marginTop: 12, gap: 8 }}>

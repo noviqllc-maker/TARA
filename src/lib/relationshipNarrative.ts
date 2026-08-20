@@ -8,11 +8,11 @@
 // (No em-dashes, per the app copy standard.)
 import { GunaResult } from '@/lib/compatibility';
 
-export type NarrativeTier = 'power-couple' | 'soulmate' | 'love-in-progress' | 'karmic';
+export type NarrativeTier = 'power-couple' | 'strong-potential' | 'love-in-progress' | 'karmic';
 
 export type RelationshipNarrative = {
   tier: NarrativeTier;
-  title: string;       // "Power Couple" | "Soulmate" | "Love in Progress" | "Karmic Connection"
+  title: string;       // "Power Couple" | "Strong Potential" | "Love in Progress" | "Karmic Connection"
   summary: string;     // 2–3 sentence tier narrative
   dynamics: string[];  // specific Yoni / Varna / Nadi notes that apply to this pairing
 };
@@ -24,8 +24,8 @@ function tierFor(total: number): { tier: NarrativeTier; title: string; summary: 
     summary: 'This is a rare, high-harmony match. You read as spiritually aligned, with a shared sense of mission and a natural pull in the same direction. Two natural leaders who amplify each other rather than compete: the work is simply to keep choosing the same horizon.',
   };
   if (total >= 24) return {
-    tier: 'soulmate', title: 'Soulmate',
-    summary: 'A deeply compatible, soulmate-tier match. The emotional understanding runs deep and mostly effortless; you tend to get each other without much explaining. Growth here is a shared project, so you become more yourselves together, not less.',
+    tier: 'strong-potential', title: 'Strong Potential',
+    summary: 'A deeply compatible match with strong potential. The emotional understanding runs deep and mostly effortless; you tend to get each other without much explaining. Growth here is a shared project, so you become more yourselves together, not less.',
   };
   if (total >= 18) return {
     tier: 'love-in-progress', title: 'Love in Progress',
