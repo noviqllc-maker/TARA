@@ -55,30 +55,31 @@ const ord = (n: number | null) => (n && ORD[n]) || 'current';
 const cap = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s);
 const lower = (s: string) => (s ? s[0].toLowerCase() + s.slice(1) : s);
 
-// A short "energy" lead for each graha (3 phrasings for day-to-day rotation).
+// A short "energy" lead for each graha (6 phrasings for day-to-day rotation; jargon-free, no
+// planet/house names, so these stay safe for both the guidance and the insight-card bodies).
 const GRAHA_LEADS: Record<string, string[]> = {
-  Sun: ['Your sense of purpose runs clear today.', 'There’s a quiet pull toward being seen and standing tall.', 'Confidence and clarity are within reach.'],
-  Moon: ['Feelings run close to the surface.', 'A tender, intuitive current moves through the day.', 'Your inner weather asks to be honored.'],
-  Mars: ['Energy runs high and ready to move.', 'There’s courage and drive to spend well.', 'A day with real momentum in it.'],
-  Mercury: ['The mind is quick and curious.', 'Ideas and conversations want to flow.', 'A sharp, connective mental current.'],
-  Jupiter: ['A spacious, hopeful current opens up.', 'Growth and meaning feel close today.', 'Doors feel a little more open than usual.'],
-  Venus: ['Warmth and ease soften the day.', 'Connection and beauty come more naturally now.', 'A gentle, magnetic current runs through today.'],
-  Saturn: ['Steady effort compounds now.', 'A grounded, patient current holds the day.', 'Slow and solid beats fast and loud today.'],
-  Rahu: ['A restless pull toward something new.', 'Ambition hums under the surface.', 'The unfamiliar looks unusually appealing.'],
-  Ketu: ['A quiet, inward tide moves today.', 'Something wants to be released, not chased.', 'Depth matters more than motion right now.'],
+  Sun: ['Your sense of purpose runs clear today.', 'There’s a quiet pull toward being seen and standing tall.', 'Confidence and clarity are within reach.', 'A steadier sense of self settles in.', 'You feel a little more visible today.', 'There is warmth in standing tall.'],
+  Moon: ['Feelings run close to the surface.', 'A tender, intuitive current moves through the day.', 'Your inner weather asks to be honored.', 'The heart wants a gentler pace.', 'Moods move like weather today.', 'A soft, intuitive tone colors the hours.'],
+  Mars: ['Energy runs high and ready to move.', 'There’s courage and drive to spend well.', 'A day with real momentum in it.', 'A clean charge of energy is here.', 'You feel ready to push and to act.', 'There is heat and forward motion today.'],
+  Mercury: ['The mind is quick and curious.', 'Ideas and conversations want to flow.', 'A sharp, connective mental current.', 'Thoughts link up quickly today.', 'The day favors words and small plans.', 'A bright, restless curiosity is running.'],
+  Jupiter: ['A spacious, hopeful current opens up.', 'Growth and meaning feel close today.', 'Doors feel a little more open than usual.', 'The day feels a little more generous.', 'There is room to think and to grow.', 'Optimism comes more easily now.'],
+  Venus: ['Warmth and ease soften the day.', 'Connection and beauty come more naturally now.', 'A gentle, magnetic current runs through today.', 'A softer, sweeter tone runs today.', 'People and beauty feel closer.', 'The day leans toward comfort and care.'],
+  Saturn: ['Steady effort compounds now.', 'A grounded, patient current holds the day.', 'Slow and solid beats fast and loud today.', 'The day rewards doing things properly.', 'A quiet discipline steadies the hours.', 'Patience feels more available today.'],
+  Rahu: ['A restless pull toward something new.', 'Ambition hums under the surface.', 'The unfamiliar looks unusually appealing.', 'Something new keeps catching your eye.', 'A hungry, forward pull is here.', 'The usual feels a little too small today.'],
+  Ketu: ['A quiet, inward tide moves today.', 'Something wants to be released, not chased.', 'Depth matters more than motion right now.', 'The day turns quiet and inward.', 'Less noise, more meaning today.', 'A gentle urge to simplify is here.'],
 };
 
-// Short headlines for Tara's Message, keyed to the day's driving graha.
+// Short headlines for Tara's Message, keyed to the day's driving graha (6 phrasings each).
 const GRAHA_HEADLINES: Record<string, string[]> = {
-  Sun: ['Today rewards showing up as yourself.', 'Lead with clarity, not volume.', 'Let your intention be the light.'],
-  Moon: ['Today rewards feeling over fixing.', 'Let the heart set the pace.', 'Softness is the strategy today.'],
-  Mars: ['Today rewards aimed effort over noise.', 'Move, but choose your direction.', 'Channel the fire, don’t scatter it.'],
-  Mercury: ['Today rewards clear words over clever ones.', 'Let the mind organize, not spiral.', 'One clear thought moves everything.'],
-  Jupiter: ['Today rewards thinking a little bigger.', 'Say yes to the wider horizon.', 'Growth favors the generous today.'],
-  Venus: ['Today rewards warmth over winning.', 'Lead with connection, not correction.', 'Let ease do some of the work.'],
-  Saturn: ['Today rewards patience over pressure.', 'Build slow, build once.', 'The long game is the winning one.'],
-  Rahu: ['Today rewards bold moves with a grounded heart.', 'Reach, but keep your feet on the earth.', 'Ambition works best when it’s anchored.'],
-  Ketu: ['Today rewards release over reaching.', 'Let go, and let clarity arrive.', 'Less is genuinely more today.'],
+  Sun: ['Today rewards showing up as yourself.', 'Lead with clarity, not volume.', 'Let your intention be the light.', 'Let yourself be seen today.', 'Warmth carries further than force.', 'Stand in your own light.'],
+  Moon: ['Today rewards feeling over fixing.', 'Let the heart set the pace.', 'Softness is the strategy today.', 'Feel it before you fix it.', 'Tend the heart first today.', 'Let the mood inform, not rule.'],
+  Mars: ['Today rewards aimed effort over noise.', 'Move, but choose your direction.', 'Channel the fire, don’t scatter it.', 'Aim the fire, then move.', 'One bold, chosen step wins.', 'Spend the energy on purpose.'],
+  Mercury: ['Today rewards clear words over clever ones.', 'Let the mind organize, not spiral.', 'One clear thought moves everything.', 'Say the clear thing simply.', 'Let one idea lead today.', 'Think it through, then speak.'],
+  Jupiter: ['Today rewards thinking a little bigger.', 'Say yes to the wider horizon.', 'Growth favors the generous today.', 'Reach for the wider view.', 'Generosity opens the day.', 'Say yes to a little more.'],
+  Venus: ['Today rewards warmth over winning.', 'Lead with connection, not correction.', 'Let ease do some of the work.', 'Choose warmth over being right.', 'Let ease carry the day.', 'Lead with kindness today.'],
+  Saturn: ['Today rewards patience over pressure.', 'Build slow, build once.', 'The long game is the winning one.', 'Do the unglamorous thing well.', 'Steady hands finish the work.', 'Let discipline be a kindness.'],
+  Rahu: ['Today rewards bold moves with a grounded heart.', 'Reach, but keep your feet on the earth.', 'Ambition works best when it’s anchored.', 'Chase the new with clear eyes.', 'Bold, but not reckless, today.', 'Let hunger point, not drive.'],
+  Ketu: ['Today rewards release over reaching.', 'Let go, and let clarity arrive.', 'Less is genuinely more today.', 'Let go to make room.', 'Release, and clarity follows.', 'Travel a little lighter today.'],
 };
 
 const MANTRAS: Record<string, { mantra: string; note: string }> = {
