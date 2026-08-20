@@ -18,7 +18,9 @@ import { GlossaryTooltip } from '@/components/GlossaryTooltip';
 import { PremiumSheet } from '@/components/PremiumNudge';
 import Disclaimer from '@/components/Disclaimer';
 import { useDailyContent } from '@/hooks/useDailyContent';
+import { useChart } from '@/hooks/useChart';
 import { usePanchangExplained } from '@/hooks/usePanchangExplained';
+import { computePanchanga } from '@/lib/calendar';
 import { useHealth } from '@/hooks/useHealth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useAuth } from '@/hooks/useAuth';
@@ -27,7 +29,7 @@ import { bodySuggestion, genericBodySuggestion, classifyHealth, dayLordOf } from
 import { benefitsLeadingWith } from '@/lib/premium';
 import { setAskDraft } from '@/lib/askDraft';
 import { todayLong } from '@/data/mock';
-import { colors, spacing } from '@/theme';
+import { colors, radius, spacing } from '@/theme';
 
 // PREFILL the question in Ask Tara (focused, not sent) — the explicit send press is the
 // only action that spends a credit, so no stray tap can trigger a charge.
@@ -52,12 +54,17 @@ type CardVM =
 
 export default function Insights() {
   const daily = useDailyContent();
+  const chart = useChart();
   const panchang = usePanchangExplained();
   const { metrics, connected } = useHealth();
   const { isPremium } = useSubscription();
   const { session } = useAuth();
   const { profile } = useProfile();
   const [sheet, setSheet] = useState(false);
+  // Today's Panchāṅga — five elements + a universal reading (free) and a chart-tied personal
+  // reading (Premium). Deterministic; recomputed per calendar day + chart. This interpretation
+  // lives here on Insights (Home shows the compact facts; the Calendar shows any day's detail).
+  const panchanga = useMemo(() => computePanchanga(chart, new Date()), [chart]);
 
   // The health-aware Body Signal suggestion (premium only — and Body Signal is itself premium
   // now, so this only ever renders inside the premium branch). Seeded (user + date).
@@ -110,13 +117,41 @@ export default function Insights() {
         <Text variant="screenTitle" style={{ marginTop: 8, marginBottom: spacing.lg }}>Your Cosmic Weather</Text>
       </Animated.View>
 
-      {/* FREE — the overall weather headline. */}
+      {/* FREE — Today's Panchāṅga: the five elements + a universal reading everyone sees; the
+          chart-tied personal reading is Premium. This is the panchāṅga's home (Home keeps the
+          compact facts, the Calendar keeps any day's full detail). */}
       <Card solid glow style={{ marginBottom: spacing.lg }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 8 }}>
           <Text variant="sectionHeader" color={colors.gold}>Today's Panchāṅga</Text>
           <GlossaryTooltip term="panchanga" />
         </View>
-        <Text variant="body">{daily.weatherSummary}</Text>
+        <Text variant="body" color={colors.goldSoft}>
+          {panchanga.tithi} · {panchanga.nakshatra} · {panchanga.yoga} · {panchanga.vara}
+        </Text>
+        <Text variant="secondaryBody" style={{ marginTop: 2 }}>{panchanga.paksha}</Text>
+
+        {/* Universal meaning — free for everyone */}
+        <View style={styles.universalSection}>
+          <Text variant="body" color={colors.cream} style={{ fontWeight: '600' }}>{panchanga.universalHeading}</Text>
+          <Text variant="secondaryBody" style={{ marginTop: 6 }}>{panchanga.universalMeaning}</Text>
+        </View>
+
+        {/* Personal meaning — Premium (chart-tied); free users see a locked prompt */}
+        {isPremium && panchanga.personalMeaning ? (
+          <View style={styles.personalSection}>
+            <Text variant="caption" color={colors.gold}>✦ What this means for you</Text>
+            <Text variant="body" color={colors.cream} style={{ marginTop: 6 }}>{panchanga.personalMeaning}</Text>
+          </View>
+        ) : isPremium && !chart ? (
+          <View style={styles.personalSection}>
+            <Text variant="secondaryBody">Add your birth details to see what today means for your own chart.</Text>
+          </View>
+        ) : (
+          <Pressable onPress={() => router.push('/paywall')} style={styles.personalLocked}>
+            <Text variant="caption" color={colors.gold}>✦ Personalized for your chart</Text>
+            <Text variant="caption" color={colors.gold}>Premium →</Text>
+          </Pressable>
+        )}
       </Card>
 
       {/* Panchāṅga explained for the user's chart (deterministic instantly, AI-upgraded). */}
@@ -251,5 +286,15 @@ const styles = StyleSheet.create({
   suggestion: {
     flexDirection: 'row', alignItems: 'flex-start', marginTop: 10, paddingTop: 10,
     borderTopWidth: 1, borderTopColor: colors.line,
+  },
+  // Today's Panchāṅga — universal (free) + personal (premium) blocks
+  universalSection: {
+    marginTop: 14, paddingVertical: 12,
+    borderTopWidth: 1, borderTopColor: colors.line, borderBottomWidth: 1, borderBottomColor: colors.line,
+  },
+  personalSection: { marginTop: 12, paddingVertical: 12, paddingHorizontal: 12, backgroundColor: colors.cardSolid, borderRadius: radius.md },
+  personalLocked: {
+    marginTop: 12, paddingVertical: 12, paddingHorizontal: 12, backgroundColor: colors.cardSolid, borderRadius: radius.md,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
   },
 });

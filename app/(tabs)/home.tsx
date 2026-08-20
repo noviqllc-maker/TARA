@@ -12,14 +12,16 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { useProfile } from '@/hooks/useProfile';
 import { useAuth } from '@/hooks/useAuth';
 import { useChart } from '@/hooks/useChart';
+import { useTransits } from '@/hooks/useTransits';
 import { useDailyEnergy } from '@/hooks/useDailyEnergy';
 import { useHealth } from '@/hooks/useHealth';
 import { useDailyContent } from '@/hooks/useDailyContent';
-import { computeCosmicEvents } from '@/lib/panchanga';
+import { computeCosmicEvents, CosmicEvents } from '@/lib/panchanga';
 import { useCurrentLocation } from '@/hooks/useCurrentLocation';
+import { GlossaryTooltip } from '@/components/GlossaryTooltip';
 import { todayObservance } from '@/lib/observances';
 import { computeTransitFactor, BirthChart } from '@/lib/vedic';
-import { buildMonth, dayDetail, computePanchanga, DayCell, TithiSpecial } from '@/lib/calendar';
+import { buildMonth, dayDetail, DayCell, TithiSpecial } from '@/lib/calendar';
 import { PURPOSES, Purpose, findMuhurtaDates } from '@/lib/muhurtaPlanner';
 import { Topic } from '@/lib/topic';
 import { PriorityKey } from '@/data/priorities';
@@ -118,6 +120,7 @@ export default function Home() {
   const { session } = useAuth();
   const uid = session?.user?.id || profile.name || 'anon';
   const chart = useChart();
+  const transits = useTransits();
   // Real daily energy (chart + Moon transit + moon phase + Apple Health), shared
   // across Home, Love & Career via the hook so the numbers stay consistent.
   const energy = useDailyEnergy();
@@ -170,9 +173,56 @@ export default function Home() {
   // Today's observance (Ekādaśī / Pūrṇimā / festival …), if one is active — surfaced as a
   // line on the cosmic-events card and echoed on the Practice card. Deterministic, no AI.
   const observance = useMemo(() => todayObservance(new Date()), [dayKey]);
-  // Today's Panchāṅga — five elements + a universal reading (free) and a chart-tied personal
-  // reading (Premium). Deterministic, recomputed per calendar day + chart.
-  const panchanga = useMemo(() => computePanchanga(chart, new Date()), [chart, dayKey]);
+
+  // Today's Cosmic Events — the compact daily almanac (facts only, no explanations; the
+  // panchāṅga interpretation now lives on Daily Insights). Nakshatra & tithi are in the grid,
+  // so the second row-group carries only Dasha / Transit / Moon phase (never duplicated).
+  const cosmicRows: [string, string][] = [
+    ['Dasha', chart?.currentDasha ?? '–'],
+    ['Transit', transits.transitText],
+    ['Moon Phase', transits.moonPhase],
+  ];
+  // The three timing rows (power hour / Abhijit / Rāhukālam) are added only when a location is
+  // set, so they never render as empty placeholders.
+  type EventCell = { glyph: string; label: string; value: string; swatch?: string; term?: string };
+  const buildCells = (ev: CosmicEvents): EventCell[] => [
+    { glyph: '☾', label: 'Moon', value: `${ev.moonSign} • ${ev.moonNakshatra}`, term: 'nakshatra' },
+    { glyph: '◐', label: 'Tithi', value: ev.tithi, term: 'tithi' },
+    { glyph: ev.dayLordGlyph, label: 'Planet of the day', value: ev.dayLord, term: 'vara' },
+    ...(ev.powerHours
+      ? [{ glyph: '⏱', label: 'Power hour', value: `${ev.powerHours.start} – ${ev.powerHours.end}`, term: 'hora' }]
+      : []),
+    ...(ev.abhijitMuhurta
+      ? [{ glyph: '☀', label: 'Abhijit (auspicious)', value: `${ev.abhijitMuhurta.start} – ${ev.abhijitMuhurta.end}`, term: 'abhijit' }]
+      : []),
+    ...(ev.rahukalam
+      ? [{ glyph: '☊', label: 'Rāhukālam (avoid)', value: `${ev.rahukalam.start} – ${ev.rahukalam.end}`, term: 'rahukalam' }]
+      : []),
+    { glyph: '●', label: 'Lucky color', value: ev.luckyColor, swatch: ev.luckyColorHex },
+    { glyph: '✦', label: 'Lucky number', value: String(ev.luckyNumber) },
+  ];
+  const cells = buildCells(cosmic);
+
+  // One grid renderer for the cosmic-events card.
+  const renderGrid = (cellArr: EventCell[]) => (
+    <View style={styles.eventsGrid}>
+      {cellArr.map((c) => (
+        <View key={c.label} style={styles.eventCell}>
+          <Text style={{ fontSize: 16, color: colors.goldSoft, lineHeight: 22 }}>{c.glyph}</Text>
+          <View style={{ flex: 1 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+              <Text color={colors.muted} style={{ fontSize: 10.5, letterSpacing: 0.3 }}>{c.label}</Text>
+              {c.term ? <GlossaryTooltip term={c.term} /> : null}
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 3 }}>
+              {c.swatch ? <View style={[styles.swatch, { backgroundColor: c.swatch }]} /> : null}
+              <Text color={colors.cream} style={styles.eventValue} numberOfLines={1}>{c.value}</Text>
+            </View>
+          </View>
+        </View>
+      ))}
+    </View>
+  );
 
   // ---- Embedded Vedic Calendar + Muhūrta ----------------------------------------
   // Month grid (deterministic, from calendar.ts), a tapped-day detail, and a purpose-driven
@@ -255,52 +305,21 @@ export default function Home() {
         <GoldButton label="Ask Tara about today" onPress={() => router.push('/(tabs)/tara')} style={{ marginTop: 18 }} />
       </Card>
 
-      {/* Today's Panchāṅga — sits right under Guidance to complete the retention loop:
-          plain advice → today's Vedic state + a universal reading (free) → personal reading
-          (Premium). Five elements, then a universal layer everyone sees and a chart-tied layer
-          gated to Premium. Replaces the old almanac grid; the day's time windows (best hours /
-          Abhijit / Rāhukālam) live in the day-detail card below, so nothing is shown twice. */}
+      {/* Today's Cosmic Events — the compact daily snapshot: facts at a glance, no explanations.
+          The panchāṅga interpretation (5 elements + universal/personal meaning) lives on Daily
+          Insights; the full per-day analysis lives in the Vedic Calendar. Nothing repeats. */}
       <Card style={{ marginBottom: spacing.lg }}>
-        <SectionLabel>Today's Panchāṅga</SectionLabel>
-        <View style={{ marginTop: 10, gap: 3 }}>
-          <Text variant="serif" style={{ fontSize: 16.5, color: colors.goldSoft }}>
-            {panchanga.tithi} · {panchanga.nakshatra} · {panchanga.yoga}
-          </Text>
-          <Text variant="tiny" color={colors.muted} style={{ fontSize: 12 }}>
-            {panchanga.vara} · {panchanga.paksha}
-          </Text>
-        </View>
+        <SectionLabel>Today's Cosmic Events</SectionLabel>
+        {renderGrid(cells)}
 
-        {/* Universal reading — free for everyone */}
-        <View style={styles.universalBlock}>
-          <Text variant="body" color={colors.cream} style={{ fontSize: 14.5, fontWeight: '600' }}>{panchanga.universalHeading}</Text>
-          <Text variant="tiny" color={colors.cream} style={{ fontSize: 13, lineHeight: 19, marginTop: 6, opacity: 0.85 }}>{panchanga.universalMeaning}</Text>
-        </View>
-
-        {/* Personal reading — Premium (chart-tied); free users see a locked prompt */}
-        {isPremium && panchanga.personalMeaning ? (
-          <View style={styles.personalBlock}>
-            <Text variant="tiny" color={colors.gold} style={{ fontSize: 11.5, fontWeight: '700' }}>✦ What this means for you</Text>
-            <Text variant="tiny" color={colors.cream} style={{ fontSize: 13, lineHeight: 19, marginTop: 6 }}>{panchanga.personalMeaning}</Text>
-          </View>
-        ) : isPremium && !chart ? (
-          <View style={styles.personalBlock}>
-            <Text variant="tiny" color={colors.muted} style={{ fontSize: 12.5, lineHeight: 18 }}>Add your birth details to see what today means for your own chart.</Text>
-          </View>
-        ) : (
-          <Pressable onPress={() => router.push('/paywall')} style={styles.personalLocked}>
-            <Text variant="tiny" color={colors.gold} style={{ fontSize: 12.5, fontWeight: '600' }}>✦ Personalized for your chart</Text>
-            <Text variant="tiny" color={colors.gold} style={{ fontSize: 12.5, fontWeight: '700' }}>Premium →</Text>
-          </Pressable>
-        )}
-
-        {/* Lucky color + number — the day-lord almanac bit that's unique to this card */}
-        <View style={styles.luckyRow}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <View style={[styles.swatch, { backgroundColor: cosmic.luckyColorHex }]} />
-            <Text variant="tiny" color={colors.muted} style={{ fontSize: 12 }}>Lucky color <Text variant="tiny" color={colors.cream} style={{ fontSize: 12 }}>{cosmic.luckyColor}</Text></Text>
-          </View>
-          <Text variant="tiny" color={colors.muted} style={{ fontSize: 12 }}>Lucky number <Text variant="tiny" color={colors.cream} style={{ fontSize: 12 }}>{cosmic.luckyNumber}</Text></Text>
+        {/* Second group — Dasha / Transit / Moon phase (values not already in the grid). */}
+        <View style={styles.cosmicRows}>
+          {cosmicRows.map(([k, v]) => (
+            <View key={k} style={styles.cwRow}>
+              <Text variant="tiny" color={colors.muted}>{k}</Text>
+              <Text variant="body" color={colors.goldSoft} style={{ fontSize: 13, flexShrink: 1, textAlign: 'right' }} numberOfLines={1}>{v}</Text>
+            </View>
+          ))}
         </View>
 
         {/* Today's observance, when one is active — informational, taps into Practice. */}
@@ -612,17 +631,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 14, paddingTop: 12,
     borderTopWidth: 1, borderTopColor: colors.line,
   },
-  // Today's Panchāṅga — universal (free) + personal (premium) blocks
-  universalBlock: {
-    marginTop: 14, paddingVertical: 12, gap: 2,
-    borderTopWidth: 1, borderTopColor: colors.line, borderBottomWidth: 1, borderBottomColor: colors.line,
-  },
-  personalBlock: { marginTop: 12, paddingVertical: 12, paddingHorizontal: 12, backgroundColor: colors.cardSolid, borderRadius: radius.md },
-  personalLocked: {
-    marginTop: 12, paddingVertical: 12, paddingHorizontal: 12, backgroundColor: colors.cardSolid, borderRadius: radius.md,
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-  },
-  luckyRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 14 },
   // Embedded Vedic Calendar
   monthHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, paddingHorizontal: 4 },
   calArrow: { fontSize: 28, color: colors.gold, lineHeight: 30, paddingHorizontal: 10 },
