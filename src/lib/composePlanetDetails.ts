@@ -57,16 +57,18 @@ const MONEY: Record<string, string> = {
   Rahu: 'unusual or speculative paths with big swings, so caution genuinely pays',
   Ketu: 'finances best kept simple; detachment serves you better than grasping',
 };
+// Reflective wellness temperament per graha (traditional associations, framed as lifestyle
+// invitations rather than physical claims). Not medical or diagnostic.
 const HEALTH: Record<string, string> = {
-  Sun: 'vitality, the heart and eyes; watch overexertion and pride-driven stress',
-  Moon: 'emotions and digestion are linked; sleep and stress affect the body most',
-  Mars: 'high energy, but prone to heat, inflammation, or strain when overpushed',
-  Mercury: 'the nervous system and skin; overthinking tends to show up physically',
-  Jupiter: 'generally robust; mind the liver, weight, and over-indulgence',
-  Venus: 'the kidneys and reproductive system; balance sweetness and comfort',
-  Saturn: 'stamina over time but slower healing; prevention and rest matter',
-  Rahu: 'unusual or hard-to-pin complaints; grounding and routine steady you',
-  Ketu: 'subtle or intermittent issues; the body responds to calm and simplicity',
+  Sun: 'vitality and steady energy; watch overexertion and pride-driven stress',
+  Moon: 'closely tied to sleep, mood, and routine; steadiness in these supports the rest',
+  Mars: 'high drive; pacing yourself matters so intensity does not tip into strain',
+  Mercury: 'a busy, active mind; a calmer pace and real rest tend to help you most',
+  Jupiter: 'generally robust; moderation serves you better than over-indulgence',
+  Venus: 'comfort and balance; keeping sweetness and rest in proportion serves you',
+  Saturn: 'stamina over time; prevention, patience, and rest matter most',
+  Rahu: 'when things feel scattered, grounding and routine steady you',
+  Ketu: 'calm and simplicity serve you; a steady routine settles the restlessness',
 };
 const STRENGTH_GIFT: Record<string, string> = {
   Sun: 'natural leadership, courage, and clarity of purpose',

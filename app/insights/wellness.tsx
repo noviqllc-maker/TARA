@@ -151,7 +151,7 @@ export default function Wellness() {
               </View>
             ))}
             <View>
-              <Text variant="eyebrow" color={colors.muted} style={{ fontSize: 10, letterSpacing: 0.4 }}>Risk level</Text>
+              <Text variant="eyebrow" color={colors.muted} style={{ fontSize: 10, letterSpacing: 0.4 }}>Rest priority</Text>
               <Text
                 variant="tiny"
                 color={RISK_COLOR[healthAction.riskLevel]}

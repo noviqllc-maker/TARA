@@ -174,7 +174,7 @@ export default function Profile() {
               <Text variant="secondaryBody" color={colors.muted} style={{ marginTop: 8 }}>
                 Personalized Daily Panchāṅga and the Muhūrta Planner (auspicious dates for marriage, travel,
                 business, moving, and more), plus Ask Tara all month, Weekly and Monthly Guidance, the full
-                Daily Insights, and health-aware guidance.
+                Daily Insights, and wellness-aware guidance.
               </Text>
               <Pressable style={styles.upgrade} onPress={() => router.push('/paywall')}>
                 <Text variant="body" color="#1a1018" style={{ fontWeight: '600' }}>See Premium</Text>

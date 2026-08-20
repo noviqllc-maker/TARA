@@ -39,8 +39,8 @@ const DAY_ACTION: Record<string, string> = {
 const AVOID_BY_EL: Record<Element, string> = {
   Fire: 'overexertion and stimulants; the fire runs high today, so pace yourself and do not burn out',
   Earth: 'rigid, all-or-nothing routines; let the day have a little give rather than forcing it',
-  Air: 'skipped meals and screen overload; your nervous system is asking for steadiness',
-  Water: 'heavy or late meals; digestion is sensitive today, so keep it lighter and earlier',
+  Air: 'skipped meals and screen overload; a steadier, simpler pace may feel supportive today',
+  Water: 'heavy or late meals; simpler, earlier meals may feel more supportive today',
 };
 
 // What the body responds to best while the Moon transits each house today.
@@ -77,9 +77,9 @@ export function composeHealthAction(chart: BirthChart | null, date: Date = new D
   const eighthInvolved = moon?.house === 8 || saturn?.house === 8 || transitMoonHouse === 8;
   const recoveryDay = saturn?.house === 6 || transitMoonHouse === 6;
   const avoidToday = eighthInvolved
-    ? 'Avoid intense new physical challenges today; the body is in a deeper, more sensitive phase, so gentleness beats proving anything.'
+    ? 'Avoid intense new physical challenges today; a gentler pace may feel more supportive than proving anything.'
     : recoveryDay
-      ? 'Avoid pushing through fatigue today; recovery matters more than intensity while the 6th house is active.'
+      ? 'Avoid pushing through fatigue today; rest may feel more supportive than intensity right now.'
       : `Avoid ${AVOID_BY_EL[transitMoonEl]}.`;
 
   // 3. Best hour — the day-lord's horā window.
@@ -95,7 +95,7 @@ export function composeHealthAction(chart: BirthChart | null, date: Date = new D
   } else if (jupiter && [1, 4, 5, 9, 10].includes(jupiter.house)) {
     biggestOpportunity = 'Jupiter is well placed to build capacity: a longer session or a new healthy habit can take root now.';
   } else if (transitMoonHouse) {
-    biggestOpportunity = `With the Moon moving through your ${ORD[transitMoonHouse]} house today, your body responds best to ${MOON_HOUSE_BODY[transitMoonHouse]}.`;
+    biggestOpportunity = `With the Moon moving through your ${ORD[transitMoonHouse]} house today, ${MOON_HOUSE_BODY[transitMoonHouse]} may feel especially supportive.`;
   } else {
     biggestOpportunity = 'A steady, moderate day; consistency will do more for you than intensity.';
   }
@@ -125,7 +125,7 @@ export function composeHealthAction(chart: BirthChart | null, date: Date = new D
   // 6. One decision to make — the day's tie-breaker, keyed to the risk read.
   const oneDecisionToMake =
     riskLevel === 'high'
-      ? 'Rest or push? Today your body says rest first; you have nothing to prove.'
+      ? 'Rest or push? Today leans toward rest first; you have nothing to prove.'
       : riskLevel === 'medium'
         ? 'Move or pause? Start gentle and let your energy tell you how far to go.'
         : 'You have energy to spend. Put it into real movement or deliberate recovery, on purpose rather than by default.';
