@@ -55,8 +55,8 @@ export default function BirthDateScreen() {
           paddingVertical: 22, alignItems: 'center', marginBottom: 8,
         }}
       >
-        <Text variant="eyebrow" color={colors.muted} style={{ marginBottom: 6 }}>Date of birth</Text>
-        <Text variant="h1" style={{ fontSize: 30 }}>{label(date)}</Text>
+        <Text variant="caption" color={colors.muted} style={{ marginBottom: 6 }}>Date of birth</Text>
+        <Text variant="cardTitle">{label(date)}</Text>
       </Pressable>
 
       {show && (

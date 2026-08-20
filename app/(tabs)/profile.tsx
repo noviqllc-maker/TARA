@@ -146,7 +146,7 @@ export default function Profile() {
       <Animated.View entering={FadeInDown.duration(500)} style={{ marginBottom: spacing.lg }}>
         <View style={{ flex: 1 }}>
           <Eyebrow>Profile</Eyebrow>
-          <Text variant="h1" style={{ marginTop: 8 }}>{profile.name || "Friend"}</Text>
+          <Text variant="screenTitle" style={{ marginTop: 8 }}>{profile.name || "Friend"}</Text>
         </View>
       </Animated.View>
 
@@ -154,24 +154,24 @@ export default function Profile() {
       <Card style={{ marginBottom: spacing.lg }}>
         {facts.map(([k, v], i) => (
           <View key={k} style={[styles.row, i === facts.length - 1 && { borderBottomWidth: 0 }]}>
-            <Text variant="tiny" color={colors.muted}>{k}</Text>
-            <Text variant="body" color={colors.goldSoft} style={{ fontSize: 13.5 }}>{v}</Text>
+            <Text variant="caption" color={colors.muted}>{k}</Text>
+            <Text variant="body" color={colors.goldSoft}>{v}</Text>
           </View>
         ))}
       </Card>
 
       {/* Shop */}
       <View onLayout={(e) => { shopY.current = e.nativeEvent.layout.y; maybeScrollToShop(); }}>
-        <Eyebrow>Shop</Eyebrow>
+        <Text variant="sectionHeader">Shop</Text>
         <View style={{ gap: 12, marginTop: 12 }}>
           {/* Premium subscription promo (free users only). Reports below are separate
               one-time purchases; this card never claims they are included. Price lives on
               the paywall, from RevenueCat. */}
           {!isPremium ? (
             <Card solid glow>
-              <Eyebrow color={colors.gold}>Tara Premium</Eyebrow>
-              <Text variant="serif" style={{ fontSize: 16.5, marginTop: 6 }}>Your chart, explained every day</Text>
-              <Text variant="tiny" color={colors.muted} style={{ marginTop: 8, lineHeight: 19 }}>
+              <Text variant="sectionHeader" color={colors.gold}>Tara Premium</Text>
+              <Text variant="cardTitle" style={{ marginTop: 6 }}>Your chart, explained every day</Text>
+              <Text variant="secondaryBody" color={colors.muted} style={{ marginTop: 8 }}>
                 Personalized Daily Panchāṅga and the Muhūrta Planner (auspicious dates for marriage, travel,
                 business, moving, and more), plus Ask Tara all month, Weekly and Monthly Guidance, the full
                 Daily Insights, and health-aware guidance.
@@ -203,14 +203,14 @@ export default function Profile() {
 
             return (
               <Card key={item.id}>
-                <Text variant="serif" style={{ fontSize: 16 }}>{item.title}</Text>
-                <Text variant="tiny" style={{ marginTop: 4, lineHeight: 17 }}>{item.description}</Text>
-                <Text variant="tiny" color={colors.muted} style={{ marginTop: 6, fontSize: 11 }}>{item.features}</Text>
+                <Text variant="cardTitle">{item.title}</Text>
+                <Text variant="secondaryBody" style={{ marginTop: 4 }}>{item.description}</Text>
+                <Text variant="metadata" color={colors.muted} style={{ marginTop: 6 }}>{item.features}</Text>
                 {owned ? (
                   <View style={styles.shopRow}>
                     <Text variant="body" color={colors.sage} style={{ fontWeight: '600' }}>✓ Unlocked</Text>
                     <Pressable onPress={() => onView(item)} style={styles.unlockBtn}>
-                      <Text variant="tiny" color="#1a1018" style={{ fontWeight: '600' }}>View</Text>
+                      <Text variant="body" color="#1a1018" style={{ fontWeight: '600' }}>View</Text>
                     </Pressable>
                   </View>
                 ) : (
@@ -227,14 +227,14 @@ export default function Profile() {
                     {/* Single manual retry — never an automatic re-fetch loop. */}
                     {priceUnavailable && (
                       <Pressable onPress={retryShop} style={styles.previewBtn}>
-                        <Text variant="tiny" color={colors.gold}>Prices unavailable: tap to retry</Text>
+                        <Text variant="caption" color={colors.gold}>Prices unavailable: tap to retry</Text>
                       </Pressable>
                     )}
                   </>
                 )}
                 {__DEV__ && !owned && (
                   <Pressable onPress={() => onPreview(item)} style={styles.previewBtn}>
-                    <Text variant="tiny" color={colors.muted}>Preview report (dev)</Text>
+                    <Text variant="caption" color={colors.muted}>Preview report (dev)</Text>
                   </Pressable>
                 )}
               </Card>
@@ -242,7 +242,7 @@ export default function Profile() {
           })}
         </View>
         <Pressable onPress={onRestore} disabled={restoring} style={{ marginTop: 12, marginBottom: spacing.lg }}>
-          <Text variant="tiny" color={colors.muted} style={{ textAlign: 'center' }}>
+          <Text variant="caption" color={colors.muted} style={{ textAlign: 'center' }}>
             {restoring ? 'Restoring…' : 'Restore purchases'}
           </Text>
         </Pressable>
@@ -250,18 +250,18 @@ export default function Profile() {
 
       {/* Subscription */}
       <Card solid glow style={{ marginBottom: spacing.lg }}>
-        <Eyebrow>Subscription · {isPremium ? 'Premium ✦' : 'Free'}</Eyebrow>
+        <Text variant="sectionHeader">Subscription · {isPremium ? 'Premium ✦' : 'Free'}</Text>
         {isPremium ? (
           <>
-            <Text variant="serif" style={{ fontSize: 17, marginTop: 8 }}>You're a Premium member</Text>
-            <Text variant="tiny" style={{ marginTop: 6 }}>
+            <Text variant="cardTitle" style={{ marginTop: 8 }}>You're a Premium member</Text>
+            <Text variant="secondaryBody" style={{ marginTop: 6 }}>
               All features unlocked. Manage your subscription in your app store account settings.
             </Text>
           </>
         ) : (
           <>
-            <Text variant="serif" style={{ fontSize: 17, marginTop: 8 }}>Unlock Tara Premium</Text>
-            <Text variant="body" color={colors.goldSoft} style={{ marginTop: 6, fontSize: 14 }}>
+            <Text variant="cardTitle" style={{ marginTop: 8 }}>Unlock Tara Premium</Text>
+            <Text variant="secondaryBody" color={colors.goldSoft} style={{ marginTop: 6 }}>
               {PREMIUM_COPY.homeNudgeLine}
             </Text>
             {/* Same benefits as the paywall — single source of truth (PREMIUM_BENEFITS). */}
@@ -269,7 +269,7 @@ export default function Profile() {
               {PREMIUM_BENEFITS.map((b) => (
                 <View key={b} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                   <Text style={{ color: colors.gold, fontSize: 13 }}>✓</Text>
-                  <Text variant="tiny" style={{ flex: 1, fontSize: 12.5 }}>{b}</Text>
+                  <Text variant="secondaryBody" style={{ flex: 1 }}>{b}</Text>
                 </View>
               ))}
             </View>
@@ -283,24 +283,24 @@ export default function Profile() {
 
       {/* Settings */}
       <Card style={{ marginBottom: spacing.lg }}>
-        <Eyebrow>Settings</Eyebrow>
+        <Text variant="sectionHeader">Settings</Text>
         <View style={{ marginTop: 6 }}>
           {SETTINGS_ROWS.map((r) => (
             <Pressable key={r.label} style={styles.row} onPress={() => router.push(r.route as any)}>
-              <Text variant="body" style={{ fontSize: 14 }}>{r.label}</Text>
+              <Text variant="body">{r.label}</Text>
               <Text style={{ color: colors.gold, fontSize: 18 }}>›</Text>
             </Pressable>
           ))}
           <Pressable style={styles.row} onPress={onManageSubscription}>
-            <Text variant="body" style={{ fontSize: 14 }}>Manage Subscription</Text>
+            <Text variant="body">Manage Subscription</Text>
             <Text style={{ color: colors.gold, fontSize: 18 }}>›</Text>
           </Pressable>
           <Pressable style={styles.row} onPress={onRestore} disabled={restoring}>
-            <Text variant="body" style={{ fontSize: 14 }}>{restoring ? 'Restoring…' : 'Restore Purchases'}</Text>
+            <Text variant="body">{restoring ? 'Restoring…' : 'Restore Purchases'}</Text>
             <Text style={{ color: colors.gold, fontSize: 18 }}>›</Text>
           </Pressable>
           <View style={[styles.row, { borderBottomWidth: 0 }]}>
-            <Text variant="body" style={{ fontSize: 14 }}>Dark Mode</Text>
+            <Text variant="body">Dark Mode</Text>
             <Switch value disabled trackColor={{ true: colors.gold }} />
           </View>
         </View>

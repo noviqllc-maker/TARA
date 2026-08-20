@@ -53,10 +53,10 @@ export default function WellnessScreen() {
       >
         <Animated.View entering={FadeInDown.duration(500)}>
           <Eyebrow>Step 6 of 6</Eyebrow>
-          <Text variant="h1" style={{ marginTop: 12, marginBottom: 6 }}>
+          <Text variant="screenTitle" style={{ marginTop: 12, marginBottom: 6 }}>
             Would you like Tara to understand your body rhythm too?
           </Text>
-          <Text variant="tiny" style={{ marginBottom: 22 }}>
+          <Text variant="body" style={{ marginBottom: 22 }}>
             Connect Apple Health to blend your real sleep, recovery and HRV with your chart. Others coming soon.
           </Text>
 
@@ -72,7 +72,7 @@ export default function WellnessScreen() {
                     <Text variant="body" color={colors.muted}>{s.name}</Text>
                   </View>
                   <View style={styles.badgeSoon}>
-                    <Text variant="tiny" color={colors.muted}>Coming soon</Text>
+                    <Text variant="caption" color={colors.muted}>Coming soon</Text>
                   </View>
                 </View>
               );
@@ -88,7 +88,7 @@ export default function WellnessScreen() {
                   <Text variant="body">{s.name}</Text>
                 </View>
                 <View style={[styles.badge, on && styles.badgeOn]}>
-                  <Text variant="tiny" color={on ? '#a8c6a3' : colors.goldSoft}>{on ? '✓ Connected' : 'Connect'}</Text>
+                  <Text variant="caption" color={on ? '#a8c6a3' : colors.goldSoft}>{on ? '✓ Connected' : 'Connect'}</Text>
                 </View>
               </Pressable>
             );

@@ -58,7 +58,7 @@ export default function BirthTimeScreen() {
     >
       <View style={styles.row}>
         <View style={{ flex: 1 }}>
-          <Text variant="eyebrow" color={colors.muted} style={styles.label}>HH</Text>
+          <Text variant="caption" color={colors.muted} style={styles.label}>HH</Text>
           <TextInput
             value={hh} onChangeText={onHH} onBlur={padHH}
             placeholder="07" placeholderTextColor={colors.mutedDim}
@@ -67,7 +67,7 @@ export default function BirthTimeScreen() {
           />
         </View>
         <View style={{ flex: 1 }}>
-          <Text variant="eyebrow" color={colors.muted} style={styles.label}>MM</Text>
+          <Text variant="caption" color={colors.muted} style={styles.label}>MM</Text>
           <TextInput
             ref={mmRef} value={mm} onChangeText={onMM} onBlur={padMM}
             placeholder="05" placeholderTextColor={colors.mutedDim}
@@ -77,19 +77,19 @@ export default function BirthTimeScreen() {
         </View>
       </View>
 
-      <Text variant="eyebrow" color={colors.muted} style={[styles.label, { marginTop: 18 }]}>AM / PM</Text>
+      <Text variant="caption" color={colors.muted} style={[styles.label, { marginTop: 18 }]}>AM / PM</Text>
       <View style={styles.pillRow}>
         {(['AM', 'PM'] as const).map((p) => {
           const active = ampm === p;
           return (
             <Pressable key={p} onPress={() => setAmpm(p)} style={[styles.pill, active && styles.pillActive]}>
-              <Text variant="body" color={active ? '#1a1018' : colors.cream} style={{ fontWeight: '600' }}>{p}</Text>
+              <Text variant="body" color={active ? '#1a1018' : colors.cream}>{p}</Text>
             </Pressable>
           );
         })}
       </View>
 
-      {errorMsg ? <Text variant="tiny" color={colors.terra} style={{ marginTop: 12 }}>{errorMsg}</Text> : null}
+      {errorMsg ? <Text variant="secondaryBody" color={colors.terra} style={{ marginTop: 12 }}>{errorMsg}</Text> : null}
     </OnboardingShell>
   );
 }

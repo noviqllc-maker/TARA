@@ -63,10 +63,10 @@ export default function NotificationsPrimer() {
       <CosmicBackground intense />
       <View style={[styles.root, { paddingTop: insets.top + 44, paddingBottom: insets.bottom + 24 }]}>
         <Animated.View entering={FadeInDown.duration(500)} style={{ alignItems: 'center' }}>
-          <Text variant="h1" style={{ textAlign: 'center', fontSize: 28, lineHeight: 36 }}>
+          <Text variant="screenTitle" style={{ textAlign: 'center' }}>
             Never miss an important planetary shift.
           </Text>
-          <Text variant="tiny" color={colors.muted} style={{ textAlign: 'center', marginTop: 12, lineHeight: 20, paddingHorizontal: 12 }}>
+          <Text variant="body" color={colors.muted} style={{ textAlign: 'center', marginTop: 12, paddingHorizontal: 12 }}>
             Tara will notify you when your chart reveals opportunities, challenges, or important timing for decisions.
           </Text>
         </Animated.View>
@@ -74,16 +74,16 @@ export default function NotificationsPrimer() {
         {/* Phone illustration with mocked notification cards */}
         <View style={styles.phoneWrap}>
           <Animated.View entering={FadeInUp.duration(600).delay(150)} style={styles.phone}>
-            <Text variant="tiny" color={colors.mutedDim} style={{ textAlign: 'center', marginBottom: 14, fontSize: 11 }}>9:41</Text>
+            <Text variant="metadata" color={colors.mutedDim} style={{ textAlign: 'center', marginBottom: 14 }}>9:41</Text>
             {CARDS.map((c, i) => (
               <View key={i} style={styles.card}>
                 <View style={styles.icon}><Text style={{ color: '#1a1018', fontSize: 13 }}>✦</Text></View>
                 <View style={{ flex: 1 }}>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text variant="tiny" color={colors.cream} style={{ fontWeight: '700', fontSize: 12 }}>{c.title}</Text>
-                    <Text variant="tiny" color={colors.mutedDim} style={{ fontSize: 10 }}>now</Text>
+                    <Text variant="caption" color={colors.cream}>{c.title}</Text>
+                    <Text variant="metadata" color={colors.mutedDim}>now</Text>
                   </View>
-                  <Text variant="tiny" color={colors.muted} style={{ marginTop: 3, lineHeight: 15, fontSize: 11.5 }}>{c.body}</Text>
+                  <Text variant="metadata" color={colors.muted} style={{ marginTop: 3 }}>{c.body}</Text>
                 </View>
               </View>
             ))}
@@ -93,7 +93,7 @@ export default function NotificationsPrimer() {
         <View>
           <GoldButton label={busy ? 'Turning on…' : 'TURN ON NOTIFICATIONS'} onPress={onTurnOn} disabled={busy} />
           <Pressable onPress={onSkip} hitSlop={8} style={{ marginTop: 16 }} disabled={busy}>
-            <Text variant="tiny" color={colors.muted} style={{ textAlign: 'center' }}>Not right now</Text>
+            <Text variant="caption" color={colors.muted} style={{ textAlign: 'center' }}>Not right now</Text>
           </Pressable>
         </View>
       </View>

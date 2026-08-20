@@ -53,7 +53,7 @@ export default function CalendarScreen() {
       {/* Month header with prev/next */}
       <View style={styles.monthHeader}>
         <Pressable onPress={() => shift(-1)} hitSlop={12}><Text style={styles.arrow}>‹</Text></Pressable>
-        <Text variant="serif" style={{ fontSize: 20 }}>{label}</Text>
+        <Text variant="screenTitle">{label}</Text>
         <Pressable onPress={() => shift(1)} hitSlop={12}><Text style={styles.arrow}>›</Text></Pressable>
       </View>
 
@@ -98,11 +98,11 @@ export default function CalendarScreen() {
         {(['amavasya', 'purnima', 'ekadashi'] as const).map((k) => (
           <View key={k} style={styles.legendItem}>
             <View style={[styles.dot, { backgroundColor: DOT_COLOR[k] }]} />
-            <Text variant="tiny" color={colors.muted} style={{ fontSize: 11 }}>{DOT_LABEL[k]}</Text>
+            <Text variant="metadata" color={colors.muted}>{DOT_LABEL[k]}</Text>
           </View>
         ))}
-        <View style={styles.legendItem}><Text style={{ fontSize: 11 }}>🪔</Text><Text variant="tiny" color={colors.muted} style={{ fontSize: 11 }}>Festival</Text></View>
-        <View style={styles.legendItem}><Text style={{ fontSize: 11 }}>⭐</Text><Text variant="tiny" color={colors.muted} style={{ fontSize: 11 }}>Auspicious yoga</Text></View>
+        <View style={styles.legendItem}><Text style={{ fontSize: 11 }}>🪔</Text><Text variant="metadata" color={colors.muted}>Festival</Text></View>
+        <View style={styles.legendItem}><Text style={{ fontSize: 11 }}>⭐</Text><Text variant="metadata" color={colors.muted}>Auspicious yoga</Text></View>
       </View>
 
       {/* Day detail sheet */}
@@ -113,7 +113,7 @@ export default function CalendarScreen() {
             {detail ? (
               <>
                 <View style={styles.sheetHeader}>
-                  <Text variant="serif" style={{ fontSize: 19, flex: 1 }}>{detail.dateLabel}</Text>
+                  <Text variant="cardTitle" style={{ flex: 1 }}>{detail.dateLabel}</Text>
                   <Pressable onPress={() => setSelected(null)} hitSlop={12}><Text style={{ fontSize: 28, color: colors.gold }}>×</Text></Pressable>
                 </View>
                 <ScrollView style={{ flexGrow: 0 }} contentContainerStyle={{ paddingBottom: 28 }} showsVerticalScrollIndicator={false}>
@@ -124,22 +124,22 @@ export default function CalendarScreen() {
                     <Field label={detail.observance.kind === 'festival' ? 'Festival' : 'Observance'} value={detail.observance.name} note={detail.observance.significance} />
                   ) : null}
 
-                  <Text variant="eyebrow" color={colors.gold} style={styles.groupLabel}>Best hours</Text>
+                  <Text variant="sectionHeader" color={colors.gold} style={styles.groupLabel}>Best hours</Text>
                   {detail.bestHours.map((b) => (
                     <View key={b.area} style={styles.hourRow}>
-                      <Text variant="tiny" color={colors.cream} style={{ fontSize: 13 }}>{b.area}</Text>
-                      <Text variant="tiny" color={b.window ? colors.goldSoft : colors.mutedDim} style={{ fontSize: 13 }}>{b.window ?? 'Set birth place'}</Text>
+                      <Text variant="secondaryBody" color={colors.cream}>{b.area}</Text>
+                      <Text variant="secondaryBody" color={b.window ? colors.goldSoft : colors.mutedDim}>{b.window ?? 'Set birth place'}</Text>
                     </View>
                   ))}
 
-                  <Text variant="eyebrow" color={colors.gold} style={styles.groupLabel}>Muhūrta windows</Text>
+                  <Text variant="sectionHeader" color={colors.gold} style={styles.groupLabel}>Muhūrta windows</Text>
                   <View style={styles.hourRow}>
-                    <Text variant="tiny" color={colors.cream} style={{ fontSize: 13 }}>Abhijit (auspicious)</Text>
-                    <Text variant="tiny" color={detail.abhijit ? colors.sage : colors.mutedDim} style={{ fontSize: 13 }}>{detail.abhijit ?? 'Set birth place'}</Text>
+                    <Text variant="secondaryBody" color={colors.cream}>Abhijit (auspicious)</Text>
+                    <Text variant="secondaryBody" color={detail.abhijit ? colors.sage : colors.mutedDim}>{detail.abhijit ?? 'Set birth place'}</Text>
                   </View>
                   <View style={styles.hourRow}>
-                    <Text variant="tiny" color={colors.cream} style={{ fontSize: 13 }}>Rāhukālam (avoid)</Text>
-                    <Text variant="tiny" color={detail.rahukalam ? colors.terra : colors.mutedDim} style={{ fontSize: 13 }}>{detail.rahukalam ?? 'Set birth place'}</Text>
+                    <Text variant="secondaryBody" color={colors.cream}>Rāhukālam (avoid)</Text>
+                    <Text variant="secondaryBody" color={detail.rahukalam ? colors.terra : colors.mutedDim}>{detail.rahukalam ?? 'Set birth place'}</Text>
                   </View>
                 </ScrollView>
               </>
@@ -154,9 +154,9 @@ export default function CalendarScreen() {
 function Field({ label, value, note }: { label: string; value: string; note: string }) {
   return (
     <View style={{ marginTop: 14 }}>
-      <Text variant="eyebrow" color={colors.muted} style={{ fontSize: 10, letterSpacing: 0.5 }}>{label}</Text>
-      <Text variant="serif" style={{ fontSize: 15, color: colors.goldSoft, marginTop: 2 }}>{value}</Text>
-      <Text variant="tiny" color={colors.cream} style={{ fontSize: 12.5, lineHeight: 18, marginTop: 4 }}>{note}</Text>
+      <Text variant="caption" color={colors.muted}>{label}</Text>
+      <Text variant="body" color={colors.goldSoft} style={{ marginTop: 2 }}>{value}</Text>
+      <Text variant="secondaryBody" color={colors.cream} style={{ marginTop: 4 }}>{note}</Text>
     </View>
   );
 }
@@ -174,6 +174,6 @@ const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.72)', justifyContent: 'flex-end' },
   sheet: { backgroundColor: colors.bg, borderTopLeftRadius: 22, borderTopRightRadius: 22, paddingHorizontal: 20, paddingTop: 18, maxHeight: '84%', borderTopWidth: 1, borderColor: colors.line },
   sheetHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 12, marginBottom: 4, borderBottomWidth: 1, borderBottomColor: colors.line },
-  groupLabel: { fontSize: 10.5, letterSpacing: 0.6, marginTop: 20, marginBottom: 6 },
+  groupLabel: { marginTop: 20, marginBottom: 6 },
   hourRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 7, borderBottomWidth: 1, borderBottomColor: 'rgba(205,163,73,0.1)' },
 });

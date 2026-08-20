@@ -130,7 +130,7 @@ function RevealContent({ chart, reduceMotion, insets }: { chart: BirthChart; red
           <Rise delay={850} pulse reduceMotion={reduceMotion}>
             <View style={styles.birthStar}>
               <Text variant="eyebrow" color={colors.gold} style={styles.placeLabel}>Birth Star (Nakshatra)</Text>
-              <Text style={styles.birthStarValue}>
+              <Text variant="cardTitle" color={colors.goldSoft} style={styles.birthStarValue}>
                 <Text style={{ color: colors.gold }}>✦</Text> {chart.nakshatra}
               </Text>
             </View>
@@ -138,7 +138,7 @@ function RevealContent({ chart, reduceMotion, insets }: { chart: BirthChart; red
 
           {/* 5. Caption rides with the placements row (same 500ms unit) */}
           <Rise delay={500} reduceMotion={reduceMotion}>
-            <Text variant="tiny" color={colors.mutedDim} style={{ marginTop: 12, letterSpacing: 0.4 }}>
+            <Text variant="metadata" color={colors.mutedDim} style={{ marginTop: 12 }}>
               Vedic (sidereal) placements
             </Text>
           </Rise>
@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', marginTop: 20, paddingVertical: 11, paddingHorizontal: 20,
     borderRadius: radius.md, borderWidth: 1, borderColor: colors.gold, backgroundColor: 'rgba(205,163,73,0.07)',
   },
-  birthStarValue: { fontFamily: fonts.serifMed, fontSize: 19, color: colors.goldSoft, textAlign: 'center', marginTop: 6 },
+  birthStarValue: { textAlign: 'center', marginTop: 6 },
 
   traits: { marginTop: 24, alignItems: 'center', gap: 6 },
   trait: { fontSize: 20, lineHeight: 26, textAlign: 'center', color: colors.cream },

@@ -55,12 +55,12 @@ export default function PriorityScreen() {
               style={[styles.row, on && styles.rowOn, full && styles.rowFull]}
             >
               <View style={{ flex: 1 }}>
-                <Text variant="body" style={{ fontSize: 15 }}>{p.label}</Text>
-                <Text variant="tiny" color={colors.muted} style={{ fontSize: 11.5, marginTop: 1 }}>{p.blurb}</Text>
+                <Text variant="body">{p.label}</Text>
+                <Text variant="secondaryBody" color={colors.muted} style={{ marginTop: 1 }}>{p.blurb}</Text>
               </View>
               {/* A numbered box shows the selection order (1, 2, 3); empty when unselected. */}
               <View style={[styles.box, on && styles.boxOn]}>
-                {on ? <Text variant="tiny" color={colors.bg} style={{ fontSize: 12, fontWeight: '700' }}>{idx + 1}</Text> : null}
+                {on ? <Text variant="caption" color={colors.bg}>{idx + 1}</Text> : null}
               </View>
             </Pressable>
           );

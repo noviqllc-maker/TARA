@@ -68,7 +68,7 @@ export default function BirthPlaceScreen() {
       {loading && (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12 }}>
           <ActivityIndicator color={colors.gold} size="small" />
-          <Text variant="tiny">Searching…</Text>
+          <Text variant="secondaryBody">Searching…</Text>
         </View>
       )}
 
@@ -84,14 +84,14 @@ export default function BirthPlaceScreen() {
                 backgroundColor: 'rgba(255,255,255,0.02)',
               }}
             >
-              <Text variant="body" style={{ fontSize: 14 }}>{r.description}</Text>
+              <Text variant="body">{r.description}</Text>
             </Pressable>
           ))}
         </View>
       )}
 
       {picked && (
-        <Text variant="tiny" color={colors.sage} style={{ marginTop: 10 }}>✓ Location set for an accurate chart</Text>
+        <Text variant="secondaryBody" color={colors.sage} style={{ marginTop: 10 }}>✓ Location set for an accurate chart</Text>
       )}
     </OnboardingShell>
   );

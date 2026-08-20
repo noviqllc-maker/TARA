@@ -45,8 +45,8 @@ export default function OnboardingShell({
 
         <Animated.View entering={FadeInDown.duration(500)} style={{ flex: 1, justifyContent: 'center' }}>
           <Eyebrow>Step {step} of {total}</Eyebrow>
-          <Text variant="h1" style={{ marginTop: 12, marginBottom: helper ? 6 : 24 }}>{question}</Text>
-          {helper ? <Text variant="tiny" style={{ marginBottom: 24 }}>{helper}</Text> : null}
+          <Text variant="screenTitle" style={{ marginTop: 12, marginBottom: helper ? 6 : 24 }}>{question}</Text>
+          {helper ? <Text variant="body" color={colors.muted} style={{ marginBottom: 24 }}>{helper}</Text> : null}
           {children}
         </Animated.View>
 
