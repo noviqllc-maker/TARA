@@ -11,10 +11,10 @@ export type AskCategory = 'career' | 'love' | 'money' | 'health' | 'purpose' | '
 
 const CATEGORY_KEYWORDS: Record<Exclude<AskCategory, 'general'>, string[]> = {
   career: ['career', 'job', 'work', 'business', 'profession', 'vocation', 'promotion', 'employment', 'boss', 'office', 'industry'],
-  love: ['love', 'relationship', 'partner', 'marriage', 'romance', 'dating', 'attraction', 'connected', 'intimate', 'spouse', 'crush', 'ex'],
+  love: ['love', 'relationship', 'partner', 'marriage', 'marry', 'married', 'wedding', 'romance', 'dating', 'attraction', 'connected', 'intimate', 'spouse', 'girlfriend', 'boyfriend', 'husband', 'wife', 'crush', 'ex'],
   money: ['money', 'wealth', 'income', 'salary', 'investment', 'financial', 'finances', 'profit', 'revenue', 'rich', 'debt', 'savings'],
   health: ['health', 'wellness', 'body', 'exercise', 'illness', 'disease', 'energy', 'pain', 'healing', 'medical', 'sleep', 'stress'],
-  purpose: ['purpose', 'soul', 'calling', 'destiny', 'meaning', 'spiritual', 'path', 'direction', 'dharma', 'life purpose'],
+  purpose: ['purpose', 'soul', 'calling', 'destiny', 'meaning', 'spiritual', 'path', 'direction', 'dharma', 'life purpose', 'built for', 'meant for', 'made for', 'meant to do'],
   timing: ['when', 'best time', 'right time', 'window', 'period', 'phase', 'auspicious', 'muhurta'],
 };
 
@@ -46,8 +46,42 @@ const CATEGORY_PROMPTS: Record<AskCategory, string> = {
     'CATEGORY = GENERAL. Answer the question first in plain human terms, then explain through the chart: the houses relevant to the topic, the running Mahadasha (the season of life), then the Sun and Moon (identity and emotion), then any genuine yoga. Do not default to opening the explanation with today\'s transit.',
 };
 
-// Return the guidance segment for a category (defaults to general). The optional chart is
-// accepted for future chart-aware tuning; the current guidance is chart-agnostic.
+// Structured evidence priority per category: the houses/planets that carry the clearest signal,
+// the factors to keep SECONDARY (so different questions surface different evidence), and a short
+// focus label. The prose CATEGORY_PROMPTS above stay the primary guidance; the `avoid` list here
+// drives the extra "do not over-rely on X" clause appended by buildCategoryPrompt. Single source
+// of truth for the avoid data (no separate askTaraCategories file). ('mind' folds into general.)
+export type EvidencePriority = { houses: number[]; planets: string[]; avoid: string[]; focus: string };
+export const EVIDENCE_PRIORITY: Record<AskCategory, EvidencePriority> = {
+  career:  { houses: [10, 6, 2, 11], planets: ['Saturn', 'Jupiter', 'Sun', 'Mercury'], avoid: ['the Moon', 'Venus'],   focus: 'work, action, and decisions' },
+  love:    { houses: [7, 5, 1, 8, 9], planets: ['Venus', 'Moon', 'Mars', 'Jupiter'],    avoid: ['Saturn', 'Mercury'],   focus: 'connection, emotion, and attraction' },
+  money:   { houses: [2, 11, 8, 1],  planets: ['Jupiter', 'Venus', 'Mercury', 'Saturn'], avoid: ['the Moon', 'Mars'],    focus: 'resources, gains, and opportunity' },
+  purpose: { houses: [9, 10, 12, 1], planets: ['Sun', 'Jupiter', 'Saturn', 'Venus'],    avoid: ['the Moon', 'Mercury'], focus: 'meaning and soul direction' },
+  health:  { houses: [1, 6, 8, 12],  planets: ['Moon', 'Mars', 'Saturn', 'Sun'],        avoid: ['Venus', 'Jupiter'],    focus: 'energy, rhythm, and wellbeing' },
+  timing:  { houses: [], planets: [], avoid: [], focus: 'when, and which window' },
+  general: { houses: [], planets: [], avoid: [], focus: 'the question at hand' },
+};
+
+// Map a loose topic/category string (career/work, love/relationships, …) to its evidence
+// priority. Defaults to 'general'.
+export function getEvidencePriority(topic: string): EvidencePriority {
+  const t = (topic || '').toLowerCase();
+  if (t === 'career' || t === 'work') return EVIDENCE_PRIORITY.career;
+  if (t === 'love' || t === 'relationships') return EVIDENCE_PRIORITY.love;
+  if (t === 'money' || t === 'finances') return EVIDENCE_PRIORITY.money;
+  if (t === 'purpose' || t === 'meaning' || t === 'spiritual') return EVIDENCE_PRIORITY.purpose;
+  if (t === 'health' || t === 'wellness' || t === 'mind' || t === 'mental') return EVIDENCE_PRIORITY.health;
+  if (t === 'timing' || t === 'when') return EVIDENCE_PRIORITY.timing;
+  return EVIDENCE_PRIORITY.general;
+}
+
+// Return the guidance segment for a category (defaults to general), plus a short "keep these
+// secondary" clause generated from EVIDENCE_PRIORITY so a category never over-leans on the
+// factors that seldom carry its clearest story.
 export function buildCategoryPrompt(category: string): string {
-  return CATEGORY_PROMPTS[(category as AskCategory)] ?? CATEGORY_PROMPTS.general;
+  const cat = (category as AskCategory);
+  const base = CATEGORY_PROMPTS[cat] ?? CATEGORY_PROMPTS.general;
+  const avoid = (EVIDENCE_PRIORITY[cat] ?? EVIDENCE_PRIORITY.general).avoid;
+  if (!avoid.length) return base;
+  return `${base} Keep ${avoid.join(' and ')} secondary in a ${cat} answer; they rarely carry its clearest signal.`;
 }
