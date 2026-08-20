@@ -10,11 +10,11 @@ import { tithiSpecialOf, nityaYoga } from '@/lib/calendar';
 import { varaLord } from '@/lib/panchanga';
 import { getHoraSchedule, getAbhijitMuhurta, getRahukalam } from '@/lib/astronomy';
 
-export type Purpose = 'marriage' | 'travel' | 'business' | 'moving' | 'surgery' | 'interview';
+export type Purpose = 'marriage' | 'travel' | 'business' | 'moving' | 'interview' | 'education';
 export const PURPOSES: { key: Purpose; label: string }[] = [
   { key: 'marriage', label: 'Marriage' }, { key: 'travel', label: 'Travel' },
   { key: 'business', label: 'Business' }, { key: 'moving', label: 'Moving Home' },
-  { key: 'surgery', label: 'Surgery' }, { key: 'interview', label: 'Interview' },
+  { key: 'interview', label: 'Interview' }, { key: 'education', label: 'Education' },
 ];
 
 export interface MuhurtaDate {
@@ -35,7 +35,7 @@ type Cfg = {
   goodVaras: Set<string>;
   badVaras: Set<string>;
   keyHouse: number;       // the house this purpose activates
-  marsHelps: boolean;     // surgery wants Mars strength; most purposes treat Mars on the key house as friction
+  marsHelps: boolean;     // if true, Mars on the key house is decisive rather than friction (none of the current purposes want it, but the scorer still honors the flag)
   dashaLords: Set<string>;
   horaPlanet: string;     // planet whose horā is the "best hour" for this purpose
 };
@@ -65,11 +65,11 @@ const CFG: Record<Purpose, Cfg> = {
     goodVaras: S('Moon', 'Mercury', 'Jupiter', 'Venus'), badVaras: S('Mars', 'Saturn'),
     keyHouse: 4, marsHelps: false, dashaLords: S('Moon', 'Venus', 'Jupiter'), horaPlanet: 'Moon',
   },
-  surgery: {
-    good: S('Ashwini', 'Krittika', 'Pushya', 'Hasta', 'Anuradha', 'Shravana', 'Mula', 'Revati'),
-    avoid: S('Rohini', 'Ashlesha', 'Jyeshtha'),
-    goodVaras: S('Mars', 'Sun', 'Saturn'), badVaras: S('Venus'),
-    keyHouse: 6, marsHelps: true, dashaLords: S('Mars', 'Sun', 'Saturn'), horaPlanet: 'Mars',
+  education: {
+    good: S('Ashwini', 'Mrigashira', 'Punarvasu', 'Pushya', 'Hasta', 'Chitra', 'Swati', 'Anuradha', 'Shravana', 'Dhanishta', 'Shatabhisha', 'Revati'),
+    avoid: S('Bharani', 'Krittika', 'Ashlesha', 'Magha', 'Jyeshtha', 'Mula'),
+    goodVaras: S('Mercury', 'Jupiter', 'Sun', 'Moon'), badVaras: S('Saturn', 'Mars'),
+    keyHouse: 5, marsHelps: false, dashaLords: S('Mercury', 'Jupiter', 'Moon'), horaPlanet: 'Mercury',
   },
   interview: {
     good: S('Ashwini', 'Pushya', 'Hasta', 'Chitra', 'Swati', 'Anuradha', 'Shravana', 'Revati'),
