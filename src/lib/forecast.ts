@@ -19,10 +19,13 @@ export type ForecastDay = {
   key: string;         // 'YYYY-M-D'
   label: string;       // "Thu, Aug 6"
   rel: string;         // "Today" | "Tomorrow" | "Thursday"
-  glyph: string;       // dominant graha glyph
-  strength: number;    // 0–100
-  headline: string;    // collapsed one-liner (the moon-house mood + tone)
-  reading: string;     // 2–4 sentence expanded reading
+  glyph: string;       // dominant graha glyph (decorative)
+  strength: number;    // 0–100 (drives the bar + the qualitative label; the number isn't shown)
+  scoreLabel: string;  // qualitative tier — "High energy" / "Steady energy" / "Lower energy" / "Slow energy"
+  bestFor: string[];   // ["Conversations", "Short trips", "Courage"] — what the day supports
+  headline: string;    // collapsed one-liner (plain English, actionable — no mechanics)
+  reading: string;     // 2–3 sentence expanded reading (plain English — NO planets/houses/aspects)
+  mechanics: string;   // the technical breakdown, revealed only on "Why this?" (kept out of the reading)
   question: string;    // Ask-Tara bridge (prefilled, never auto-sent)
 };
 
@@ -30,7 +33,8 @@ export type ForecastMark = { date: string; text: string };
 
 export type MonthAhead = {
   label: string;               // "The Month Ahead · Aug 6 – Sep 5"
-  strength: number;            // 0–100 average tenor
+  strength: number;            // 0–100 average tenor (drives the bar; the number isn't shown)
+  strengthLabel: string;       // qualitative tenor word ("Broadly favourable" / "Mixed" / "Quieter")
   theme: string;               // 2–4 sentence composed theme (distinct from Year Ahead)
   keyDates: ForecastMark[];    // real dated events
   opportunities: ForecastMark[]; // favourable windows
@@ -78,7 +82,47 @@ function hashStr(s: string): number {
 }
 const jitter = (key: string, amp: number) => ((hashStr(key) % 1000) / 1000 * 2 - 1) * amp;
 const lower = (s: string) => (s ? s[0].toLowerCase() + s.slice(1) : s);
+const cap = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s);
 const addDays = (d: Date, n: number) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n, 12);
+
+// Qualitative energy tier from the day-strength — we show this, never a raw "/100".
+function scoreLabel(strength: number): string {
+  if (strength >= 72) return 'High energy';
+  if (strength >= 58) return 'Steady energy';
+  if (strength >= 46) return 'Lower energy';
+  return 'Slow energy';
+}
+// Qualitative tenor word for the month header.
+function monthTenorLabel(strength: number): string {
+  if (strength >= 68) return 'Broadly favourable';
+  if (strength >= 54) return 'Mixed, with real openings';
+  return 'Quieter, a lighter touch';
+}
+// What the day supports, drawn from the Moon-house lean (already plain English). First three.
+function bestForOf(moonHouse: number | null): string[] {
+  const lean = houseTheme(moonHouse).lean; // e.g. "Conversations, short trips, courage"
+  return lean.split(',').map((s) => cap(s.trim())).filter(Boolean).slice(0, 3);
+}
+// Actionable, plain-English headlines by energy tier (no astrology vocabulary). Variety-guarded.
+const HEADLINES: Record<string, string[]> = {
+  high: ['A strong day to make your move.', 'Momentum is with you today.', 'Good day to start and to ask.', 'Push on what matters most.'],
+  steady: ['Steady progress beats big swings today.', 'Build on what is already working.', 'A workable day for real progress.', 'Keep it moving, one step at a time.'],
+  lower: ['Ease the pace and keep it simple.', 'Tend rather than push today.', 'A lighter day; protect your energy.', 'Do less, but do it well.'],
+  slow: ['A day for rest and inner work.', 'Go quiet and let things settle.', 'Rest counts as progress today.', 'Save the big moves for later.'],
+};
+// A per-day focus nudge that changes day to day, so two same-Moon-house days still read
+// differently (the deterministic anti-repetition lever for consecutive days). Plain, actionable.
+const NUDGES = [
+  'Start with the thing you have been putting off.',
+  'Let one clear priority lead the day.',
+  'Leave a little room instead of packing the hours.',
+  'Follow the task that has the most energy behind it.',
+  'Keep your promises small and your focus real.',
+  'Move at a pace you could keep tomorrow.',
+  'Say the honest thing sooner rather than later.',
+  'Finish one thing before you start the next.',
+];
+const tierOf = (s: number) => (s >= 72 ? 'high' : s >= 58 ? 'steady' : s >= 46 ? 'lower' : 'slow');
 const fmtShort = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 const fmtDay = (d: Date) => d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 const WEEKDAY = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -112,33 +156,39 @@ function relLabel(offset: number, date: Date): string {
   return WEEKDAY[date.getDay()];
 }
 
-function dayReading(chart: BirthChart, date: Date, rel: string, seedBase: string, used: Set<string>): Omit<ForecastDay, 'key' | 'label' | 'rel' | 'strength'> {
+function dayReading(chart: BirthChart, date: Date, rel: string, seedBase: string, used: Set<string>, strength: number): Omit<ForecastDay, 'key' | 'label' | 'rel' | 'strength'> {
   const f = computeTransitFactor(chart, date, 'general');
   const t = computeTransits(date, chart);
   const g = f.transiting;
   const ht = houseTheme(t.moonHouse);
   const mh = t.moonHouse;
+  const [, tithiName] = t.panchanga.split(' · ');
+  const tier = tierOf(strength);
 
-  // Collapsed headline: the moon-house mood (changes as the Moon moves) — reliably distinct
-  // across the week even when the dominant graha repeats. Variety-guarded anyway.
-  const headline = chooseUnique(seedBase + 'h', [
-    `${ht.mood}.`,
-    `${ht.mood.replace(/ and /, ', ')}.`,
-  ], used);
+  // Headline — actionable and plain (no astrology vocabulary), keyed to the day's energy tier,
+  // variety-guarded so no two days in the week repeat the same line.
+  const headline = chooseUnique(seedBase + 'h', HEADLINES[tier], used);
 
-  // Expanded reading: day tone → moon placement → an aspect/action → a lean/ease-off line.
-  const lead = `The day ${tone(g).day}.`;
-  const moon = `The Moon moves through your ${ord(mh)} house of ${HOUSE_OF[mh ?? 1] ?? 'daily rhythm'}, so ${lower(ht.mood)} colours the hours.`;
+  // Meaning — plain English, mechanics HIDDEN. Moon-house mood → what to lean into / ease off →
+  // a per-day focus nudge. The nudge changes day to day, so two days that share a Moon house
+  // (the Moon lingers ~2.25 days) still read differently. No planet, house, sign, or aspect is
+  // ever named here; the technical driver lives in `mechanics`, revealed only on tap.
+  const moodS = `Today feels ${lower(ht.mood)}.`;
+  const actionS = `Put your energy into ${lower(ht.lean)}, and go easy on ${lower(ht.avoid)}.`;
+  const nudge = chooseUnique(seedBase + 'n', NUDGES, used);
+  const reading = `${moodS} ${actionS} ${nudge}`;
+
+  // Mechanics — the technical breakdown, surfaced only behind "Why this?" so it never crowds
+  // the plain reading. This is where the slow, day-to-day-repeating transit is allowed to live.
   const aspect = f.natalPlanet && f.aspectName
-    ? `Transiting ${g} ${lower(f.aspectName)}s your natal ${f.natalPlanet}, sharpening the theme.`
-    : `${g} moving through your ${ord(f.house)} house sets the undertone.`;
-  const guide = `Lean into ${lower(ht.lean)}; ease off ${lower(ht.avoid)}.`;
-  const reading = [lead, moon, aspect, guide].join(' ');
+    ? `transiting ${g} ${lower(f.aspectName)}s your natal ${f.natalPlanet}`
+    : `${g} moving through your ${ord(f.house)} house`;
+  const mechanics = `The Moon is in your ${ord(mh)} house of ${HOUSE_OF[mh ?? 1] ?? 'daily rhythm'}${tithiName ? `, on ${tithiName}` : ''}, and the day's strongest thread is ${aspect}.`;
 
   const relWord = rel === 'Today' ? 'today' : rel === 'Tomorrow' ? 'tomorrow' : rel;
   const question = `What should I focus on ${relWord}, ${fmtShort(date)}?`;
 
-  return { glyph: GLYPH[g] ?? '✦', headline, reading, question };
+  return { glyph: GLYPH[g] ?? '✦', scoreLabel: scoreLabel(strength), bestFor: bestForOf(mh), headline, reading, mechanics, question };
 }
 
 // ---- month window events -------------------------------------------------------
@@ -276,7 +326,7 @@ export function computeForecast(chart: BirthChart, from: Date = new Date()): For
     const f = computeTransitFactor(chart, d, 'general');
     const strength = dayStrength(chart, d, f.transiting, f.house ?? null);
     const rel = relLabel(i, d);
-    const body = dayReading(chart, d, rel, `${userSeed}:${i}:`, usedWeek);
+    const body = dayReading(chart, d, rel, `${userSeed}:${i}:`, usedWeek, strength);
     week.push({
       key: `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`,
       label: fmtDay(d), rel, strength, ...body,
@@ -352,6 +402,7 @@ export function computeForecast(chart: BirthChart, from: Date = new Date()): For
   const month: MonthAhead = {
     label: `${fmtShort(today)} – ${fmtShort(addDays(today, DAYS))}`,
     strength: avg,
+    strengthLabel: monthTenorLabel(avg),
     theme: composeMonthTheme(avg, top, mahaLord, antarLord, userSeed),
     keyDates,
     opportunities: opportunities.slice(0, 3),

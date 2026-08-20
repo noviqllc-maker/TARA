@@ -91,7 +91,7 @@ export default function Forecast() {
     <Screen>
       <SubHeader eyebrow="Guidance" title="Weekly & Monthly Guidance" />
       <Text variant="tiny" color={colors.muted} style={{ marginBottom: 16, lineHeight: 18 }}>
-        Your week and month ahead: always current, computed fresh from your chart each time you open it.
+        The rhythm of your next seven days and the month beyond: when to push, when to rest, and when to make your move. Always current, built from your chart.
       </Text>
 
       {/* WEEK AHEAD */}
@@ -103,7 +103,7 @@ export default function Forecast() {
       {/* MONTH AHEAD */}
       <View style={{ height: spacing.lg }} />
       <Eyebrow>The Month Ahead</Eyebrow>
-      <Text variant="tiny" color={colors.muted} style={{ marginTop: 4, marginBottom: 12, fontSize: 12 }}>{month.label} · {month.strength}/100</Text>
+      <Text variant="tiny" color={colors.muted} style={{ marginTop: 4, marginBottom: 12, fontSize: 12 }}>{month.label} · {month.strengthLabel}</Text>
 
       <Card solid glow style={{ marginBottom: 12 }}>
         <View style={styles.trackSm}><View style={[styles.fill, { width: `${month.strength}%` }]} /></View>
@@ -125,6 +125,7 @@ export default function Forecast() {
 }
 
 function DayCard({ day, index, open, onToggle }: { day: ForecastDay; index: number; open: boolean; onToggle: () => void }) {
+  const [showWhy, setShowWhy] = useState(false);
   return (
     <Animated.View entering={FadeInDown.delay(Math.min(index, 6) * 40).duration(400)}>
       <Card solid={open} glow={open && index === 0} style={{ marginBottom: 10 }}>
@@ -132,9 +133,9 @@ function DayCard({ day, index, open, onToggle }: { day: ForecastDay; index: numb
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <View style={{ flex: 1, paddingRight: 10 }}>
               <Text variant="serif" style={{ fontSize: 16.5 }}>
-                {day.glyph}  {day.rel}{index === 0 ? '' : ''}
+                {day.glyph}  {day.rel}
               </Text>
-              <Text variant="tiny" color={colors.goldSoft} style={{ marginTop: 2, fontSize: 11.5 }}>{day.label} · {day.strength}/100</Text>
+              <Text variant="tiny" color={colors.goldSoft} style={{ marginTop: 2, fontSize: 11.5 }}>{day.label} · {day.scoreLabel}</Text>
             </View>
             <Text style={{ color: colors.gold, fontSize: 15 }}>{open ? '▾' : '▸'}</Text>
           </View>
@@ -149,8 +150,20 @@ function DayCard({ day, index, open, onToggle }: { day: ForecastDay; index: numb
         {open && (
           <View style={{ marginTop: 12 }}>
             <Text variant="body" color={colors.cream} style={{ fontSize: 14, lineHeight: 22 }}>{day.reading}</Text>
+            {day.bestFor.length ? (
+              <Text variant="tiny" color={colors.goldSoft} style={{ marginTop: 10, fontSize: 12.5 }}>Best for: {day.bestFor.join(', ')}</Text>
+            ) : null}
+
+            {/* Why this? — reveals the technical breakdown inline; the reading itself stays plain */}
+            <Pressable onPress={() => setShowWhy((v) => !v)} hitSlop={6} style={{ marginTop: 12, alignSelf: 'flex-start' }}>
+              <Text variant="tiny" color={colors.gold} style={{ fontWeight: '600', fontSize: 12.5 }}>{showWhy ? 'Hide the why ▾' : 'Why this? ▸'}</Text>
+            </Pressable>
+            {showWhy ? (
+              <Text variant="tiny" color={colors.muted} style={{ marginTop: 8, fontSize: 12, lineHeight: 18 }}>{day.mechanics}</Text>
+            ) : null}
+
             <Pressable onPress={() => askWhy(day.question)} hitSlop={6} style={{ marginTop: 12, alignSelf: 'flex-start' }}>
-              <Text variant="tiny" color={colors.gold} style={{ fontWeight: '600', fontSize: 12.5 }}>Ask Tara why →</Text>
+              <Text variant="tiny" color={colors.gold} style={{ fontWeight: '600', fontSize: 12.5 }}>Ask Tara →</Text>
             </Pressable>
           </View>
         )}
